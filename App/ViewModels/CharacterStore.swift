@@ -23,6 +23,15 @@ struct ActivityOutcomeSummary: Equatable {
     }
 }
 
+/// The result of one crew-member interaction: the relationship outcome plus
+/// whatever the accompanying `.socializeWithCrew` activity produced (XP,
+/// a rank-up, unlocks).
+struct CrewInteractionResult {
+    let outcome: CrewInteractionOutcome
+    let newBondScore: Int
+    let xpOutcome: ActivityOutcomeSummary?
+}
+
 /// The single owner of character state: creation, every progression-earning
 /// action, and the read-only derived values (rank, stats, next-rank
 /// progress, owned items) views bind to. Wraps SwiftData persistence around
@@ -114,6 +123,50 @@ final class CharacterStore {
 
     func hasAttended(matchId: String) -> Bool {
         character?.attendanceLog.contains { $0.matchId == matchId } ?? false
+    }
+
+    // MARK: - Crew relationships
+
+    func bondScore(forMember memberId: String) -> Int {
+        guard let character else { return 0 }
+        return PersistenceMapper.bondScore(forMemberId: memberId, on: character)
+    }
+
+    func relationshipLevel(forMember memberId: String) -> RelationshipLevel {
+        RelationshipLevel.level(forBond: bondScore(forMember: memberId))
+    }
+
+    /// Interacts with a crew member: resolves the outcome (which can go
+    /// either way — see `CrewInteractionEngine`), persists the new bond
+    /// score, and also records a `.socializeWithCrew` activity so the
+    /// interaction contributes a little XP like any other activity.
+    @discardableResult
+    func interact(with member: CrewMember, type: CrewInteractionType, today: Date = .now) -> CrewInteractionResult? {
+        guard let character else { return nil }
+
+        let currentBond = PersistenceMapper.bondScore(forMemberId: member.id, on: character)
+        var generator = SystemRandomNumberGenerator()
+        let (outcome, newBond) = CrewInteractionEngine.resolve(
+            interaction: type, memberName: member.name, currentBond: currentBond, using: &generator
+        )
+
+        if let relationship = character.crewRelationships.first(where: { $0.memberId == member.id }) {
+            relationship.bondScore = newBond
+            relationship.lastInteractionDate = today
+        } else {
+            let relationship = CrewRelationshipEntity(memberId: member.id, bondScore: newBond, lastInteractionDate: today)
+            relationship.character = character
+            modelContext.insert(relationship)
+            character.crewRelationships.append(relationship)
+        }
+
+        let xpOutcome = apply(
+            activity: .socializeWithCrew, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
+        try? modelContext.save()
+
+        return CrewInteractionResult(outcome: outcome, newBondScore: newBond, xpOutcome: xpOutcome)
     }
 
     // MARK: - Derived, read-only state

@@ -54,5 +54,12 @@
     "category": "scarf",
     "description": "The scarf worn only by the section's Capo.",
     "unlockCriteria": { "kind": "reachRank", "rank": 4 }
+  },
+  {
+    "id": "crew-badge",
+    "name": "Crew Badge",
+    "category": "pin",
+    "description": "Earned by getting to know the crew.",
+    "unlockCriteria": { "kind": "activityCount", "activityType": "socializeWithCrew", "threshold": 5 }
   }
 ]

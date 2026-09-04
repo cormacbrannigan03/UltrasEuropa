@@ -15,6 +15,7 @@ struct ContentRepository {
     let inventoryCatalog: [InventoryItem]
     let achievementCatalog: [Achievement]
     let tasks: [ChallengeTask]
+    let crewMembers: [CrewMember]
     /// Each league's full generated double round-robin season, keyed by league id.
     let matchesByLeagueId: [String: [Match]]
 
@@ -38,6 +39,7 @@ struct ContentRepository {
             inventoryCatalog: load([InventoryItem].self, "inventory_catalog", bundle: bundle),
             achievementCatalog: load([Achievement].self, "achievements_catalog", bundle: bundle),
             tasks: load([ChallengeTask].self, "tasks", bundle: bundle),
+            crewMembers: load([CrewMember].self, "crew_members", bundle: bundle),
             matchesByLeagueId: matchesByLeagueId
         )
     }
@@ -94,5 +96,13 @@ struct ContentRepository {
 
     func task(id: String) -> ChallengeTask? {
         tasks.first { $0.id == id }
+    }
+
+    func crewMember(id: String) -> CrewMember? {
+        crewMembers.first { $0.id == id }
+    }
+
+    func crewMembersInRank(_ rank: Rank) -> [CrewMember] {
+        crewMembers.filter { $0.rank == rank }
     }
 }

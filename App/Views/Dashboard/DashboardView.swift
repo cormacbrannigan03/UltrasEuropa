@@ -24,6 +24,9 @@ struct DashboardView: View {
 
                 StatsGridView(stats: characterStore.stats)
 
+                NavigationLink { CrewMembersView() } label: {
+                    DashboardLinkRow(title: "Crew Members", subtitle: "Build relationships", systemImage: "person.3.fill")
+                }
                 NavigationLink { InventoryView() } label: {
                     DashboardLinkRow(
                         title: "Inventory", subtitle: "\(characterStore.ownedItems.count) items",

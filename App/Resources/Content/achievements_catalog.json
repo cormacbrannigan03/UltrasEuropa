@@ -76,5 +76,17 @@
     "name": "Capo",
     "description": "Reached the top of the ladder: Capo.",
     "criteria": { "kind": "reachRank", "rank": 4 }
+  },
+  {
+    "id": "made-a-friend",
+    "name": "Made a Friend",
+    "description": "Interacted with crew members 5 times.",
+    "criteria": { "kind": "activityCount", "activityType": "socializeWithCrew", "threshold": 5 }
+  },
+  {
+    "id": "social-butterfly",
+    "name": "Social Butterfly",
+    "description": "Interacted with crew members 20 times.",
+    "criteria": { "kind": "activityCount", "activityType": "socializeWithCrew", "threshold": 20 }
   }
 ]

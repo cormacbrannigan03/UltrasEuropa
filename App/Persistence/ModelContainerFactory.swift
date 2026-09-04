@@ -12,6 +12,7 @@ enum ModelContainerFactory {
             MatchAttendanceEntity.self,
             ActivityLogEntity.self,
             CompletedTaskEntity.self,
+            CrewRelationshipEntity.self,
         ])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {

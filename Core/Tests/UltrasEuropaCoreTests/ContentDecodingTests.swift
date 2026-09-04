@@ -117,4 +117,18 @@ final class ContentDecodingTests: XCTestCase {
         XCTAssertEqual(task.title, "Learn a Chant")
         XCTAssertNil(task.relatedClubId)
     }
+
+    func testDecodesCrewMember() throws {
+        let json = """
+        {
+            "id": "crew-tommy", "name": "Tommy", "rank": 0,
+            "personality": "Eager newcomer",
+            "bio": "Turned up to his first match last season and hasn't missed one since."
+        }
+        """.data(using: .utf8)!
+
+        let member = try ContentDecoding.decode(CrewMember.self, from: json)
+        XCTAssertEqual(member.name, "Tommy")
+        XCTAssertEqual(member.rank, .regular)
+    }
 }

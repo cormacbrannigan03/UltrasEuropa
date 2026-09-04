@@ -62,4 +62,10 @@ enum PersistenceMapper {
         }.count
         return countSoFarToday + 1
     }
+
+    /// The player's bond score with a crew member — 0 (Stranger) if they've
+    /// never interacted.
+    static func bondScore(forMemberId memberId: String, on entity: CharacterEntity) -> Int {
+        entity.crewRelationships.first { $0.memberId == memberId }?.bondScore ?? 0
+    }
 }

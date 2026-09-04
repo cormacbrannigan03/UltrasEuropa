@@ -1,0 +1,107 @@
+[
+  {
+    "id": "crew-tommy",
+    "name": "Tommy",
+    "rank": 0,
+    "personality": "Eager newcomer",
+    "bio": "Turned up to his first match last season and hasn't missed one since."
+  },
+  {
+    "id": "crew-dana",
+    "name": "Dana",
+    "rank": 0,
+    "personality": "Quiet but curious",
+    "bio": "Still learning the chants but always brings a flag."
+  },
+  {
+    "id": "crew-iggy",
+    "name": "Iggy",
+    "rank": 0,
+    "personality": "Class clown",
+    "bio": "Never short of a joke, even when the team's losing."
+  },
+  {
+    "id": "crew-priya",
+    "name": "Priya",
+    "rank": 1,
+    "personality": "Fiercely loyal",
+    "bio": "Started as a regular two seasons ago and hasn't looked back."
+  },
+  {
+    "id": "crew-marcus",
+    "name": "Marcus",
+    "rank": 1,
+    "personality": "Hot-headed",
+    "bio": "Passionate to a fault — the ref hears about it every week."
+  },
+  {
+    "id": "crew-sanne",
+    "name": "Sanne",
+    "rank": 1,
+    "personality": "Organizer",
+    "bio": "Handles the away-day minibus and never lets anyone miss kickoff."
+  },
+  {
+    "id": "crew-dimitri",
+    "name": "Dimitri",
+    "rank": 2,
+    "personality": "Old guard",
+    "bio": "Been part of the group longer than most can remember."
+  },
+  {
+    "id": "crew-fatima",
+    "name": "Fatima",
+    "rank": 2,
+    "personality": "Tifo artist",
+    "bio": "Designs half the banners the stand has ever seen."
+  },
+  {
+    "id": "crew-lukas",
+    "name": "Lukas",
+    "rank": 2,
+    "personality": "Straight talker",
+    "bio": "Says what everyone's thinking, whether they want to hear it or not."
+  },
+  {
+    "id": "crew-ana",
+    "name": "Ana",
+    "rank": 3,
+    "personality": "Respected leader",
+    "bio": "Keeps the stand organized even when things get tense."
+  },
+  {
+    "id": "crew-viktor",
+    "name": "Viktor",
+    "rank": 3,
+    "personality": "Fierce protector",
+    "bio": "First to step in if trouble starts, first to calm it down too."
+  },
+  {
+    "id": "crew-grace",
+    "name": "Grace",
+    "rank": 3,
+    "personality": "Sharp mind",
+    "bio": "Plans every away trip like a military operation."
+  },
+  {
+    "id": "crew-big-joe",
+    "name": "Big Joe",
+    "rank": 4,
+    "personality": "Legend of the stand",
+    "bio": "Led the chants here for longer than most fans have been alive."
+  },
+  {
+    "id": "crew-rosa",
+    "name": "Rosa",
+    "rank": 4,
+    "personality": "The Colonel",
+    "bio": "Runs the pyro crew with military precision and zero patience for excuses."
+  },
+  {
+    "id": "crew-nikos",
+    "name": "Nikos",
+    "rank": 4,
+    "personality": "Founding member",
+    "bio": "One of the first through the turnstiles when this crew started."
+  }
+]

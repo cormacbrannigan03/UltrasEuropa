@@ -44,6 +44,9 @@ final class CharacterEntity {
     @Relationship(deleteRule: .cascade, inverse: \CompletedTaskEntity.character)
     var completedTasks: [CompletedTaskEntity] = []
 
+    @Relationship(deleteRule: .cascade, inverse: \CrewRelationshipEntity.character)
+    var crewRelationships: [CrewRelationshipEntity] = []
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -154,5 +157,23 @@ final class CompletedTaskEntity {
     init(taskId: String, dateCompleted: Date = .now) {
         self.taskId = taskId
         self.dateCompleted = dateCompleted
+    }
+}
+
+/// The player's relationship with one `CrewMember` catalog entry — the
+/// member's name/bio/rank lives in the bundled `crew_members.json`, not
+/// here. One row is created the first time the player interacts with that
+/// member; before that, their bond score is implicitly 0 (Stranger).
+@Model
+final class CrewRelationshipEntity {
+    var memberId: String
+    var bondScore: Int
+    var lastInteractionDate: Date?
+    var character: CharacterEntity?
+
+    init(memberId: String, bondScore: Int = 0, lastInteractionDate: Date? = nil) {
+        self.memberId = memberId
+        self.bondScore = bondScore
+        self.lastInteractionDate = lastInteractionDate
     }
 }

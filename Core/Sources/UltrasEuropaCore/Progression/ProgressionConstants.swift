@@ -30,6 +30,7 @@ public enum ProgressionConstants {
         .contributeToTifo: ActivityReward(xp: 35, loyalty: 2, knowledge: 3, influence: 3, notoriety: 1),
         .completeTask: ActivityReward(xp: 25, loyalty: 2, knowledge: 2, influence: 2, notoriety: 0),
         .dailyLoyaltyCheckIn: ActivityReward(xp: 5, loyalty: 1, knowledge: 0, influence: 0, notoriety: 0),
+        .socializeWithCrew: ActivityReward(xp: 20, loyalty: 1, knowledge: 0, influence: 3, notoriety: 0),
     ]
 
     // MARK: - Diminishing returns

@@ -3,7 +3,8 @@
 A native iOS app for European football ultras fan culture. Create a character
 and rise through the ranks — from a regular fan to Capo — by attending
 matches, standing in the ultras section, running pyro displays, learning
-your crew's chants, and contributing to your crew's tifo displays.
+your crew's chants, contributing to your crew's tifo displays, and building
+relationships with your crew's members.
 
 ## Project layout
 
@@ -12,13 +13,14 @@ UltrasEuropa/
 ├── project.yml        XcodeGen spec — generates UltrasEuropa.xcodeproj (not committed)
 ├── Core/               Local Swift package: pure models + progression logic (no SwiftUI/SwiftData)
 │   ├── Sources/UltrasEuropaCore/
-│   │   ├── Models/         Club, League, Match, Rank, CharacterStats, Chant, TifoPhoto, ...
+│   │   ├── Models/         Club, League, Match, Rank, CharacterStats, Chant, TifoPhoto, CrewMember, ...
 │   │   ├── Progression/    XP/rank/achievement rules
-│   │   └── Scheduling/     SeasonScheduleGenerator (see below)
+│   │   ├── Scheduling/     SeasonScheduleGenerator (see below)
+│   │   └── Crew/           CrewInteractionEngine (see below)
 │   └── Tests/UltrasEuropaCoreTests/
 └── App/                 The iOS app target: SwiftUI views, SwiftData persistence, bundled content
     ├── Persistence/
-    ├── Resources/Content/   Bundled JSON: leagues, clubs, chants, tifo, catalogs
+    ├── Resources/Content/   Bundled JSON: leagues, clubs, chants, tifo, crew members, catalogs
     ├── ViewModels/
     ├── Views/
     └── Support/
@@ -76,6 +78,8 @@ This also runs in CI on every push via `.github/workflows/core-tests.yml`.
 - [ ] Achievements unlock and appear under Achievements once their criteria are met
 - [ ] Inventory items appear as they're earned
 - [ ] Force-quit and relaunch the app — character, stats, rank, inventory and achievements all persist
+- [ ] Dashboard's "Crew Members" link shows 15 members grouped by rank (Capo first); each has a relationship label that starts at "Stranger"
+- [ ] Interacting with a member shows an outcome (which can go either way), moves their relationship level up or down accordingly, and also awards a little XP — force-quit and relaunch to confirm the relationship persists
 - [ ] Clubs tab lists all 20 leagues; drilling into one shows its real clubs; a club's detail screen shows its generated fixtures/results
 - [ ] Matches tab lists the same 20 leagues; drilling into one shows its full generated season
 
@@ -130,6 +134,28 @@ chants/tifo/inventory catalogs in `App/Resources/Content/` (`chants.json`,
 `tifo_photos.json`, `inventory_catalog.json`) belong to that crew regardless
 of which real club they follow. Swap in your own chants/tifo captions freely
 — they're intentionally generic, not real.
+
+## Crew members and relationships
+
+`App/Resources/Content/crew_members.json` is a small fictional roster (3 per
+rank, `crew_members.json`'s `rank` field matches `Rank`'s raw value 0-4) that
+becomes visible on the Dashboard ("Crew Members") once a character exists —
+these are entirely made-up NPCs belonging to the player's own crew, same
+reasoning as the chants/tifo above.
+
+Tapping a member opens a detail screen with five interactions (Chat, Invite
+to a Match, Share a Chant, Stand Up for Them, Tease Them), each with its own
+success chance and point range — see
+`Core/Sources/UltrasEuropaCore/Crew/CrewInteractionConstants.swift`. Every
+interaction can go either way: `CrewInteractionEngine.resolve` (pure,
+seeded-RNG-testable) rolls the outcome and returns a bond-score delta that
+can be positive (relationship improves) or negative (it sours) — persisted
+per member in a `CrewRelationshipEntity`, clamped to -100...100 and labeled
+by `RelationshipLevel` (Rival through Bonded for Life). Each interaction also
+records a `.socializeWithCrew` activity, so it earns a little XP the same
+way every other activity does — but it's deliberately left out of the
+activity-diversity rank gate, so it's a bonus on top of the existing ladder,
+not a new required step.
 
 ## Progression design
 
