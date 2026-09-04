@@ -6,6 +6,10 @@ public struct Club: Codable, Identifiable, Hashable, Sendable {
     public let city: String
     public let country: String
     public let leagueId: String
+    /// How historically dominant/globally known this club is, 1 (smallest)
+    /// through 5 (global giant). Scales how much XP a fan of this club
+    /// needs to rank up — see `ProgressionConstants.xpMultiplier(forPrestigeTier:)`.
+    public let prestigeTier: Int
     public let founded: Int
     public let stadiumName: String
     public let primaryColorHex: String
@@ -24,6 +28,7 @@ public struct Club: Codable, Identifiable, Hashable, Sendable {
         city: String,
         country: String,
         leagueId: String,
+        prestigeTier: Int = 3,
         founded: Int,
         stadiumName: String,
         primaryColorHex: String,
@@ -36,6 +41,7 @@ public struct Club: Codable, Identifiable, Hashable, Sendable {
         self.city = city
         self.country = country
         self.leagueId = leagueId
+        self.prestigeTier = prestigeTier
         self.founded = founded
         self.stadiumName = stadiumName
         self.primaryColorHex = primaryColorHex

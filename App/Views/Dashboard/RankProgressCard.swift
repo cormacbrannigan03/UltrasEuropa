@@ -4,6 +4,7 @@ import UltrasEuropaCore
 struct RankProgressCard: View {
     let rank: Rank
     let progress: RankProgress?
+    let xpMultiplier: Double
     let achievementName: (String) -> String
 
     var body: some View {
@@ -11,6 +12,12 @@ struct RankProgressCard: View {
             if let progress {
                 Text("Progress to \(progress.rank.displayName)")
                     .font(.headline)
+
+                if let multiplierNote {
+                    Text(multiplierNote)
+                        .font(.caption)
+                        .foregroundStyle(Theme.accent)
+                }
 
                 ProgressRow(label: "XP", current: progress.xpProgress, total: progress.xpNeeded)
 
@@ -57,6 +64,17 @@ struct RankProgressCard: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var multiplierNote: String? {
+        if xpMultiplier > 1.001 {
+            return String(format: "Your club's size makes this tougher — %.1f× the XP a smaller club would need.", xpMultiplier)
+        } else if xpMultiplier < 0.999 {
+            let discount = Int(((1 - xpMultiplier) * 100).rounded())
+            return "Your club's size makes this easier — \(discount)% less XP needed than a top club."
+        } else {
+            return nil
+        }
     }
 }
 

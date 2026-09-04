@@ -98,4 +98,27 @@ final class ProgressionEngineTests: XCTestCase {
         XCTAssertFalse(outcome.didRankUp)
         XCTAssertEqual(outcome.newRank, .regular)
     }
+
+    func testClubXPMultiplierAffectsRankUpButNotXPAwarded() {
+        var stats = CharacterStats.initial
+        stats.totalXP = 299
+        stats.matchesAttended = 4
+
+        let smallClubOutcome = ProgressionEngine.apply(
+            activity: .attendMatch, occurrenceIndexToday: 1,
+            currentStats: stats, activityCounts: [.attendMatch: 4], unlockedAchievementIDs: [],
+            xpMultiplier: ProgressionConstants.xpMultiplier(forPrestigeTier: 1)
+        )
+        let giantClubOutcome = ProgressionEngine.apply(
+            activity: .attendMatch, occurrenceIndexToday: 1,
+            currentStats: stats, activityCounts: [.attendMatch: 4], unlockedAchievementIDs: [],
+            xpMultiplier: ProgressionConstants.xpMultiplier(forPrestigeTier: 5)
+        )
+
+        // Same activity, same XP earned, regardless of club.
+        XCTAssertEqual(smallClubOutcome.xpAwarded, giantClubOutcome.xpAwarded)
+        // But only the smaller club's fan actually ranks up on that XP.
+        XCTAssertTrue(smallClubOutcome.didRankUp)
+        XCTAssertFalse(giantClubOutcome.didRankUp)
+    }
 }

@@ -7,15 +7,16 @@ final class ContentDecodingTests: XCTestCase {
         let json = """
         {
             "id": "arsenal", "name": "Arsenal", "city": "London", "country": "England",
-            "leagueId": "premier-league", "founded": 1886, "stadiumName": "Emirates Stadium",
-            "primaryColorHex": "#EF0107", "secondaryColorHex": "#FFFFFF", "crestAssetName": null,
-            "history": null
+            "leagueId": "premier-league", "prestigeTier": 5, "founded": 1886,
+            "stadiumName": "Emirates Stadium", "primaryColorHex": "#EF0107",
+            "secondaryColorHex": "#FFFFFF", "crestAssetName": null, "history": null
         }
         """.data(using: .utf8)!
 
         let club = try ContentDecoding.decode(Club.self, from: json)
         XCTAssertEqual(club.id, "arsenal")
         XCTAssertEqual(club.leagueId, "premier-league")
+        XCTAssertEqual(club.prestigeTier, 5)
         XCTAssertEqual(club.founded, 1886)
         XCTAssertNil(club.crestAssetName)
         XCTAssertNil(club.history)

@@ -29,12 +29,19 @@ public struct RankRequirement: Sendable {
         self.requiredAchievementIDs = requiredAchievementIDs
     }
 
+    /// `minimumXP` scaled by the fan's club-prestige XP multiplier — the
+    /// actual XP this character needs for this rank.
+    public func effectiveMinimumXP(xpMultiplier: Double) -> Int {
+        Int((Double(minimumXP) * xpMultiplier).rounded())
+    }
+
     public func isSatisfied(
         stats: CharacterStats,
         activityDiversity: Int,
-        unlockedAchievementIDs: Set<String>
+        unlockedAchievementIDs: Set<String>,
+        xpMultiplier: Double = 1.0
     ) -> Bool {
-        stats.totalXP >= minimumXP
+        stats.totalXP >= effectiveMinimumXP(xpMultiplier: xpMultiplier)
             && stats.matchesAttended >= minimumMatchesAttended
             && activityDiversity >= minimumActivityDiversity
             && stats.currentStreakDays >= minimumStreakDays

@@ -151,8 +151,18 @@ final class CharacterStore {
             current: rank,
             stats: stats,
             activityCounts: lifetimeActivityCounts,
-            unlockedAchievementIDs: unlockedAchievementIDs
+            unlockedAchievementIDs: unlockedAchievementIDs,
+            xpMultiplier: favoriteClubXPMultiplier
         )
+    }
+
+    /// How much XP the character's favorite club's prestige demands for
+    /// each rank, relative to the base thresholds (1.0 = no adjustment).
+    /// A fan of a bigger, more historically dominant club needs more XP
+    /// for the same rank — see `ProgressionConstants.xpMultiplier(forPrestigeTier:)`.
+    var favoriteClubXPMultiplier: Double {
+        guard let character, let club = content.club(id: character.favoriteClubId) else { return 1.0 }
+        return ProgressionConstants.xpMultiplier(forPrestigeTier: club.prestigeTier)
     }
 
     // MARK: - Private
@@ -180,7 +190,8 @@ final class CharacterStore {
             occurrenceIndexToday: occurrenceIndex,
             currentStats: statsBefore,
             activityCounts: countsBefore,
-            unlockedAchievementIDs: unlockedBefore
+            unlockedAchievementIDs: unlockedBefore,
+            xpMultiplier: favoriteClubXPMultiplier
         )
 
         PersistenceMapper.apply(outcome.updatedStats, to: character)

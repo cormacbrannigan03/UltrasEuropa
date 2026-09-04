@@ -24,12 +24,19 @@ public enum ProgressionEngine {
     ///     callers can detect a rank-up.
     ///   - unlockedAchievementIDs: achievement IDs already unlocked, used
     ///     for rank gating (some ranks require specific achievements).
+    ///   - xpMultiplier: the fan's club-prestige XP multiplier (see
+    ///     `ProgressionConstants.xpMultiplier(forPrestigeTier:)`), applied
+    ///     only to the rank-threshold comparison, not to the XP actually
+    ///     awarded — a Real Madrid fan and a lower-league fan still earn
+    ///     the same XP per activity, it's just worth less toward rank for
+    ///     the bigger club.
     public static func apply(
         activity: ActivityType,
         occurrenceIndexToday: Int,
         currentStats: CharacterStats,
         activityCounts: [ActivityType: Int],
-        unlockedAchievementIDs: Set<String>
+        unlockedAchievementIDs: Set<String>,
+        xpMultiplier: Double = 1.0
     ) -> ActivityOutcome {
         let reward = ProgressionConstants.activityRewards[activity] ?? ActivityReward(xp: 0)
         let multiplier = ProgressionConstants.diminishingReturnsMultiplier(occurrenceIndexToday: occurrenceIndexToday)
@@ -56,12 +63,14 @@ public enum ProgressionEngine {
         let previousRank = RankCalculator.achievableRank(
             stats: currentStats,
             activityCounts: activityCounts,
-            unlockedAchievementIDs: unlockedAchievementIDs
+            unlockedAchievementIDs: unlockedAchievementIDs,
+            xpMultiplier: xpMultiplier
         )
         let newRank = RankCalculator.achievableRank(
             stats: updatedStats,
             activityCounts: updatedActivityCounts,
-            unlockedAchievementIDs: unlockedAchievementIDs
+            unlockedAchievementIDs: unlockedAchievementIDs,
+            xpMultiplier: xpMultiplier
         )
 
         return ActivityOutcome(

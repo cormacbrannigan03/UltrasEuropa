@@ -18,6 +18,7 @@ struct DashboardView: View {
                 RankProgressCard(
                     rank: characterStore.rank,
                     progress: characterStore.nextRankProgress,
+                    xpMultiplier: characterStore.favoriteClubXPMultiplier,
                     achievementName: { id in contentStore.repository.achievement(id: id)?.name ?? id }
                 )
 

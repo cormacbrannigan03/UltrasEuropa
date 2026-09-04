@@ -33,6 +33,8 @@ struct ClubDetailView: View {
                     }
                 }
 
+                PrestigeIndicator(tier: club.prestigeTier)
+
                 NavigationLink {
                     MatchScheduleView(
                         title: "\(club.name) Fixtures",
@@ -47,6 +49,32 @@ struct ClubDetailView: View {
         .background(Theme.background)
         .navigationTitle(club.name)
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Shows a club's prestige tier (1-5) as stars, with a note on what that
+/// means for progression — see `ProgressionConstants.xpMultiplier(forPrestigeTier:)`.
+struct PrestigeIndicator: View {
+    let tier: Int
+
+    private var multiplier: Double { ProgressionConstants.xpMultiplier(forPrestigeTier: tier) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 2) {
+                ForEach(1...5, id: \.self) { star in
+                    Image(systemName: star <= tier ? "star.fill" : "star")
+                        .foregroundStyle(star <= tier ? Theme.accent : Theme.secondaryText)
+                        .font(.caption)
+                }
+                Text("Prestige").font(.caption).foregroundStyle(Theme.secondaryText).padding(.leading, 4)
+            }
+            Text("Fans of this club need \(String(format: "%.1f", multiplier))× the base XP to rank up.")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+        }
+        .padding(12)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12))
     }
 }
 

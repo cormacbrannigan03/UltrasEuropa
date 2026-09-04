@@ -7,17 +7,22 @@ public enum RankCalculator {
     /// previous rank's), but this walks from the top down and returns the
     /// first satisfied rank so a requirement table doesn't have to be
     /// perfectly monotonic to behave correctly.
+    /// - Parameter xpMultiplier: scales every rank's XP threshold — see
+    ///   `ProgressionConstants.xpMultiplier(forPrestigeTier:)`. Defaults to
+    ///   1.0 (no adjustment).
     public static func achievableRank(
         stats: CharacterStats,
         activityCounts: [ActivityType: Int],
-        unlockedAchievementIDs: Set<String>
+        unlockedAchievementIDs: Set<String>,
+        xpMultiplier: Double = 1.0
     ) -> Rank {
         let diversity = ProgressionConstants.activityDiversity(activityCounts: activityCounts)
         for requirement in ProgressionConstants.rankRequirements.sorted(by: { $0.rank > $1.rank }) {
             if requirement.isSatisfied(
                 stats: stats,
                 activityDiversity: diversity,
-                unlockedAchievementIDs: unlockedAchievementIDs
+                unlockedAchievementIDs: unlockedAchievementIDs,
+                xpMultiplier: xpMultiplier
             ) {
                 return requirement.rank
             }
@@ -32,7 +37,8 @@ public enum RankCalculator {
         current: Rank,
         stats: CharacterStats,
         activityCounts: [ActivityType: Int],
-        unlockedAchievementIDs: Set<String>
+        unlockedAchievementIDs: Set<String>,
+        xpMultiplier: Double = 1.0
     ) -> RankProgress? {
         guard let next = current.next,
               let requirement = ProgressionConstants.rankRequirements.first(where: { $0.rank == next })
@@ -40,11 +46,12 @@ public enum RankCalculator {
 
         let diversity = ProgressionConstants.activityDiversity(activityCounts: activityCounts)
         let missingAchievements = requirement.requiredAchievementIDs.subtracting(unlockedAchievementIDs)
+        let xpNeeded = requirement.effectiveMinimumXP(xpMultiplier: xpMultiplier)
 
         return RankProgress(
             rank: next,
-            xpProgress: min(stats.totalXP, requirement.minimumXP),
-            xpNeeded: requirement.minimumXP,
+            xpProgress: min(stats.totalXP, xpNeeded),
+            xpNeeded: xpNeeded,
             matchesAttendedProgress: min(stats.matchesAttended, requirement.minimumMatchesAttended),
             matchesAttendedNeeded: requirement.minimumMatchesAttended,
             activityDiversityProgress: min(diversity, requirement.minimumActivityDiversity),

@@ -3,7 +3,7 @@ import Foundation
 /// Single source of truth for balance. Change numbers here to retune the
 /// game without touching any engine logic.
 ///
-/// Design intent: ranking up must NOT be simple. Three separate levers
+/// Design intent: ranking up must NOT be simple. Four separate levers
 /// enforce that together:
 ///   1. XP thresholds rise steeply per rank (roughly 3x each step).
 ///   2. Higher ranks additionally require a minimum number of matches
@@ -14,6 +14,10 @@ import Foundation
 ///   3. Each activity's XP/stat reward diminishes the more times it's
 ///      repeated on the same day, so grinding a single action in one
 ///      sitting has a hard ceiling.
+///   4. The XP thresholds themselves scale by the fan's club — a fan of
+///      one of the biggest, most historically dominant clubs needs more
+///      XP for the same rank than a fan of a smaller one. See
+///      `xpMultiplier(forPrestigeTier:)`.
 public enum ProgressionConstants {
 
     // MARK: - Activity rewards
@@ -65,6 +69,27 @@ public enum ProgressionConstants {
         coreDiversityActivityTypes.reduce(into: 0) { total, type in
             if (activityCounts[type] ?? 0) > 0 { total += 1 }
         }
+    }
+
+    // MARK: - Club prestige → XP difficulty
+
+    /// How much harder (or easier) it is to earn rank-qualifying XP as a
+    /// fan of a club at each `Club.prestigeTier` (1 = smallest, 5 = global
+    /// giant). Applied only to XP thresholds — activity-diversity, matches
+    /// attended, streak, and achievement gates stay the same for everyone,
+    /// so following a huge club doesn't change *what* you have to do, only
+    /// how much XP it's worth to that rank.
+    public static let prestigeXPMultiplier: [Int: Double] = [
+        1: 0.7,
+        2: 0.85,
+        3: 1.0,
+        4: 1.3,
+        5: 1.6,
+    ]
+
+    /// Falls back to 1.0 (no adjustment) for an out-of-range tier.
+    public static func xpMultiplier(forPrestigeTier tier: Int) -> Double {
+        prestigeXPMultiplier[tier] ?? 1.0
     }
 
     // MARK: - Achievement IDs used as rank gates

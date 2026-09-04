@@ -153,9 +153,16 @@ private struct ClubPickerRow: View {
             .frame(width: 44, height: 44)
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(club.name).font(.subheadline.bold())
                 Text("\(club.city), \(club.country)").font(.caption).foregroundStyle(Theme.secondaryText)
+                HStack(spacing: 1) {
+                    ForEach(1...5, id: \.self) { star in
+                        Image(systemName: star <= club.prestigeTier ? "star.fill" : "star")
+                            .font(.system(size: 9))
+                            .foregroundStyle(star <= club.prestigeTier ? Theme.accent : Theme.secondaryText)
+                    }
+                }
             }
             Spacer()
             if isSelected {

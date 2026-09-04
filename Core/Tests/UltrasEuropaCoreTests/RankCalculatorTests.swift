@@ -149,4 +149,39 @@ final class RankCalculatorTests: XCTestCase {
         )
         XCTAssertNil(progress)
     }
+
+    func testHigherClubPrestigeRequiresMoreXPForSameRank() {
+        // Same stats, same activity, same achievements — only the fan's
+        // club prestige multiplier differs. A fan of a bigger club should
+        // NOT be Young Ultra yet on XP that would be enough for a smaller
+        // club's fan.
+        var stats = CharacterStats.initial
+        stats.totalXP = 300 // exactly the base (multiplier 1.0) threshold
+        stats.matchesAttended = 5
+
+        let smallClubRank = RankCalculator.achievableRank(
+            stats: stats, activityCounts: [:], unlockedAchievementIDs: [],
+            xpMultiplier: ProgressionConstants.xpMultiplier(forPrestigeTier: 1)
+        )
+        XCTAssertEqual(smallClubRank, .youngUltra, "A smaller club's lower multiplier should make 300 XP enough")
+
+        let giantClubRank = RankCalculator.achievableRank(
+            stats: stats, activityCounts: [:], unlockedAchievementIDs: [],
+            xpMultiplier: ProgressionConstants.xpMultiplier(forPrestigeTier: 5)
+        )
+        XCTAssertEqual(giantClubRank, .regular, "A giant club's higher multiplier should make 300 XP NOT enough")
+    }
+
+    func testNextRankProgressScalesXPNeededByMultiplier() {
+        let baseProgress = RankCalculator.nextRankProgress(
+            current: .regular, stats: .initial, activityCounts: [:], unlockedAchievementIDs: []
+        )
+        let giantClubProgress = RankCalculator.nextRankProgress(
+            current: .regular, stats: .initial, activityCounts: [:], unlockedAchievementIDs: [],
+            xpMultiplier: ProgressionConstants.xpMultiplier(forPrestigeTier: 5)
+        )
+
+        XCTAssertEqual(baseProgress?.xpNeeded, 300)
+        XCTAssertGreaterThan(giantClubProgress?.xpNeeded ?? 0, baseProgress?.xpNeeded ?? 0)
+    }
 }

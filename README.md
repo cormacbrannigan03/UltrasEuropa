@@ -72,6 +72,7 @@ This also runs in CI on every push via `.github/workflows/core-tests.yml`.
 - [ ] Participating in a chant and contributing to a tifo (Chants/Gallery tabs — these are your crew's, not tied to any real club) each award XP/stats
 - [ ] Completing a challenge/task awards XP
 - [ ] Rank only advances once XP **and** the rank's gating requirements (activity variety / achievements — see below) are met — it should NOT be possible to reach Capo quickly by repeating one action
+- [ ] The Dashboard's rank-progress card shows a difficulty note (harder/easier) when the favorite club's prestige tier isn't 3, and a club's detail screen shows its prestige stars
 - [ ] Achievements unlock and appear under Achievements once their criteria are met
 - [ ] Inventory items appear as they're earned
 - [ ] Force-quit and relaunch the app — character, stats, rank, inventory and achievements all persist
@@ -139,3 +140,16 @@ require a minimum spread of activity types (not just repeating one action)
 and specific achievements to be unlocked, and each activity's XP has a daily
 diminishing-returns cap so grinding a single action can't shortcut the
 climb.
+
+On top of that, every club carries a `prestigeTier` (1-5, see `clubs.json`)
+that scales how much XP its fans need for each rank —
+`ProgressionConstants.xpMultiplier(forPrestigeTier:)` maps tier 1 (a small
+club) to 0.7× the base XP thresholds and tier 5 (a global giant) to 1.6×, so
+a Real Madrid or Manchester United fan needs well over twice the XP a
+smaller club's fan needs to reach the same rank. This only scales the XP
+threshold — matches attended, activity variety, streaks, and achievement
+gates are the same for every club. Tiers were assigned by a per-league
+baseline (bigger leagues start higher) plus a bonus for each league's
+traditionally dominant clubs — see `prestigeTier` in `clubs.json` and treat
+it the same as the rest of the club data: a reasonable starting point, not
+a precisely researched ranking.
