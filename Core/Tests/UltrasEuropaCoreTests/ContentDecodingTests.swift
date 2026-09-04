@@ -6,37 +6,36 @@ final class ContentDecodingTests: XCTestCase {
     func testDecodesClub() throws {
         let json = """
         {
-            "id": "rotstadt", "name": "FC Rotstadt", "city": "Rotstadt", "country": "Germany",
-            "founded": 1904, "stadiumName": "Rotstadion", "primaryColorHex": "#B3121B",
-            "secondaryColorHex": "#111111", "crestAssetName": null,
-            "history": "Founded by dockworkers in 1904."
+            "id": "arsenal", "name": "Arsenal", "city": "London", "country": "England",
+            "leagueId": "premier-league", "founded": 1886, "stadiumName": "Emirates Stadium",
+            "primaryColorHex": "#EF0107", "secondaryColorHex": "#FFFFFF", "crestAssetName": null,
+            "history": null
         }
         """.data(using: .utf8)!
 
         let club = try ContentDecoding.decode(Club.self, from: json)
-        XCTAssertEqual(club.id, "rotstadt")
-        XCTAssertEqual(club.founded, 1904)
+        XCTAssertEqual(club.id, "arsenal")
+        XCTAssertEqual(club.leagueId, "premier-league")
+        XCTAssertEqual(club.founded, 1886)
         XCTAssertNil(club.crestAssetName)
+        XCTAssertNil(club.history)
     }
 
-    func testDecodesUltrasGroupWithDescriptionKey() throws {
+    func testDecodesLeague() throws {
         let json = """
-        {
-            "id": "rotstadt-brigade", "clubId": "rotstadt", "name": "Rotstadt Brigade '58",
-            "founded": 1958, "symbols": ["Crossed flags", "Black star"], "colors": ["Red", "Black"],
-            "description": "The main ultras group behind the south stand."
-        }
+        { "id": "premier-league", "name": "Premier League", "country": "England", "rank": 1 }
         """.data(using: .utf8)!
 
-        let group = try ContentDecoding.decode(UltrasGroup.self, from: json)
-        XCTAssertEqual(group.groupDescription, "The main ultras group behind the south stand.")
+        let league = try ContentDecoding.decode(League.self, from: json)
+        XCTAssertEqual(league.id, "premier-league")
+        XCTAssertEqual(league.rank, 1)
     }
 
     func testDecodesMatchWithNullScoresAsUnplayed() throws {
         let json = """
         {
-            "id": "m1", "homeClubId": "rotstadt", "awayClubId": "portovento",
-            "date": "2026-03-14T19:00:00Z", "competition": "Euro Cup", "venue": "Rotstadion",
+            "id": "m1", "homeClubId": "arsenal", "awayClubId": "chelsea",
+            "date": "2026-03-14T19:00:00Z", "competition": "Premier League", "venue": "Emirates Stadium",
             "homeScore": null, "awayScore": null
         }
         """.data(using: .utf8)!
@@ -48,14 +47,32 @@ final class ContentDecodingTests: XCTestCase {
     func testDecodesMatchWithScoresAsPlayed() throws {
         let json = """
         {
-            "id": "m2", "homeClubId": "rotstadt", "awayClubId": "portovento",
-            "date": "2026-01-10T19:00:00Z", "competition": "Euro Cup", "venue": "Rotstadion",
+            "id": "m2", "homeClubId": "arsenal", "awayClubId": "chelsea",
+            "date": "2026-01-10T19:00:00Z", "competition": "Premier League", "venue": "Emirates Stadium",
             "homeScore": 2, "awayScore": 1
         }
         """.data(using: .utf8)!
 
         let match = try ContentDecoding.decode(Match.self, from: json)
         XCTAssertTrue(match.isPlayed)
+    }
+
+    func testDecodesChant() throws {
+        let json = """
+        { "id": "chant-one-voice", "title": "One Voice", "lyrics": "We are one voice.", "audioAssetName": null }
+        """.data(using: .utf8)!
+
+        let chant = try ContentDecoding.decode(Chant.self, from: json)
+        XCTAssertEqual(chant.title, "One Voice")
+    }
+
+    func testDecodesTifoPhoto() throws {
+        let json = """
+        { "id": "tifo-flag-wall", "caption": "A full flag wall.", "imageAssetName": null }
+        """.data(using: .utf8)!
+
+        let photo = try ContentDecoding.decode(TifoPhoto.self, from: json)
+        XCTAssertEqual(photo.caption, "A full flag wall.")
     }
 
     func testDecodesAchievementCriteria() throws {

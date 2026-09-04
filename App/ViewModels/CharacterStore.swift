@@ -49,8 +49,11 @@ final class CharacterStore {
 
     // MARK: - Character creation
 
-    func createCharacter(name: String, favoriteClubId: String, today: Date = .now) {
-        let entity = CharacterEntity(name: name, favoriteClubId: favoriteClubId, createdAt: today, lastActiveDate: today)
+    func createCharacter(name: String, favoriteClubId: String, crewName: String, today: Date = .now) {
+        let entity = CharacterEntity(
+            name: name, favoriteClubId: favoriteClubId, crewName: crewName,
+            createdAt: today, lastActiveDate: today
+        )
         modelContext.insert(entity)
         character = entity
         try? modelContext.save()

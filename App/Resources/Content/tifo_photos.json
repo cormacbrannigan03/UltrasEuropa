@@ -1,65 +1,52 @@
 [
   {
-    "id": "tifo-rotstadt-1",
-    "clubId": "rotstadt",
-    "caption": "South stand mosaic reading 'BRIGADE 58' unveiled before the Zvijezda derby.",
-    "matchId": "m3",
+    "id": "tifo-flag-wall",
+    "caption": "A full flag wall covering the entire stand before kickoff.",
     "imageAssetName": null
   },
   {
-    "id": "tifo-rotstadt-2",
-    "clubId": "rotstadt",
-    "caption": "Giant black-and-red flag wall covering the entire south end.",
-    "matchId": null,
+    "id": "tifo-card-mosaic",
+    "caption": "A card mosaic display timed to unfurl as the teams walk out.",
     "imageAssetName": null
   },
   {
-    "id": "tifo-portovento-1",
-    "clubId": "portovento",
-    "caption": "Wind-themed tifo with hundreds of blue and white streamers.",
-    "matchId": "m5",
+    "id": "tifo-smoke-display",
+    "caption": "Coordinated smoke display filling the stand in the crew's colors.",
     "imageAssetName": null
   },
   {
-    "id": "tifo-portovento-2",
-    "clubId": "portovento",
-    "caption": "Anchor mosaic spanning the full north curve.",
-    "matchId": null,
+    "id": "tifo-giant-banner",
+    "caption": "A hand-painted giant banner stretching the length of the stand.",
     "imageAssetName": null
   },
   {
-    "id": "tifo-nordhavn-1",
-    "clubId": "nordhavn",
-    "caption": "Small but proud away-end banner display at an away fixture.",
-    "matchId": "m2",
+    "id": "tifo-streamer-drop",
+    "caption": "Thousands of streamers dropped from the upper tier at kickoff.",
     "imageAssetName": null
   },
   {
-    "id": "tifo-cantera-1",
-    "clubId": "cantera",
-    "caption": "Stone-textured tifo marking Frente Cantera's founding anniversary.",
-    "matchId": "m4",
+    "id": "tifo-anniversary-display",
+    "caption": "A display marking the crew's founding anniversary.",
     "imageAssetName": null
   },
   {
-    "id": "tifo-cantera-2",
-    "clubId": "cantera",
-    "caption": "Maroon and gold pyrotechnic display before kickoff.",
-    "matchId": null,
+    "id": "tifo-away-day-banner",
+    "caption": "A travel banner unfurled in the away end, miles from home.",
     "imageAssetName": null
   },
   {
-    "id": "tifo-zvijezda-1",
-    "clubId": "zvijezda",
-    "caption": "Massive coordinated pyro show lighting up the entire stand.",
-    "matchId": "m7",
+    "id": "tifo-pyro-show",
+    "caption": "A pyrotechnic show lighting up the stand before the derby.",
     "imageAssetName": null
   },
   {
-    "id": "tifo-zvijezda-2",
-    "clubId": "zvijezda",
-    "caption": "Five-pointed star mosaic held up by the full Fanatici section.",
-    "matchId": null,
+    "id": "tifo-crest-mosaic",
+    "caption": "A crest mosaic built from thousands of colored cards.",
+    "imageAssetName": null
+  },
+  {
+    "id": "tifo-derby-display",
+    "caption": "The stand's biggest display of the season, saved for the derby.",
     "imageAssetName": null
   }
 ]

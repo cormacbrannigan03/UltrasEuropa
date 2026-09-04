@@ -1,0 +1,122 @@
+[
+  {
+    "id": "premier-league",
+    "name": "Premier League",
+    "country": "England",
+    "rank": 1
+  },
+  {
+    "id": "la-liga",
+    "name": "La Liga",
+    "country": "Spain",
+    "rank": 2
+  },
+  {
+    "id": "serie-a",
+    "name": "Serie A",
+    "country": "Italy",
+    "rank": 3
+  },
+  {
+    "id": "bundesliga",
+    "name": "Bundesliga",
+    "country": "Germany",
+    "rank": 4
+  },
+  {
+    "id": "ligue-1",
+    "name": "Ligue 1",
+    "country": "France",
+    "rank": 5
+  },
+  {
+    "id": "eredivisie",
+    "name": "Eredivisie",
+    "country": "Netherlands",
+    "rank": 6
+  },
+  {
+    "id": "primeira-liga",
+    "name": "Primeira Liga",
+    "country": "Portugal",
+    "rank": 7
+  },
+  {
+    "id": "pro-league",
+    "name": "Pro League",
+    "country": "Belgium",
+    "rank": 8
+  },
+  {
+    "id": "super-lig",
+    "name": "Super Lig",
+    "country": "Turkey",
+    "rank": 9
+  },
+  {
+    "id": "austrian-bundesliga",
+    "name": "Bundesliga",
+    "country": "Austria",
+    "rank": 10
+  },
+  {
+    "id": "swiss-super-league",
+    "name": "Super League",
+    "country": "Switzerland",
+    "rank": 11
+  },
+  {
+    "id": "chance-liga",
+    "name": "Chance Liga",
+    "country": "Czechia",
+    "rank": 12
+  },
+  {
+    "id": "super-league-greece",
+    "name": "Super League 1",
+    "country": "Greece",
+    "rank": 13
+  },
+  {
+    "id": "eliteserien",
+    "name": "Eliteserien",
+    "country": "Norway",
+    "rank": 14
+  },
+  {
+    "id": "scottish-premiership",
+    "name": "Premiership",
+    "country": "Scotland",
+    "rank": 15
+  },
+  {
+    "id": "danish-superliga",
+    "name": "Superliga",
+    "country": "Denmark",
+    "rank": 16
+  },
+  {
+    "id": "ligat-haal",
+    "name": "Ligat ha'Al",
+    "country": "Israel",
+    "rank": 17
+  },
+  {
+    "id": "cypriot-first-division",
+    "name": "First Division",
+    "country": "Cyprus",
+    "rank": 18
+  },
+  {
+    "id": "hnl",
+    "name": "HNL",
+    "country": "Croatia",
+    "rank": 19
+  },
+  {
+    "id": "serbian-superliga",
+    "name": "SuperLiga",
+    "country": "Serbia",
+    "rank": 20
+  }
+]

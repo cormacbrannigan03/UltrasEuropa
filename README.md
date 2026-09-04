@@ -3,7 +3,7 @@
 A native iOS app for European football ultras fan culture. Create a character
 and rise through the ranks — from a regular fan to Capo — by attending
 matches, standing in the ultras section, running pyro displays, learning
-chants, and contributing to tifo displays.
+your crew's chants, and contributing to your crew's tifo displays.
 
 ## Project layout
 
@@ -12,10 +12,13 @@ UltrasEuropa/
 ├── project.yml        XcodeGen spec — generates UltrasEuropa.xcodeproj (not committed)
 ├── Core/               Local Swift package: pure models + progression logic (no SwiftUI/SwiftData)
 │   ├── Sources/UltrasEuropaCore/
+│   │   ├── Models/         Club, League, Match, Rank, CharacterStats, Chant, TifoPhoto, ...
+│   │   ├── Progression/    XP/rank/achievement rules
+│   │   └── Scheduling/     SeasonScheduleGenerator (see below)
 │   └── Tests/UltrasEuropaCoreTests/
 └── App/                 The iOS app target: SwiftUI views, SwiftData persistence, bundled content
     ├── Persistence/
-    ├── Resources/Content/   Bundled JSON: clubs, groups, matches, chants, tifo, catalogs
+    ├── Resources/Content/   Bundled JSON: leagues, clubs, chants, tifo, catalogs
     ├── ViewModels/
     ├── Views/
     └── Support/
@@ -23,9 +26,10 @@ UltrasEuropa/
 
 `Core/` has zero dependency on SwiftUI/SwiftData/UIKit, so it builds and
 tests on any machine with the Swift toolchain — including Linux, no Xcode
-required. All rank/XP/progression math and JSON content decoding lives there
-and is unit tested. The `App/` target is a thin SwiftUI + SwiftData layer on
-top of it, and requires Xcode/macOS to build and run.
+required. All rank/XP/progression math, the season schedule generator, and
+JSON content decoding lives there and is unit tested. The `App/` target is a
+thin SwiftUI + SwiftData layer on top of it, and requires Xcode/macOS to
+build and run.
 
 ## Building and running (on a Mac)
 
@@ -50,8 +54,8 @@ Re-run `xcodegen generate` any time files are added/removed under `App/` or
 
 ## Running Core's tests
 
-The progression/rank logic is plain Swift and can be tested independently of
-Xcode:
+The progression/rank/schedule logic is plain Swift and can be tested
+independently of Xcode:
 
 ```sh
 cd Core
@@ -62,36 +66,69 @@ This also runs in CI on every push via `.github/workflows/core-tests.yml`.
 
 ## Manual verification checklist (run through this on a Simulator)
 
-- [ ] First launch shows character creation (name + favorite club)
-- [ ] After creating a character, Dashboard shows rank "Regular", 0 XP, all stats at their base value
+- [ ] First launch shows character creation (name, crew name, favorite club — searchable across all 20 leagues)
+- [ ] After creating a character, Dashboard shows rank "Regular", 0 XP, all stats at their base value, and the crew name
 - [ ] Attending a match (with "Sit in Ultras Stand" / "Do Pyro" toggled) increases XP and the relevant stats
-- [ ] Participating in a chant and contributing to a tifo each award XP/stats
+- [ ] Participating in a chant and contributing to a tifo (Chants/Gallery tabs — these are your crew's, not tied to any real club) each award XP/stats
 - [ ] Completing a challenge/task awards XP
 - [ ] Rank only advances once XP **and** the rank's gating requirements (activity variety / achievements — see below) are met — it should NOT be possible to reach Capo quickly by repeating one action
 - [ ] Achievements unlock and appear under Achievements once their criteria are met
 - [ ] Inventory items appear as they're earned
 - [ ] Force-quit and relaunch the app — character, stats, rank, inventory and achievements all persist
-- [ ] Club directory, match schedule/results, chants library, and tifo gallery all display the 5 bundled placeholder clubs correctly
+- [ ] Clubs tab lists all 20 leagues; drilling into one shows its real clubs; a club's detail screen shows its generated fixtures/results
+- [ ] Matches tab lists the same 20 leagues; drilling into one shows its full generated season
 
-## Replacing the placeholder content
+## The club/league data — real, but not live-verified
 
-All club/group/match/chant/tifo/catalog data lives as JSON under
-`App/Resources/Content/`. The 5 clubs shipped in this repo (Rotstadt,
-Portovento, Nordhavn, Cantera, Zvijezda) are **intentionally fictional
-placeholders** — swap in real clubs/data by editing those JSON files; no
-Swift code changes are required as long as the shape of each entry matches
-the existing fields (see `Core/Sources/UltrasEuropaCore/Models/`).
+`App/Resources/Content/leagues.json` and `clubs.json` cover the top-flight
+division of the top 20 UEFA-ranked nations (~316 real clubs) — England,
+Spain, Italy, Germany, France, Netherlands, Portugal, Belgium, Turkey,
+Austria, Switzerland, Czechia, Greece, Norway, Scotland, Denmark, Israel,
+Cyprus, Croatia, and Serbia.
 
-A couple of things to keep in mind when adding real content:
+This was compiled from the model's own knowledge, **not fetched live** —
+this environment's web access was blocked for the reference sites that
+would normally verify it (UEFA coefficient rankings, current top-flight
+rosters). Club names/leagues should be broadly right, but treat founding
+years, stadium names, and especially *this season's exact promoted/relegated
+clubs* as best-effort, not verified fact — spot-check before shipping
+anything public. `crestAssetName` is `null` everywhere (renders a themed
+placeholder — see below) and `history` is `null` for nearly every club
+rather than inventing narrative text at this scale; add real crests/history
+once you've sourced them, or replace any club's row entirely.
+
+A couple of things to keep in mind when editing this data:
 - Real club/competition names are just facts and are fine to use.
-- Crests/logos, official color trademarks, and chant lyrics are often owned
-  by the club or fan groups — make sure you have the rights to use anything
-  you add (images, audio, text) before shipping.
-- `crestAssetName` / `imageAssetName` fields can be left `null` — the app
-  renders a themed placeholder (a gradient in the club's colors) when no
-  asset is provided, so the app works before any real images are added. Add
-  real images to `Images.xcassets` and set the matching asset name once you
-  have them.
+- Crests/logos and official color trademarks are often owned by the club —
+  make sure you have the rights to use any image you add before shipping.
+- `crestAssetName` fields can stay `null` — the app renders a themed
+  placeholder (a gradient in the club's listed colors) when no asset is
+  provided. Add real images to `Images.xcassets` and set the matching asset
+  name once you have them.
+
+## Why matches are generated, not stored
+
+A double round-robin season across ~20 clubs is already ~380 fixtures; across
+all 20 leagues that's roughly 4,800 — far too much to hand-author or ship as
+static JSON, and there's no real fixture list to source for a game. So
+`Core/Sources/UltrasEuropaCore/Scheduling/SeasonScheduleGenerator.swift`
+derives each league's full season (pairings, dates, and a placeholder score
+for any fixture whose date has passed) **on the fly** from just the club list
+and today's date — nothing is persisted. It's seeded deterministically off
+stable ids, so the same inputs always produce the same schedule; nothing
+changes between launches just from recomputing it. Scores are synthetic —
+clearly a game placeholder, never a claim about a real result.
+
+## Chants, tifo, and inventory belong to the player's crew, not a real club
+
+Once club data is real, inventing specific chants, tifo displays, or a named
+"ultras group" and attributing them to an actual real club or fan group would
+misrepresent that real fan culture. So those features aren't tied to any
+club at all: at creation the player names their own crew, and the generic
+chants/tifo/inventory catalogs in `App/Resources/Content/` (`chants.json`,
+`tifo_photos.json`, `inventory_catalog.json`) belong to that crew regardless
+of which real club they follow. Swap in your own chants/tifo captions freely
+— they're intentionally generic, not real.
 
 ## Progression design
 

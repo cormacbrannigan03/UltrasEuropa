@@ -5,16 +5,12 @@ struct ChantDetailView: View {
     let chant: Chant
 
     @Environment(CharacterStore.self) private var characterStore
-    @Environment(ContentStore.self) private var contentStore
     @State private var showOutcome = false
-
-    private var club: Club? { contentStore.repository.club(id: chant.clubId) }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text(chant.title).font(.title.bold())
-                if let club { Text(club.name).foregroundStyle(Theme.secondaryText) }
 
                 Text(chant.lyrics)
                     .font(.body)

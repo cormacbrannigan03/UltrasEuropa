@@ -1,9 +1,9 @@
 import SwiftUI
 import UltrasEuropaCore
 
-/// Top of the Clubs tab: the 20 real top-flight leagues, ordered by UEFA
-/// coefficient rank. Tapping one drills into its clubs.
-struct ClubDirectoryView: View {
+/// Top of the Matches tab: pick a league, then see its full generated
+/// season (see `SeasonScheduleGenerator` — these are not real fixtures).
+struct MatchesHomeView: View {
     @Environment(ContentStore.self) private var contentStore
 
     private var leagues: [League] {
@@ -22,9 +22,9 @@ struct ClubDirectoryView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Theme.background)
-        .navigationTitle("Clubs")
+        .navigationTitle("Matches")
         .navigationDestination(for: League.self) { league in
-            LeagueClubsView(league: league)
+            MatchScheduleView(title: league.name, matches: contentStore.repository.matchesInLeague(league.id))
         }
     }
 }

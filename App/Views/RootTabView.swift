@@ -9,7 +9,7 @@ struct RootTabView: View {
             NavigationStack { ClubDirectoryView() }
                 .tabItem { Label("Clubs", systemImage: "shield.fill") }
 
-            NavigationStack { MatchScheduleView() }
+            NavigationStack { MatchesHomeView() }
                 .tabItem { Label("Matches", systemImage: "sportscourt.fill") }
 
             NavigationStack { ChantsLibraryView() }

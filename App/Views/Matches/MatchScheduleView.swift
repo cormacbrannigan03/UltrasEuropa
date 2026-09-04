@@ -1,19 +1,18 @@
 import SwiftUI
 import UltrasEuropaCore
 
+/// A schedule of fixtures/results — reused both for a whole league's season
+/// (from `MatchesHomeView`) and for a single club's fixtures (from
+/// `ClubDetailView`), so it just renders whatever `matches` it's given.
 struct MatchScheduleView: View {
-    var filterClubId: String? = nil
+    let title: String
+    let matches: [Match]
 
     @Environment(ContentStore.self) private var contentStore
 
-    private var matches: [Match] {
-        let all = contentStore.repository.matches.sorted { $0.date < $1.date }
-        guard let filterClubId else { return all }
-        return all.filter { $0.homeClubId == filterClubId || $0.awayClubId == filterClubId }
-    }
-
-    private var upcoming: [Match] { matches.filter { !$0.isPlayed } }
-    private var results: [Match] { Array(matches.filter(\.isPlayed).reversed()) }
+    private var sortedMatches: [Match] { matches.sorted { $0.date < $1.date } }
+    private var upcoming: [Match] { sortedMatches.filter { !$0.isPlayed } }
+    private var results: [Match] { Array(sortedMatches.filter(\.isPlayed).reversed()) }
 
     var body: some View {
         List {
@@ -38,7 +37,8 @@ struct MatchScheduleView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Theme.background)
-        .navigationTitle("Matches")
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: Match.self) { match in
             MatchDetailView(match: match)
         }

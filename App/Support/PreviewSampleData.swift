@@ -23,7 +23,11 @@ enum PreviewSampleData {
             fatalError("Failed to create in-memory preview ModelContainer")
         }
 
-        let character = CharacterEntity(name: "Marco", favoriteClubId: content.clubs.first?.id ?? "rotstadt")
+        let character = CharacterEntity(
+            name: "Marco",
+            favoriteClubId: content.clubs.first?.id ?? "arsenal",
+            crewName: "The North Bank Firm"
+        )
         character.totalXP = 120
         character.loyalty = 20
         character.knowledge = 10

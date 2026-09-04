@@ -28,6 +28,11 @@ enum Theme {
     static let accent = Color(red: 0.85, green: 0.22, blue: 0.24)
     static let primaryText = Color.white
     static let secondaryText = Color(white: 0.7)
+
+    /// The player's own crew's colors — used for generic chant/tifo/crew
+    /// flavor art, independent of whichever real club they follow.
+    static let crewPrimaryHex = "#B3121B"
+    static let crewSecondaryHex = "#111111"
 }
 
 /// Renders in place of a real photo/crest asset when the bundled content

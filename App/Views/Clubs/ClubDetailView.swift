@@ -6,7 +6,7 @@ struct ClubDetailView: View {
 
     @Environment(ContentStore.self) private var contentStore
 
-    private var group: UltrasGroup? { contentStore.repository.ultrasGroup(clubId: club.id) }
+    private var league: League? { contentStore.repository.league(id: club.leagueId) }
 
     var body: some View {
         ScrollView {
@@ -25,32 +25,21 @@ struct ClubDetailView: View {
                     Text("\(club.city), \(club.country) · Founded \(String(club.founded))")
                         .foregroundStyle(Theme.secondaryText)
                     Text(club.stadiumName).foregroundStyle(Theme.secondaryText)
-                    Text(club.history).padding(.top, 4)
+                    if let league {
+                        Text(league.name).foregroundStyle(Theme.secondaryText)
+                    }
+                    if let history = club.history {
+                        Text(history).padding(.top, 4)
+                    }
                 }
 
-                if let group {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(group.name).font(.title2.bold())
-                        Text("Founded \(String(group.founded))").font(.caption).foregroundStyle(Theme.secondaryText)
-                        Text(group.groupDescription)
-                        Text("Symbols: \(group.symbols.joined(separator: ", "))").font(.caption)
-                        Text("Colors: \(group.colors.joined(separator: ", "))").font(.caption)
-                    }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
-                }
-
-                VStack(spacing: 12) {
-                    NavigationLink { ChantsLibraryView(filterClubId: club.id) } label: {
-                        ClubLinkRow(title: "Chants", systemImage: "music.mic")
-                    }
-                    NavigationLink { TifoGalleryView(filterClubId: club.id) } label: {
-                        ClubLinkRow(title: "Tifo Gallery", systemImage: "photo.on.rectangle.angled")
-                    }
-                    NavigationLink { MatchScheduleView(filterClubId: club.id) } label: {
-                        ClubLinkRow(title: "Matches", systemImage: "sportscourt.fill")
-                    }
+                NavigationLink {
+                    MatchScheduleView(
+                        title: "\(club.name) Fixtures",
+                        matches: contentStore.repository.matchesForClub(club.id)
+                    )
+                } label: {
+                    ClubLinkRow(title: "Fixtures & Results", systemImage: "sportscourt.fill")
                 }
             }
             .padding()

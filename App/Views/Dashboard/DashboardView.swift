@@ -49,6 +49,11 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(characterStore.character?.name ?? "Fan")
                 .font(.largeTitle.bold())
+            if let crewName = characterStore.character?.crewName, !crewName.isEmpty {
+                Text(crewName)
+                    .font(.subheadline.bold())
+                    .foregroundStyle(Theme.accent)
+            }
             if let favoriteClub {
                 Text("Follows \(favoriteClub.name)")
                     .foregroundStyle(Theme.secondaryText)

@@ -1,25 +1,21 @@
 import Foundation
 
+/// A tifo display belonging to the player's own crew — not tied to any
+/// specific real club, group, or match. See `Chant` for why.
 public struct TifoPhoto: Codable, Identifiable, Hashable, Sendable {
     public let id: String
-    public let clubId: String
     public let caption: String
-    public let matchId: String?
     /// `nil` means the app should render a generated placeholder card
-    /// (gradient in the club's colors) instead of a real photo.
+    /// instead of a real photo.
     public let imageAssetName: String?
 
     public init(
         id: String,
-        clubId: String,
         caption: String,
-        matchId: String?,
-        imageAssetName: String?
+        imageAssetName: String? = nil
     ) {
         self.id = id
-        self.clubId = clubId
         self.caption = caption
-        self.matchId = matchId
         self.imageAssetName = imageAssetName
     }
 }

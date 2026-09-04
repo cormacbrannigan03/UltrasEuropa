@@ -1,72 +1,74 @@
 [
   {
-    "id": "chant-rotstadt-1",
-    "clubId": "rotstadt",
-    "title": "Rot und Schwarz",
-    "lyrics": "Rot und Schwarz, bis wir sterben!\nRotstadt, Rotstadt, unsere Stadt!\nWir sind hier, wir bleiben hier,\nRot und Schwarz für immer!",
+    "id": "chant-one-voice",
+    "title": "One Voice",
+    "lyrics": "We are one voice, from the first whistle to the last,\nStanding together, we won't sit, we won't rest,\nThrough the rain, through the cold, we're always here,\nOur crew, our colors, year after year.",
     "audioAssetName": null
   },
   {
-    "id": "chant-rotstadt-2",
-    "clubId": "rotstadt",
-    "title": "Brigade Marching Song",
-    "lyrics": "From the docks to the Rotstadion gates,\nWe march as one, we carry the weight,\nNinety minutes, we never sit down,\nBrigade '58, the pride of this town.",
+    "id": "chant-never-alone",
+    "title": "Never Alone",
+    "lyrics": "You'll never walk this ground alone,\nWe travel far to call it home,\nEvery corner, every stand,\nOur crew is here, hand in hand.",
     "audioAssetName": null
   },
   {
-    "id": "chant-portovento-1",
-    "clubId": "portovento",
-    "title": "Vento do Norte",
-    "lyrics": "Vento do norte, sopra mais forte,\nCurva Vento Nord até a morte!\nAzul e branco no meu coração,\nPortovento é a nossa nação.",
+    "id": "chant-ninety-minutes",
+    "title": "Ninety Minutes",
+    "lyrics": "Ninety minutes, on our feet,\nDrums are pounding, hear the beat,\nWe don't stop when the score's not right,\nWe're here for the badge, we're here for the fight.",
     "audioAssetName": null
   },
   {
-    "id": "chant-portovento-2",
-    "clubId": "portovento",
-    "title": "Anchor Song",
-    "lyrics": "We drop the anchor, we hold the line,\nThrough every storm, through every tide,\nBlue and white, our flag unfurled,\nCurva Vento against the world.",
+    "id": "chant-away-day",
+    "title": "Away Day",
+    "lyrics": "Loaded up before the sun,\nMiles of road until it's done,\nWe don't care how far we roam,\nAny stand we stand feels like home.",
     "audioAssetName": null
   },
   {
-    "id": "chant-nordhavn-1",
-    "clubId": "nordhavn",
-    "title": "Løver Aldrig Alene",
-    "lyrics": "Grønne løver, aldrig alene,\nFra havnen følger vi jer allene,\nHjemme og ude, regn eller sol,\nNordhavn i vores hjerters idol.",
+    "id": "chant-north-stand",
+    "title": "The North Stand Sings",
+    "lyrics": "The north stand sings, the north stand roars,\nEvery matchday, we settle scores,\nFlags are flying, smoke in the air,\nThis is our house, and we'll always be there.",
     "audioAssetName": null
   },
   {
-    "id": "chant-nordhavn-2",
-    "clubId": "nordhavn",
-    "title": "Small But Loud",
-    "lyrics": "We might be small but we are loud,\nA harbor town, a traveling crowd,\nEvery ground, near or far,\nWe follow the green and white star.",
+    "id": "chant-old-colors",
+    "title": "Old Colors",
+    "lyrics": "Same old colors, same old song,\nWe've been singing it all along,\nGrandfathers taught it, we'll pass it on,\nOur crew's chant will never be gone.",
     "audioAssetName": null
   },
   {
-    "id": "chant-cantera-1",
-    "clubId": "cantera",
-    "title": "Piedra y Oro",
-    "lyrics": "Piedra y oro, sangre de esta tierra,\nFrente Cantera, nunca en guerra sola,\nDesde la cantera hasta el estadio,\nReal Cantera, nuestro orgullo diario.",
+    "id": "chant-heartbeat",
+    "title": "Heartbeat of the Stand",
+    "lyrics": "Listen close, you'll hear it clear,\nThe heartbeat of the stand is here,\nDrums and voices, one and the same,\nWe are the crew that carries the flame.",
     "audioAssetName": null
   },
   {
-    "id": "chant-cantera-2",
-    "clubId": "cantera",
-    "title": "Quarry Song",
-    "lyrics": "Stone by stone, we built this pride,\nMaroon and gold, side by side,\nCantera, hear us roar,\nThe old stone quarry, forevermore.",
+    "id": "chant-till-the-end",
+    "title": "Till the End",
+    "lyrics": "Win or lose, we're still here,\nSinging loud without the fear,\nTill the final whistle blows,\nTill the end, that's how it goes.",
     "audioAssetName": null
   },
   {
-    "id": "chant-zvijezda-1",
-    "clubId": "zvijezda",
-    "title": "Zvijezda Gori",
-    "lyrics": "Zvijezda gori, plamen u noći,\nFanatici stižu, niko nas ne zaustavlja,\nCrno i zlatno, do poslednjeg daha,\nZvijezda, Zvijezda, naša je snaga.",
+    "id": "chant-flags-high",
+    "title": "Flags Held High",
+    "lyrics": "Flags held high above the crowd,\nOur crew's name sung out loud,\nColors waving in the breeze,\nWe stand for more than victories.",
     "audioAssetName": null
   },
   {
-    "id": "chant-zvijezda-2",
-    "clubId": "zvijezda",
-    "title": "The Star Burns",
-    "lyrics": "The star burns bright in the dead of night,\nFanatici marching, ready to fight,\nBlack and gold until we're gone,\nZvijezda's fire carries on.",
+    "id": "chant-matchday-morning",
+    "title": "Matchday Morning",
+    "lyrics": "Matchday morning, hearts beat fast,\nMeeting up like seasons past,\nScarves around us, ready to go,\nOff to give the stand a show.",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-first-and-last",
+    "title": "First and Last",
+    "lyrics": "First to arrive, last to leave,\nThat's the promise our crew keeps,\nThrough the highs and through the lows,\nOur voice is the one that never goes.",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-carry-the-noise",
+    "title": "Carry the Noise",
+    "lyrics": "Carry the noise from the first minute in,\nDon't let it fade, don't let it thin,\nWe are the sound that fills the ground,\nOur crew's the loudest noise around.",
     "audioAssetName": null
   }
 ]
