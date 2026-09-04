@@ -1,0 +1,80 @@
+[
+  {
+    "id": "first-match",
+    "name": "First Match",
+    "description": "Attended your first match.",
+    "criteria": { "kind": "activityCount", "activityType": "attendMatch", "threshold": 1 }
+  },
+  {
+    "id": "ultras-regular",
+    "name": "Ultras Regular",
+    "description": "Sat in the ultras stand 10 times.",
+    "criteria": { "kind": "activityCount", "activityType": "sitInUltrasStand", "threshold": 10 }
+  },
+  {
+    "id": "pyro-veteran",
+    "name": "Pyro Veteran",
+    "description": "Ran a pyro display 10 times. Required to become a Lead Ultra.",
+    "criteria": { "kind": "activityCount", "activityType": "doPyroChallenge", "threshold": 10 }
+  },
+  {
+    "id": "chant-master",
+    "name": "Chant Master",
+    "description": "Learned and led 15 chants. Required to become Capo.",
+    "criteria": { "kind": "activityCount", "activityType": "participateInChant", "threshold": 15 }
+  },
+  {
+    "id": "tifo-artist",
+    "name": "Tifo Artist",
+    "description": "Contributed to 10 tifo displays. Required to become Capo.",
+    "criteria": { "kind": "activityCount", "activityType": "contributeToTifo", "threshold": 10 }
+  },
+  {
+    "id": "task-force",
+    "name": "Task Force",
+    "description": "Completed 10 challenges.",
+    "criteria": { "kind": "activityCount", "activityType": "completeTask", "threshold": 10 }
+  },
+  {
+    "id": "well-rounded",
+    "name": "Well Rounded",
+    "description": "Tried every kind of ultras activity at least once.",
+    "criteria": { "kind": "activityDiversity", "threshold": 6 }
+  },
+  {
+    "id": "die-hard",
+    "name": "Die Hard",
+    "description": "Kept a 30-day loyalty streak. Required to become Capo.",
+    "criteria": { "kind": "streakDays", "threshold": 30 }
+  },
+  {
+    "id": "die-hard-legend",
+    "name": "Die Hard Legend",
+    "description": "Kept a 90-day loyalty streak.",
+    "criteria": { "kind": "streakDays", "threshold": 90 }
+  },
+  {
+    "id": "young-ultra-reached",
+    "name": "Young Ultra",
+    "description": "Reached the rank of Young Ultra.",
+    "criteria": { "kind": "reachRank", "rank": 1 }
+  },
+  {
+    "id": "ultra-group-reached",
+    "name": "One of the Group",
+    "description": "Reached the rank of Ultra Group.",
+    "criteria": { "kind": "reachRank", "rank": 2 }
+  },
+  {
+    "id": "lead-ultra-reached",
+    "name": "Lead Ultra",
+    "description": "Reached the rank of Lead Ultra.",
+    "criteria": { "kind": "reachRank", "rank": 3 }
+  },
+  {
+    "id": "capo-reached",
+    "name": "Capo",
+    "description": "Reached the top of the ladder: Capo.",
+    "criteria": { "kind": "reachRank", "rank": 4 }
+  }
+]

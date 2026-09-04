@@ -1,0 +1,47 @@
+[
+  {
+    "id": "rotstadt-brigade",
+    "clubId": "rotstadt",
+    "name": "Rotstadt Brigade '58",
+    "founded": 1958,
+    "symbols": ["Crossed flags", "Black star"],
+    "colors": ["Red", "Black"],
+    "description": "The main ultras group behind Rotstadion's south stand, known for continuous 90-minute chanting and a strict no-sitting policy in their section."
+  },
+  {
+    "id": "curva-vento-nord",
+    "clubId": "portovento",
+    "name": "Curva Vento Nord",
+    "founded": 1974,
+    "symbols": ["Anchor and flame", "Compass rose"],
+    "colors": ["Blue", "White"],
+    "description": "Organized around Portovento's north curve, this group is famous for tifo displays that unfurl across the entire stand in under thirty seconds."
+  },
+  {
+    "id": "nordhavn-lover",
+    "clubId": "nordhavn",
+    "name": "Nordhavn Løver",
+    "founded": 1983,
+    "symbols": ["Lion's head", "Ship's wheel"],
+    "colors": ["Green", "White"],
+    "description": "A small but fiercely dedicated group that travels to nearly every away fixture regardless of distance or division."
+  },
+  {
+    "id": "frente-cantera",
+    "clubId": "cantera",
+    "name": "Frente Cantera",
+    "founded": 1969,
+    "symbols": ["Pickaxe and shield", "Quarry stone"],
+    "colors": ["Maroon", "Gold"],
+    "description": "One of the oldest organized supporter groups in the region, rooted in the same stonemasons' guild culture as the club itself."
+  },
+  {
+    "id": "zvijezda-fanatici",
+    "clubId": "zvijezda",
+    "name": "Zvijezda Fanatici",
+    "founded": 1988,
+    "symbols": ["Five-pointed star", "Torch"],
+    "colors": ["Black", "Gold"],
+    "description": "Renowned across Europe for the scale and intensity of their pyro displays and for organizing supporter convoys to every away match."
+  }
+]

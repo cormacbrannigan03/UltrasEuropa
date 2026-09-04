@@ -1,0 +1,62 @@
+[
+  {
+    "id": "rotstadt",
+    "name": "FC Rotstadt",
+    "city": "Rotstadt",
+    "country": "Germany",
+    "founded": 1904,
+    "stadiumName": "Rotstadion",
+    "primaryColorHex": "#B3121B",
+    "secondaryColorHex": "#111111",
+    "crestAssetName": null,
+    "history": "Founded by dockworkers in 1904, FC Rotstadt built its identity in the industrial south of the city. The club has never left the top two divisions and is known for one of the loudest home ends in the country."
+  },
+  {
+    "id": "portovento",
+    "name": "Portovento SC",
+    "city": "Portovento",
+    "country": "Portugal",
+    "founded": 1912,
+    "stadiumName": "Estádio do Vento",
+    "primaryColorHex": "#0B4C8C",
+    "secondaryColorHex": "#FFFFFF",
+    "crestAssetName": null,
+    "history": "Portovento SC grew out of a rowing club on the coast. Its Curva Vento Nord end is famous for elaborate tifo displays timed to the sea wind that gives the club its name."
+  },
+  {
+    "id": "nordhavn",
+    "name": "Nordhavn IF",
+    "city": "Nordhavn",
+    "country": "Denmark",
+    "founded": 1921,
+    "stadiumName": "Nordhavn Arena",
+    "primaryColorHex": "#1B7A3D",
+    "secondaryColorHex": "#FFFFFF",
+    "crestAssetName": null,
+    "history": "A harbor-town club that has bounced between divisions for a century, Nordhavn IF is beloved for a fiercely loyal, small, and tightly knit supporter base."
+  },
+  {
+    "id": "cantera",
+    "name": "Real Cantera",
+    "city": "Cantera",
+    "country": "Spain",
+    "founded": 1899,
+    "stadiumName": "Estadio La Cantera",
+    "primaryColorHex": "#7A1F3D",
+    "secondaryColorHex": "#D4AF37",
+    "crestAssetName": null,
+    "history": "One of the oldest clubs in the region, Real Cantera's ultras trace their roots to a stonemasons' social club — the maroon and gold colors are said to represent quarry stone and afternoon sun."
+  },
+  {
+    "id": "zvijezda",
+    "name": "Balkanska Zvijezda",
+    "city": "Zvijezda",
+    "country": "Balkans",
+    "founded": 1947,
+    "stadiumName": "Stadion Zvijezda",
+    "primaryColorHex": "#111111",
+    "secondaryColorHex": "#F2C300",
+    "crestAssetName": null,
+    "history": "Formed in the postwar years, Balkanska Zvijezda's supporters are known across the continent for relentless away-day travel and some of the most intense pyro displays in European football."
+  }
+]

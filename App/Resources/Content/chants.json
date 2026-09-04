@@ -1,0 +1,72 @@
+[
+  {
+    "id": "chant-rotstadt-1",
+    "clubId": "rotstadt",
+    "title": "Rot und Schwarz",
+    "lyrics": "Rot und Schwarz, bis wir sterben!\nRotstadt, Rotstadt, unsere Stadt!\nWir sind hier, wir bleiben hier,\nRot und Schwarz für immer!",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-rotstadt-2",
+    "clubId": "rotstadt",
+    "title": "Brigade Marching Song",
+    "lyrics": "From the docks to the Rotstadion gates,\nWe march as one, we carry the weight,\nNinety minutes, we never sit down,\nBrigade '58, the pride of this town.",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-portovento-1",
+    "clubId": "portovento",
+    "title": "Vento do Norte",
+    "lyrics": "Vento do norte, sopra mais forte,\nCurva Vento Nord até a morte!\nAzul e branco no meu coração,\nPortovento é a nossa nação.",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-portovento-2",
+    "clubId": "portovento",
+    "title": "Anchor Song",
+    "lyrics": "We drop the anchor, we hold the line,\nThrough every storm, through every tide,\nBlue and white, our flag unfurled,\nCurva Vento against the world.",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-nordhavn-1",
+    "clubId": "nordhavn",
+    "title": "Løver Aldrig Alene",
+    "lyrics": "Grønne løver, aldrig alene,\nFra havnen følger vi jer allene,\nHjemme og ude, regn eller sol,\nNordhavn i vores hjerters idol.",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-nordhavn-2",
+    "clubId": "nordhavn",
+    "title": "Small But Loud",
+    "lyrics": "We might be small but we are loud,\nA harbor town, a traveling crowd,\nEvery ground, near or far,\nWe follow the green and white star.",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-cantera-1",
+    "clubId": "cantera",
+    "title": "Piedra y Oro",
+    "lyrics": "Piedra y oro, sangre de esta tierra,\nFrente Cantera, nunca en guerra sola,\nDesde la cantera hasta el estadio,\nReal Cantera, nuestro orgullo diario.",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-cantera-2",
+    "clubId": "cantera",
+    "title": "Quarry Song",
+    "lyrics": "Stone by stone, we built this pride,\nMaroon and gold, side by side,\nCantera, hear us roar,\nThe old stone quarry, forevermore.",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-zvijezda-1",
+    "clubId": "zvijezda",
+    "title": "Zvijezda Gori",
+    "lyrics": "Zvijezda gori, plamen u noći,\nFanatici stižu, niko nas ne zaustavlja,\nCrno i zlatno, do poslednjeg daha,\nZvijezda, Zvijezda, naša je snaga.",
+    "audioAssetName": null
+  },
+  {
+    "id": "chant-zvijezda-2",
+    "clubId": "zvijezda",
+    "title": "The Star Burns",
+    "lyrics": "The star burns bright in the dead of night,\nFanatici marching, ready to fight,\nBlack and gold until we're gone,\nZvijezda's fire carries on.",
+    "audioAssetName": null
+  }
+]

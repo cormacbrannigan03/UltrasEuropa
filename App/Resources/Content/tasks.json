@@ -1,0 +1,44 @@
+[
+  {
+    "id": "learn-a-chant",
+    "title": "Learn a Chant",
+    "description": "Open a chant from your club's chants library and read through the lyrics.",
+    "relatedClubId": null
+  },
+  {
+    "id": "help-make-a-tifo",
+    "title": "Help Make a Tifo",
+    "description": "Contribute to a tifo display from the gallery.",
+    "relatedClubId": null
+  },
+  {
+    "id": "travel-to-an-away-game",
+    "title": "Travel to an Away Game",
+    "description": "Attend a fixture where your club is playing away from home.",
+    "relatedClubId": null
+  },
+  {
+    "id": "light-it-up",
+    "title": "Light It Up",
+    "description": "Take part in a pyro display at a match.",
+    "relatedClubId": null
+  },
+  {
+    "id": "know-your-history",
+    "title": "Know Your History",
+    "description": "Read through your club's history in the club directory.",
+    "relatedClubId": null
+  },
+  {
+    "id": "know-your-rivals",
+    "title": "Know Your Rivals",
+    "description": "Read through the profile of an opposing club and its ultras group.",
+    "relatedClubId": null
+  },
+  {
+    "id": "check-the-fixtures",
+    "title": "Check the Fixtures",
+    "description": "Browse the upcoming match schedule.",
+    "relatedClubId": null
+  }
+]

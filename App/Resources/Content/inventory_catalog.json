@@ -1,0 +1,58 @@
+[
+  {
+    "id": "classic-scarf",
+    "name": "Classic Scarf",
+    "category": "scarf",
+    "description": "The scarf every fan starts with — earned at your first match.",
+    "unlockCriteria": { "kind": "activityCount", "activityType": "attendMatch", "threshold": 1 }
+  },
+  {
+    "id": "brigade-flag",
+    "name": "Stand Flag",
+    "category": "flag",
+    "description": "A hand-sized flag earned by standing with the ultras section.",
+    "unlockCriteria": { "kind": "activityCount", "activityType": "sitInUltrasStand", "threshold": 5 }
+  },
+  {
+    "id": "pyro-banner",
+    "name": "Smoke Banner",
+    "category": "banner",
+    "description": "A banner scorched from one too many pyro displays.",
+    "unlockCriteria": { "kind": "activityCount", "activityType": "doPyroChallenge", "threshold": 5 }
+  },
+  {
+    "id": "founders-pin",
+    "name": "Founder's Pin",
+    "category": "pin",
+    "description": "A small enamel pin for completing your early challenges.",
+    "unlockCriteria": { "kind": "activityCount", "activityType": "completeTask", "threshold": 3 }
+  },
+  {
+    "id": "away-day-jersey",
+    "name": "Away Day Jersey",
+    "category": "jersey",
+    "description": "Worn on the road — earned after attending 10 matches.",
+    "unlockCriteria": { "kind": "activityCount", "activityType": "attendMatch", "threshold": 10 }
+  },
+  {
+    "id": "tifo-banner-large",
+    "name": "Curva Banner",
+    "category": "banner",
+    "description": "A full-size hand-painted banner for dedicated tifo contributors.",
+    "unlockCriteria": { "kind": "activityCount", "activityType": "contributeToTifo", "threshold": 5 }
+  },
+  {
+    "id": "loyalty-pin",
+    "name": "Loyalty Pin",
+    "category": "pin",
+    "description": "Awarded for keeping a two-week loyalty streak.",
+    "unlockCriteria": { "kind": "streakDays", "threshold": 14 }
+  },
+  {
+    "id": "capo-scarf",
+    "name": "Capo's Scarf",
+    "category": "scarf",
+    "description": "The scarf worn only by the section's Capo.",
+    "unlockCriteria": { "kind": "reachRank", "rank": 4 }
+  }
+]

@@ -1,0 +1,102 @@
+[
+  {
+    "id": "m1",
+    "homeClubId": "rotstadt",
+    "awayClubId": "portovento",
+    "date": "2026-02-14T19:00:00Z",
+    "competition": "Continental Cup",
+    "venue": "Rotstadion",
+    "homeScore": 2,
+    "awayScore": 1
+  },
+  {
+    "id": "m2",
+    "homeClubId": "nordhavn",
+    "awayClubId": "cantera",
+    "date": "2026-03-01T18:00:00Z",
+    "competition": "Continental Cup",
+    "venue": "Nordhavn Arena",
+    "homeScore": 0,
+    "awayScore": 0
+  },
+  {
+    "id": "m3",
+    "homeClubId": "zvijezda",
+    "awayClubId": "rotstadt",
+    "date": "2026-04-18T19:30:00Z",
+    "competition": "Continental Cup",
+    "venue": "Stadion Zvijezda",
+    "homeScore": 3,
+    "awayScore": 2
+  },
+  {
+    "id": "m4",
+    "homeClubId": "cantera",
+    "awayClubId": "portovento",
+    "date": "2026-05-09T20:00:00Z",
+    "competition": "Continental Cup",
+    "venue": "Estadio La Cantera",
+    "homeScore": 1,
+    "awayScore": 1
+  },
+  {
+    "id": "m5",
+    "homeClubId": "portovento",
+    "awayClubId": "nordhavn",
+    "date": "2026-06-20T19:00:00Z",
+    "competition": "Continental Cup",
+    "venue": "Estádio do Vento",
+    "homeScore": 2,
+    "awayScore": 0
+  },
+  {
+    "id": "m6",
+    "homeClubId": "rotstadt",
+    "awayClubId": "cantera",
+    "date": "2026-07-11T19:00:00Z",
+    "competition": "Continental Cup",
+    "venue": "Rotstadion",
+    "homeScore": 1,
+    "awayScore": 0
+  },
+  {
+    "id": "m7",
+    "homeClubId": "zvijezda",
+    "awayClubId": "nordhavn",
+    "date": "2026-08-02T19:30:00Z",
+    "competition": "Continental Cup",
+    "venue": "Stadion Zvijezda",
+    "homeScore": 4,
+    "awayScore": 1
+  },
+  {
+    "id": "m8",
+    "homeClubId": "cantera",
+    "awayClubId": "zvijezda",
+    "date": "2026-09-20T20:00:00Z",
+    "competition": "Continental Cup",
+    "venue": "Estadio La Cantera",
+    "homeScore": null,
+    "awayScore": null
+  },
+  {
+    "id": "m9",
+    "homeClubId": "nordhavn",
+    "awayClubId": "rotstadt",
+    "date": "2026-10-04T18:00:00Z",
+    "competition": "Continental Cup",
+    "venue": "Nordhavn Arena",
+    "homeScore": null,
+    "awayScore": null
+  },
+  {
+    "id": "m10",
+    "homeClubId": "portovento",
+    "awayClubId": "zvijezda",
+    "date": "2026-10-25T19:00:00Z",
+    "competition": "Continental Cup",
+    "venue": "Estádio do Vento",
+    "homeScore": null,
+    "awayScore": null
+  }
+]

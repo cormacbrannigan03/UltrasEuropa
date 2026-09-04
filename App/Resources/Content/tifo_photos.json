@@ -1,0 +1,65 @@
+[
+  {
+    "id": "tifo-rotstadt-1",
+    "clubId": "rotstadt",
+    "caption": "South stand mosaic reading 'BRIGADE 58' unveiled before the Zvijezda derby.",
+    "matchId": "m3",
+    "imageAssetName": null
+  },
+  {
+    "id": "tifo-rotstadt-2",
+    "clubId": "rotstadt",
+    "caption": "Giant black-and-red flag wall covering the entire south end.",
+    "matchId": null,
+    "imageAssetName": null
+  },
+  {
+    "id": "tifo-portovento-1",
+    "clubId": "portovento",
+    "caption": "Wind-themed tifo with hundreds of blue and white streamers.",
+    "matchId": "m5",
+    "imageAssetName": null
+  },
+  {
+    "id": "tifo-portovento-2",
+    "clubId": "portovento",
+    "caption": "Anchor mosaic spanning the full north curve.",
+    "matchId": null,
+    "imageAssetName": null
+  },
+  {
+    "id": "tifo-nordhavn-1",
+    "clubId": "nordhavn",
+    "caption": "Small but proud away-end banner display at an away fixture.",
+    "matchId": "m2",
+    "imageAssetName": null
+  },
+  {
+    "id": "tifo-cantera-1",
+    "clubId": "cantera",
+    "caption": "Stone-textured tifo marking Frente Cantera's founding anniversary.",
+    "matchId": "m4",
+    "imageAssetName": null
+  },
+  {
+    "id": "tifo-cantera-2",
+    "clubId": "cantera",
+    "caption": "Maroon and gold pyrotechnic display before kickoff.",
+    "matchId": null,
+    "imageAssetName": null
+  },
+  {
+    "id": "tifo-zvijezda-1",
+    "clubId": "zvijezda",
+    "caption": "Massive coordinated pyro show lighting up the entire stand.",
+    "matchId": "m7",
+    "imageAssetName": null
+  },
+  {
+    "id": "tifo-zvijezda-2",
+    "clubId": "zvijezda",
+    "caption": "Five-pointed star mosaic held up by the full Fanatici section.",
+    "matchId": null,
+    "imageAssetName": null
+  }
+]
