@@ -31,7 +31,12 @@ public enum ProgressionConstants {
         .completeTask: ActivityReward(xp: 25, loyalty: 2, knowledge: 2, influence: 2, notoriety: 0),
         .dailyLoyaltyCheckIn: ActivityReward(xp: 5, loyalty: 1, knowledge: 0, influence: 0, notoriety: 0),
         .socializeWithCrew: ActivityReward(xp: 20, loyalty: 1, knowledge: 0, influence: 3, notoriety: 0),
+        .launchClothingRange: ActivityReward(xp: 30, loyalty: 0, knowledge: 0, influence: 5, notoriety: 10),
     ]
+
+    /// Bond-score bump every crew member gets when the player launches a
+    /// clothing range — they bought in and it shows.
+    public static let clothingRangeCrewBondBonus = 5
 
     // MARK: - Diminishing returns
 
@@ -91,6 +96,75 @@ public enum ProgressionConstants {
     /// Falls back to 1.0 (no adjustment) for an out-of-range tier.
     public static func xpMultiplier(forPrestigeTier tier: Int) -> Double {
         prestigeXPMultiplier[tier] ?? 1.0
+    }
+
+    // MARK: - Home season ticket (Ultras Section)
+
+    /// Loyalty points needed to earn a standing season ticket in the
+    /// favorite club's ultras section, by `Club.prestigeTier` — bigger,
+    /// more oversubscribed clubs take longer to build enough loyalty for.
+    /// Loyalty accrues slowly (a few points per activity, with the same
+    /// daily diminishing returns as everything else), so this is
+    /// deliberately a multi-session commitment, not a single evening.
+    public static let seasonTicketLoyaltyThreshold: [Int: Int] = [
+        1: 40,
+        2: 70,
+        3: 120,
+        4: 180,
+        5: 280,
+    ]
+
+    /// Falls back to the tier-3 threshold for an out-of-range tier.
+    public static func loyaltyThresholdForSeasonTicket(prestigeTier: Int) -> Int {
+        seasonTicketLoyaltyThreshold[prestigeTier] ?? 120
+    }
+
+    public static func hasEarnedSeasonTicket(loyalty: Int, prestigeTier: Int) -> Bool {
+        loyalty >= loyaltyThresholdForSeasonTicket(prestigeTier: prestigeTier)
+    }
+
+    // MARK: - Away tickets
+
+    /// Away loyalty points needed before an away ticket for the favorite
+    /// club is *guaranteed*, by `Club.prestigeTier` — bigger clubs sell out
+    /// more away allocations, so it takes longer to become a certainty.
+    public static let awayTicketGuaranteedThresholdByTier: [Int: Int] = [
+        1: 20,
+        2: 35,
+        3: 60,
+        4: 90,
+        5: 140,
+    ]
+
+    /// Falls back to the tier-3 threshold for an out-of-range tier.
+    public static func awayTicketGuaranteedThreshold(forPrestigeTier tier: Int) -> Int {
+        awayTicketGuaranteedThresholdByTier[tier] ?? 60
+    }
+
+    /// Chance of getting an away ticket with zero away loyalty points —
+    /// tickets are scarce, but never impossible, even for a first-timer.
+    public static let awayTicketBaseChance = 0.3
+
+    /// Away loyalty gained from a successful trip vs. an unsuccessful
+    /// attempt — even missing out on a ticket counts for something, so a
+    /// run of bad luck isn't a dead end.
+    public static let awayTicketSuccessLoyaltyGain = 6
+    public static let awayTicketConsolationLoyaltyGain = 1
+
+    /// Extra away loyalty for taking the bus (see `TravelMode`) — applies
+    /// whether or not the ticket request succeeds, since the bonding
+    /// happens on the ride, not just at the turnstile.
+    public static let busTravelAwayLoyaltyBonus = 2
+
+    /// The chance (0...1) of getting an away ticket this time, given the
+    /// character's current away loyalty points and their favorite club's
+    /// prestige tier. Rises linearly from `awayTicketBaseChance` to a
+    /// guaranteed 1.0 at `awayTicketGuaranteedThreshold(forPrestigeTier:)`.
+    public static func awayTicketChance(awayLoyaltyPoints: Int, prestigeTier: Int) -> Double {
+        let threshold = awayTicketGuaranteedThreshold(forPrestigeTier: prestigeTier)
+        guard threshold > 0 else { return 1.0 }
+        let progress = Double(awayLoyaltyPoints) / Double(threshold)
+        return min(1.0, awayTicketBaseChance + (1.0 - awayTicketBaseChance) * progress)
     }
 
     // MARK: - Achievement IDs used as rank gates

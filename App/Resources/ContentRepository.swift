@@ -16,6 +16,7 @@ struct ContentRepository {
     let achievementCatalog: [Achievement]
     let tasks: [ChallengeTask]
     let crewMembers: [CrewMember]
+    let clothingItems: [ClothingItem]
     /// Each league's full generated double round-robin season, keyed by league id.
     let matchesByLeagueId: [String: [Match]]
 
@@ -40,6 +41,7 @@ struct ContentRepository {
             achievementCatalog: load([Achievement].self, "achievements_catalog", bundle: bundle),
             tasks: load([ChallengeTask].self, "tasks", bundle: bundle),
             crewMembers: load([CrewMember].self, "crew_members", bundle: bundle),
+            clothingItems: load([ClothingItem].self, "clothing_items", bundle: bundle),
             matchesByLeagueId: matchesByLeagueId
         )
     }
@@ -104,5 +106,13 @@ struct ContentRepository {
 
     func crewMembersInRank(_ rank: Rank) -> [CrewMember] {
         crewMembers.filter { $0.rank == rank }
+    }
+
+    func clothingItem(id: String) -> ClothingItem? {
+        clothingItems.first { $0.id == id }
+    }
+
+    func clothingItemsInSlot(_ slot: ClothingSlot) -> [ClothingItem] {
+        clothingItems.filter { $0.slot == slot }
     }
 }

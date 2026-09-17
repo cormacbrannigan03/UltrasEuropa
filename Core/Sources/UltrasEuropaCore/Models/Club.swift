@@ -49,4 +49,10 @@ public struct Club: Codable, Identifiable, Hashable, Sendable {
         self.crestAssetName = crestAssetName
         self.history = history
     }
+
+    /// A generic, descriptive label for this club's ultras section — not a
+    /// specific real group's actual name or invented history. Kept
+    /// deliberately generic since this club is real: see
+    /// `UltrasGroupMembershipStage` and the content README for why.
+    public var ultrasGroupName: String { "\(name) Ultras" }
 }

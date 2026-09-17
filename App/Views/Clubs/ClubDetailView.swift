@@ -5,8 +5,10 @@ struct ClubDetailView: View {
     let club: Club
 
     @Environment(ContentStore.self) private var contentStore
+    @Environment(CharacterStore.self) private var characterStore
 
     private var league: League? { contentStore.repository.league(id: club.leagueId) }
+    private var isFavoriteClub: Bool { characterStore.favoriteClub?.id == club.id }
 
     var body: some View {
         ScrollView {
@@ -34,6 +36,19 @@ struct ClubDetailView: View {
                 }
 
                 PrestigeIndicator(tier: club.prestigeTier)
+
+                if isFavoriteClub {
+                    UltrasGroupStatusCard(
+                        clubName: club.name,
+                        stage: characterStore.ultrasGroupMembershipStage,
+                        loyalty: characterStore.stats.loyalty,
+                        seasonTicketThreshold: characterStore.homeSeasonTicketLoyaltyThreshold,
+                        hasSeasonTicket: characterStore.hasUltrasSeasonTicket,
+                        awayLoyaltyPoints: characterStore.awayLoyaltyPoints,
+                        awayTicketThreshold: characterStore.awayTicketGuaranteedThreshold,
+                        awayTicketChance: characterStore.awayTicketChance
+                    )
+                }
 
                 NavigationLink {
                     MatchScheduleView(

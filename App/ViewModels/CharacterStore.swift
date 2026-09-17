@@ -11,6 +11,13 @@ struct ActivityOutcomeSummary: Equatable {
     let newRank: Rank
     let newlyUnlockedAchievements: [Achievement]
     let newlyUnlockedItems: [InventoryItem]
+    /// Set when this rank-up crossed into a new `UltrasGroupMembershipStage`
+    /// with the character's favorite club — e.g. "Arsenal Ultras have
+    /// invited you to stand with them at home games!"
+    let membershipAnnouncement: String?
+    /// Set when this activity's loyalty gain crossed the threshold for a
+    /// standing season ticket in the favorite club's ultras section.
+    let seasonTicketAnnouncement: String?
 
     var didRankUp: Bool { newRank > previousRank }
 
@@ -20,7 +27,16 @@ struct ActivityOutcomeSummary: Equatable {
             && lhs.newRank == rhs.newRank
             && lhs.newlyUnlockedAchievements.map(\.id) == rhs.newlyUnlockedAchievements.map(\.id)
             && lhs.newlyUnlockedItems.map(\.id) == rhs.newlyUnlockedItems.map(\.id)
+            && lhs.membershipAnnouncement == rhs.membershipAnnouncement
+            && lhs.seasonTicketAnnouncement == rhs.seasonTicketAnnouncement
     }
+}
+
+/// A player-designed clothing range item (see `CharacterStore.launchClothingRange`).
+struct DesignedClothingItemSummary: Identifiable {
+    let id: String
+    let name: String
+    let slot: ClothingSlot
 }
 
 /// The result of one crew-member interaction: the relationship outcome plus
@@ -218,6 +234,144 @@ final class CharacterStore {
         return ProgressionConstants.xpMultiplier(forPrestigeTier: club.prestigeTier)
     }
 
+    var favoriteClub: Club? {
+        guard let character else { return nil }
+        return content.club(id: character.favoriteClubId)
+    }
+
+    /// The character's current standing with their favorite club's ultras
+    /// group — derived from `rank`, see `UltrasGroupMembershipStage`.
+    var ultrasGroupMembershipStage: UltrasGroupMembershipStage {
+        UltrasGroupMembershipStage.forRank(rank)
+    }
+
+    // MARK: - Home season ticket & away tickets
+
+    var homeSeasonTicketLoyaltyThreshold: Int {
+        ProgressionConstants.loyaltyThresholdForSeasonTicket(prestigeTier: favoriteClub?.prestigeTier ?? 3)
+    }
+
+    var hasUltrasSeasonTicket: Bool {
+        ProgressionConstants.hasEarnedSeasonTicket(loyalty: stats.loyalty, prestigeTier: favoriteClub?.prestigeTier ?? 3)
+    }
+
+    var awayLoyaltyPoints: Int {
+        character?.awayLoyaltyPoints ?? 0
+    }
+
+    var awayTicketGuaranteedThreshold: Int {
+        ProgressionConstants.awayTicketGuaranteedThreshold(forPrestigeTier: favoriteClub?.prestigeTier ?? 3)
+    }
+
+    var awayTicketChance: Double {
+        ProgressionConstants.awayTicketChance(
+            awayLoyaltyPoints: awayLoyaltyPoints, prestigeTier: favoriteClub?.prestigeTier ?? 3
+        )
+    }
+
+    /// Requests an away ticket for `match` (should only be called for the
+    /// favorite club's away games — see `MatchDetailView`). Always resolves
+    /// (win or lose — see `AwayTicketAllocationEngine`) and persists the
+    /// away-loyalty change; returns whether the ticket was won, or `nil` if
+    /// there's no character yet.
+    @discardableResult
+    func attemptAwayTicket(for match: Match, travelMode: TravelMode, today: Date = .now) -> Bool? {
+        guard let character else { return nil }
+
+        var generator = SystemRandomNumberGenerator()
+        let outcome = AwayTicketAllocationEngine.resolve(
+            currentAwayLoyaltyPoints: character.awayLoyaltyPoints,
+            prestigeTier: favoriteClub?.prestigeTier ?? 3,
+            using: &generator
+        )
+
+        var newAwayLoyaltyPoints = outcome.newAwayLoyaltyPoints
+        if travelMode == .bus {
+            newAwayLoyaltyPoints += ProgressionConstants.busTravelAwayLoyaltyBonus
+        }
+        character.awayLoyaltyPoints = newAwayLoyaltyPoints
+        try? modelContext.save()
+
+        return outcome.gotTicket
+    }
+
+    // MARK: - Wardrobe
+
+    func equippedItemId(for slot: ClothingSlot) -> String? {
+        guard let character else { return nil }
+        switch slot {
+        case .top: return character.equippedTopId
+        case .scarf: return character.equippedScarfId
+        case .hat: return character.equippedHatId
+        }
+    }
+
+    func equip(itemId: String, slot: ClothingSlot) {
+        guard let character else { return }
+        switch slot {
+        case .top: character.equippedTopId = itemId
+        case .scarf: character.equippedScarfId = itemId
+        case .hat: character.equippedHatId = itemId
+        }
+        try? modelContext.save()
+    }
+
+    /// Only available once Capo — running your own merch line is a
+    /// leadership move.
+    var canLaunchClothingRange: Bool { rank == .capo }
+
+    var designedClothingItems: [DesignedClothingItemSummary] {
+        (character?.designedClothingItems ?? []).map { entity in
+            DesignedClothingItemSummary(
+                id: entity.itemId, name: entity.name,
+                slot: ClothingSlot(rawValue: entity.slotRaw) ?? .top
+            )
+        }
+    }
+
+    func designedClothingItemsInSlot(_ slot: ClothingSlot) -> [DesignedClothingItemSummary] {
+        designedClothingItems.filter { $0.slot == slot }
+    }
+
+    /// Launches a new clothing range item in `slot` named `name` — only
+    /// once Capo. "Selling it to the group" is represented as an immediate
+    /// bond-score bump for every crew member (see
+    /// `ProgressionConstants.clothingRangeCrewBondBonus`), plus the usual
+    /// XP/stat reward through the shared activity pipeline.
+    @discardableResult
+    func launchClothingRange(name: String, slot: ClothingSlot, today: Date = .now) -> ActivityOutcomeSummary? {
+        guard let character, canLaunchClothingRange else { return nil }
+
+        let itemId = "range-\(UUID().uuidString)"
+        let designed = DesignedClothingItemEntity(itemId: itemId, name: name, slotRaw: slot.rawValue, createdAt: today)
+        designed.character = character
+        modelContext.insert(designed)
+        character.designedClothingItems.append(designed)
+
+        let bondCap = CrewInteractionConstants.bondRange.upperBound
+        for member in content.crewMembers {
+            if let relationship = character.crewRelationships.first(where: { $0.memberId == member.id }) {
+                relationship.bondScore = min(bondCap, relationship.bondScore + ProgressionConstants.clothingRangeCrewBondBonus)
+            } else {
+                let relationship = CrewRelationshipEntity(
+                    memberId: member.id,
+                    bondScore: min(bondCap, ProgressionConstants.clothingRangeCrewBondBonus),
+                    lastInteractionDate: today
+                )
+                relationship.character = character
+                modelContext.insert(relationship)
+                character.crewRelationships.append(relationship)
+            }
+        }
+
+        let outcome = apply(
+            activity: .launchClothingRange, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
+        try? modelContext.save()
+        return outcome
+    }
+
     // MARK: - Private
 
     @discardableResult
@@ -300,12 +454,32 @@ final class CharacterStore {
 
         try? modelContext.save()
 
+        var membershipAnnouncement: String?
+        var seasonTicketAnnouncement: String?
+        if let club = content.club(id: character.favoriteClubId) {
+            if outcome.didRankUp {
+                membershipAnnouncement = UltrasGroupMembershipStage.forRank(outcome.newRank)
+                    .invitationAnnouncement(clubName: club.name)
+            }
+            let hadSeasonTicket = ProgressionConstants.hasEarnedSeasonTicket(
+                loyalty: statsBefore.loyalty, prestigeTier: club.prestigeTier
+            )
+            let hasSeasonTicketNow = ProgressionConstants.hasEarnedSeasonTicket(
+                loyalty: outcome.updatedStats.loyalty, prestigeTier: club.prestigeTier
+            )
+            if !hadSeasonTicket && hasSeasonTicketNow {
+                seasonTicketAnnouncement = "You've earned a season ticket in the \(club.ultrasGroupName) section!"
+            }
+        }
+
         let summary = ActivityOutcomeSummary(
             xpAwarded: outcome.xpAwarded,
             previousRank: outcome.previousRank,
             newRank: outcome.newRank,
             newlyUnlockedAchievements: newlyUnlockedAchievements,
-            newlyUnlockedItems: newlyUnlockedItems
+            newlyUnlockedItems: newlyUnlockedItems,
+            membershipAnnouncement: membershipAnnouncement,
+            seasonTicketAnnouncement: seasonTicketAnnouncement
         )
         lastOutcome = summary
         return summary

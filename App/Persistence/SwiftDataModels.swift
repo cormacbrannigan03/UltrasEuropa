@@ -29,6 +29,19 @@ final class CharacterEntity {
     /// Raw value of `UltrasEuropaCore.Rank`.
     var rankRawValue: Int
 
+    /// Builds toward a guaranteed away ticket for the favorite club — see
+    /// `ProgressionConstants.awayTicketChance`. Separate from `loyalty`
+    /// since it's specifically about away-day standing, not general
+    /// progression.
+    var awayLoyaltyPoints: Int
+
+    /// Currently equipped `ClothingItem` id per slot — `nil` means nothing
+    /// equipped there yet. Can reference either a bundled starter item or
+    /// one of this character's own `designedClothingItems`.
+    var equippedTopId: String?
+    var equippedScarfId: String?
+    var equippedHatId: String?
+
     @Relationship(deleteRule: .cascade, inverse: \OwnedItemEntity.character)
     var ownedItems: [OwnedItemEntity] = []
 
@@ -47,6 +60,9 @@ final class CharacterEntity {
     @Relationship(deleteRule: .cascade, inverse: \CrewRelationshipEntity.character)
     var crewRelationships: [CrewRelationshipEntity] = []
 
+    @Relationship(deleteRule: .cascade, inverse: \DesignedClothingItemEntity.character)
+    var designedClothingItems: [DesignedClothingItemEntity] = []
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -61,7 +77,8 @@ final class CharacterEntity {
         totalXP: Int = 0,
         matchesAttended: Int = 0,
         currentStreakDays: Int = 0,
-        rankRawValue: Int = 0
+        rankRawValue: Int = 0,
+        awayLoyaltyPoints: Int = 0
     ) {
         self.id = id
         self.name = name
@@ -73,6 +90,7 @@ final class CharacterEntity {
         self.knowledge = knowledge
         self.influence = influence
         self.notoriety = notoriety
+        self.awayLoyaltyPoints = awayLoyaltyPoints
         self.totalXP = totalXP
         self.matchesAttended = matchesAttended
         self.currentStreakDays = currentStreakDays
@@ -175,5 +193,25 @@ final class CrewRelationshipEntity {
         self.memberId = memberId
         self.bondScore = bondScore
         self.lastInteractionDate = lastInteractionDate
+    }
+}
+
+/// A clothing range item the player designed themselves after reaching
+/// Capo — see `CharacterStore.launchClothingRange`. Distinct from the
+/// bundled starter `ClothingItem`s, which are read-only content.
+@Model
+final class DesignedClothingItemEntity {
+    var itemId: String
+    var name: String
+    /// Raw value of `UltrasEuropaCore.ClothingSlot`.
+    var slotRaw: String
+    var createdAt: Date
+    var character: CharacterEntity?
+
+    init(itemId: String, name: String, slotRaw: String, createdAt: Date = .now) {
+        self.itemId = itemId
+        self.name = name
+        self.slotRaw = slotRaw
+        self.createdAt = createdAt
     }
 }

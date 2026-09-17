@@ -5,10 +5,7 @@ struct DashboardView: View {
     @Environment(CharacterStore.self) private var characterStore
     @Environment(ContentStore.self) private var contentStore
 
-    private var favoriteClub: Club? {
-        guard let id = characterStore.character?.favoriteClubId else { return nil }
-        return contentStore.repository.club(id: id)
-    }
+    private var favoriteClub: Club? { characterStore.favoriteClub }
 
     var body: some View {
         ScrollView {
@@ -22,10 +19,26 @@ struct DashboardView: View {
                     achievementName: { id in contentStore.repository.achievement(id: id)?.name ?? id }
                 )
 
+                if let favoriteClub {
+                    UltrasGroupStatusCard(
+                        clubName: favoriteClub.name,
+                        stage: characterStore.ultrasGroupMembershipStage,
+                        loyalty: characterStore.stats.loyalty,
+                        seasonTicketThreshold: characterStore.homeSeasonTicketLoyaltyThreshold,
+                        hasSeasonTicket: characterStore.hasUltrasSeasonTicket,
+                        awayLoyaltyPoints: characterStore.awayLoyaltyPoints,
+                        awayTicketThreshold: characterStore.awayTicketGuaranteedThreshold,
+                        awayTicketChance: characterStore.awayTicketChance
+                    )
+                }
+
                 StatsGridView(stats: characterStore.stats)
 
                 NavigationLink { CrewMembersView() } label: {
                     DashboardLinkRow(title: "Crew Members", subtitle: "Build relationships", systemImage: "person.3.fill")
+                }
+                NavigationLink { WardrobeView() } label: {
+                    DashboardLinkRow(title: "Wardrobe", subtitle: "Dress your character", systemImage: "tshirt.fill")
                 }
                 NavigationLink { InventoryView() } label: {
                     DashboardLinkRow(

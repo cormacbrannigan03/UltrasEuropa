@@ -1,0 +1,44 @@
+[
+  {
+    "id": "top-classic-jersey",
+    "name": "Classic Jersey",
+    "slot": "top",
+    "description": "A simple jersey in your crew's colors.",
+    "isRangeItem": false
+  },
+  {
+    "id": "top-away-jacket",
+    "name": "Away Day Jacket",
+    "slot": "top",
+    "description": "A warm jacket for cold away trips.",
+    "isRangeItem": false
+  },
+  {
+    "id": "scarf-retro",
+    "name": "Retro Scarf",
+    "slot": "scarf",
+    "description": "An old-school knitted scarf.",
+    "isRangeItem": false
+  },
+  {
+    "id": "scarf-winter",
+    "name": "Winter Scarf",
+    "slot": "scarf",
+    "description": "Thick and warm for winter fixtures.",
+    "isRangeItem": false
+  },
+  {
+    "id": "hat-flat-cap",
+    "name": "Flat Cap",
+    "slot": "hat",
+    "description": "A classic terrace flat cap.",
+    "isRangeItem": false
+  },
+  {
+    "id": "hat-bucket",
+    "name": "Bucket Hat",
+    "slot": "hat",
+    "description": "A casual bucket hat for matchday.",
+    "isRangeItem": false
+  }
+]

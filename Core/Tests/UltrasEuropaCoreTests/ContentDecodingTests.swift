@@ -131,4 +131,18 @@ final class ContentDecodingTests: XCTestCase {
         XCTAssertEqual(member.name, "Tommy")
         XCTAssertEqual(member.rank, .regular)
     }
+
+    func testDecodesClothingItem() throws {
+        let json = """
+        {
+            "id": "top-classic-jersey", "name": "Classic Jersey", "slot": "top",
+            "description": "A simple jersey in your crew's colors.", "isRangeItem": false
+        }
+        """.data(using: .utf8)!
+
+        let item = try ContentDecoding.decode(ClothingItem.self, from: json)
+        XCTAssertEqual(item.slot, .top)
+        XCTAssertEqual(item.clothingDescription, "A simple jersey in your crew's colors.")
+        XCTAssertFalse(item.isRangeItem)
+    }
 }

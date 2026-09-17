@@ -10,6 +10,12 @@ extension ActivityOutcomeSummary {
         if didRankUp {
             lines.append("Ranked up to \(newRank.displayName)!")
         }
+        if let membershipAnnouncement {
+            lines.append(membershipAnnouncement)
+        }
+        if let seasonTicketAnnouncement {
+            lines.append(seasonTicketAnnouncement)
+        }
         if !newlyUnlockedAchievements.isEmpty {
             lines.append("Unlocked: " + newlyUnlockedAchievements.map(\.name).joined(separator: ", "))
         }

@@ -179,3 +179,92 @@ baseline (bigger leagues start higher) plus a bonus for each league's
 traditionally dominant clubs — see `prestigeTier` in `clubs.json` and treat
 it the same as the rest of the club data: a reasonable starting point, not
 a precisely researched ranking.
+
+## Every club has an ultras group — but it's a generic label, not invented lore
+
+Every club's ultras group is surfaced as `Club.ultrasGroupName`
+(`"{Club} Ultras"`) rather than a specific, made-up name, chant catalog, or
+history attributed to that club's actual fan culture — same reasoning as the
+chants/tifo/crew content above. What *is* real is the relationship arc: the
+group notices and invites the player as they climb the existing rank ladder.
+`UltrasGroupMembershipStage`
+(`Core/Sources/UltrasEuropaCore/Models/UltrasGroupMembershipStage.swift`)
+maps directly onto `Rank` — no new thresholds to tune or desync from the
+progression design above:
+
+| Stage | Rank(s) |
+| --- | --- |
+| Not noticed | Regular, Young Ultra |
+| Invited to home games | Ultra Group |
+| Invited to away games | Lead Ultra |
+| Full member | Capo |
+
+`CharacterStore.ultrasGroupMembershipStage` derives this live from the
+player's current rank, and `UltrasGroupStatusCard` (shown on the Dashboard
+and on the player's favorite club's detail page) surfaces the current stage
+alongside season-ticket and away-ticket progress.
+
+## Home season tickets: loyalty-gated, and harder for bigger clubs
+
+Attending a home match now means picking a seat (`SeatCategory`: Main
+Stand, Family Section, Behind the Goal, or Ultras Section) via
+`MatchDetailView`'s home-attendance flow. Sitting in the Ultras Section
+every so often isn't enough to make it a season ticket — that has to be
+*earned* with loyalty, and the bigger the club, the more it takes.
+`ProgressionConstants.seasonTicketLoyaltyThreshold` scales by the club's
+existing `prestigeTier` (40 loyalty for a tier-1 club up to 280 for a
+tier-5 giant), and `CharacterStore.hasUltrasSeasonTicket` compares the
+player's accumulated `loyalty` stat against that threshold. Loyalty accrues
+the same slow way every other stat does (see Progression design above), so
+there's no separate grind system to learn — just a harder bar for the
+biggest clubs' ultras sections, reusing the prestige scaling that already
+governs XP.
+
+## Away tickets: a loyalty-driven chance, not a guarantee
+
+Away matches are scarcer, so showing up doesn't guarantee a ticket.
+`AwayTicketAllocationEngine`
+(`Core/Sources/UltrasEuropaCore/Tickets/AwayTicketAllocationEngine.swift`)
+rolls a chance that starts at a 30% base
+(`ProgressionConstants.awayTicketBaseChance`) and rises toward guaranteed as
+the player's separate `awayLoyaltyPoints` stat approaches
+`awayTicketGuaranteedThresholdByTier` — again scaled by the club's prestige
+tier, so away tickets to a big club's biggest games stay competitive for
+longer. Every attempt moves the needle: a successful ticket earns more away
+loyalty than a miss, so even being turned down builds toward the next
+attempt. This is deliberately a separate stat from home loyalty — being a
+regular at home doesn't buy you an away seat.
+
+## Away travel: bus or train, decided with the crew
+
+Once a player has an away ticket, `TravelMode` (`bus` or `train`) is chosen
+through a lightweight "discussion" with the crew rather than a silent
+picker — each crew member has a fixed, deterministic preference
+(`TravelMode.preferred(byMemberId:)`), so the same crew always leans the
+same way, giving the choice some texture without needing a full group-chat
+system. Traveling by bus carries a small loyalty bonus
+(`ProgressionConstants.busTravelAwayLoyaltyBonus`), reflecting the
+lower-key, more communal way most ultras groups actually travel to away
+games, without inventing any specifics about a real club's real away days.
+
+## Wardrobe and player-launched clothing ranges
+
+`WardrobeView` lets the player equip one item per slot (`ClothingSlot`:
+top, scarf, hat) from the bundled generic starter catalog
+(`App/Resources/Content/clothing_items.json`) — plain, non-club-specific
+items like a classic jersey or a retro scarf, in keeping with the
+generic-content rule used everywhere else. There's no avatar renderer in
+this app (everything is card/list-based), so "dressing your character" is a
+selection system: equipped items are tracked per slot on `CharacterEntity`
+and shown with a checkmark, not painted onto a graphic.
+
+Reaching **Capo** unlocks something further: launching your own clothing
+range and selling it to your crew (`CharacterStore.launchClothingRange`).
+This creates a new `DesignedClothingItemEntity`, immediately equips it,
+gives every crew member's relationship a small bond bump (reusing the
+existing relationship system above), and records a `.launchClothingRange`
+activity for a burst of XP and notoriety — reusing the same
+`ProgressionEngine`/`CharacterStore.apply()` pipeline as every other
+activity, and left out of the activity-diversity gate for the same reason
+`.socializeWithCrew` is: it's a capstone reward for reaching the top rank,
+not a required step to get there.
