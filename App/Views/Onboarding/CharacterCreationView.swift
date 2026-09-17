@@ -2,6 +2,10 @@ import SwiftUI
 import UltrasEuropaCore
 
 struct CharacterCreationView: View {
+    /// The empty save slot this new fan is being created into — see
+    /// `SaveSlotStore`.
+    let slotIndex: Int
+
     @Environment(CharacterStore.self) private var characterStore
     @Environment(ContentStore.self) private var contentStore
 
@@ -63,7 +67,8 @@ struct CharacterCreationView: View {
                     Button {
                         guard let selectedClubId else { return }
                         characterStore.createCharacter(
-                            name: trimmedName, favoriteClubId: selectedClubId, crewName: trimmedCrewName
+                            name: trimmedName, favoriteClubId: selectedClubId, crewName: trimmedCrewName,
+                            slotIndex: slotIndex
                         )
                     } label: {
                         Text("Start as a Regular")
@@ -179,7 +184,7 @@ private struct ClubPickerRow: View {
 }
 
 #Preview {
-    CharacterCreationView()
+    CharacterCreationView(slotIndex: 0)
         .environment(PreviewSampleData.characterStore)
         .environment(PreviewSampleData.contentStore)
         .preferredColorScheme(.dark)

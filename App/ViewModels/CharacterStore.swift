@@ -67,16 +67,31 @@ final class CharacterStore {
     init(modelContext: ModelContext, content: ContentRepository) {
         self.modelContext = modelContext
         self.content = content
-        self.character = try? modelContext.fetch(FetchDescriptor<CharacterEntity>()).first
     }
 
     var hasCharacter: Bool { character != nil }
 
+    // MARK: - Save slots
+
+    /// Loads the character belonging to `slotIndex` (see `SaveSlotStore`),
+    /// or clears the active character if that slot is empty — the caller
+    /// (`RootView`) then shows character creation for an empty slot.
+    func loadCharacter(inSlot slotIndex: Int) {
+        let all = (try? modelContext.fetch(FetchDescriptor<CharacterEntity>())) ?? []
+        character = all.first { $0.slotIndex == slotIndex }
+    }
+
+    /// Returns to no active character — used when backing out to the
+    /// save-slot picker (see `SaveSlotStore.clearActiveSlot`).
+    func clearActiveCharacter() {
+        character = nil
+    }
+
     // MARK: - Character creation
 
-    func createCharacter(name: String, favoriteClubId: String, crewName: String, today: Date = .now) {
+    func createCharacter(name: String, favoriteClubId: String, crewName: String, slotIndex: Int, today: Date = .now) {
         let entity = CharacterEntity(
-            name: name, favoriteClubId: favoriteClubId, crewName: crewName,
+            name: name, favoriteClubId: favoriteClubId, slotIndex: slotIndex, crewName: crewName,
             createdAt: today, lastActiveDate: today
         )
         modelContext.insert(entity)

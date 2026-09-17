@@ -66,9 +66,44 @@ swift test
 
 This also runs in CI on every push via `.github/workflows/core-tests.yml`.
 
+## Save slots — up to three fans at once
+
+The app supports up to `SaveSlotStore.maxSlots` (3) independent saves, so
+more than one fan's career can exist side by side without overwriting each
+other — each is a separate `CharacterEntity` tagged with a `slotIndex`
+(0, 1, or 2).
+
+- **`SaveSlotStore`** (`App/ViewModels/SaveSlotStore.swift`) owns which
+  slot is active and the summaries (name, club, rank) shown for all three
+  slots on the picker. `CharacterStore` still owns everything about the
+  character *within* the active slot — the two don't overlap.
+- **Continuing on relaunch** is automatic: the active slot index is
+  remembered in `UserDefaults` (a per-device UI preference, not game data,
+  so it isn't part of the SwiftData model), and `RootView` loads that
+  slot's character before the first frame renders. Force-quitting and
+  reopening the app drops you back into the same save with no extra tap.
+- **`SaveSlotsView`** (`App/Views/Onboarding/SaveSlotsView.swift`) is the
+  picker: three rows, each either an existing save (tap to continue, or
+  the trash icon to permanently delete it) or an empty slot (tap to start
+  character creation into it). It's shown on first launch (no slot
+  remembered yet) and whenever a slot is cleared.
+- **"Switch Save"** — the icon button in the Dashboard's toolbar — backs
+  out to `SaveSlotsView` without deleting anything, so you can hop between
+  saves at any time; picking a different occupied slot loads that fan
+  immediately.
+- Deleting a save cascades through every relationship on that
+  `CharacterEntity` (inventory, achievements, attendance log, crew
+  relationships, designed clothing — the same cascade rules used
+  everywhere else) and frees the slot for a new fan.
+
 ## Manual verification checklist (run through this on a Simulator)
 
-- [ ] First launch shows character creation (name, crew name, favorite club — searchable across all 20 leagues)
+- [ ] First launch shows the save-slot picker with all 3 slots empty; tapping one shows character creation (name, crew name, favorite club — searchable across all 20 leagues)
+- [ ] After creating a character, the app goes straight to the Dashboard for that slot
+- [ ] Force-quit and relaunch the app — it resumes directly into the same save, no picker shown
+- [ ] From the Dashboard, tap "Switch Save" (top-right icon) — it returns to the picker showing the first save's real name/club/rank plus two empty slots
+- [ ] Create a second save in an empty slot, switch back to the first via the picker, and confirm each save's stats are independent of the other
+- [ ] Delete a save from the picker (trash icon) and confirm it's gone and its slot shows "New Save" again
 - [ ] After creating a character, Dashboard shows rank "Regular", 0 XP, all stats at their base value, and the crew name
 - [ ] Attending a match (with "Sit in Ultras Stand" / "Do Pyro" toggled) increases XP and the relevant stats
 - [ ] Participating in a chant and contributing to a tifo (Chants/Gallery tabs — these are your crew's, not tied to any real club) each award XP/stats

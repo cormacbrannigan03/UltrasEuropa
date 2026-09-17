@@ -17,6 +17,8 @@ enum PreviewSampleData {
             MatchAttendanceEntity.self,
             ActivityLogEntity.self,
             CompletedTaskEntity.self,
+            CrewRelationshipEntity.self,
+            DesignedClothingItemEntity.self,
         ])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         guard let container = try? ModelContainer(for: schema, configurations: [configuration]) else {
@@ -26,6 +28,7 @@ enum PreviewSampleData {
         let character = CharacterEntity(
             name: "Marco",
             favoriteClubId: content.clubs.first?.id ?? "arsenal",
+            slotIndex: 0,
             crewName: "The North Bank Firm"
         )
         character.totalXP = 120
@@ -41,10 +44,16 @@ enum PreviewSampleData {
     }()
 
     static var characterStore: CharacterStore {
-        CharacterStore(modelContext: modelContainer.mainContext, content: content)
+        let store = CharacterStore(modelContext: modelContainer.mainContext, content: content)
+        store.loadCharacter(inSlot: 0)
+        return store
     }
 
     static var contentStore: ContentStore {
         ContentStore(repository: content)
+    }
+
+    static var saveSlotStore: SaveSlotStore {
+        SaveSlotStore(modelContext: modelContainer.mainContext, content: content)
     }
 }

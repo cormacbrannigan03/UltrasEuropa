@@ -11,6 +11,11 @@ final class CharacterEntity {
     var id: UUID
     var name: String
     var favoriteClubId: String
+    /// Which of the (up to `SaveSlotStore.maxSlots`) save slots this
+    /// character belongs to — see `SaveSlotStore`. Defaults to 0 only so an
+    /// existing on-disk character predating this field migrates cleanly;
+    /// every call to the initializer below must still pass one explicitly.
+    var slotIndex: Int = 0
     /// The name the player gave their own crew at creation — the source of
     /// the chants/tifo/inventory flavor in this app, since those aren't
     /// tied to any specific real club or real ultras group.
@@ -76,6 +81,7 @@ final class CharacterEntity {
         id: UUID = UUID(),
         name: String,
         favoriteClubId: String,
+        slotIndex: Int,
         crewName: String,
         createdAt: Date = .now,
         lastActiveDate: Date = .now,
@@ -92,6 +98,7 @@ final class CharacterEntity {
         self.id = id
         self.name = name
         self.favoriteClubId = favoriteClubId
+        self.slotIndex = slotIndex
         self.crewName = crewName
         self.createdAt = createdAt
         self.lastActiveDate = lastActiveDate

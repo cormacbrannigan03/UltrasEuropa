@@ -4,6 +4,9 @@ import UltrasEuropaCore
 struct DashboardView: View {
     @Environment(CharacterStore.self) private var characterStore
     @Environment(ContentStore.self) private var contentStore
+    @Environment(SaveSlotStore.self) private var saveSlotStore
+
+    @State private var showSwitchSaveConfirmation = false
 
     private var favoriteClub: Club? { characterStore.favoriteClub }
 
@@ -63,6 +66,25 @@ struct DashboardView: View {
         }
         .background(Theme.background)
         .navigationTitle("Dashboard")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showSwitchSaveConfirmation = true
+                } label: {
+                    Image(systemName: "person.crop.circle.badge.checkmark")
+                }
+            }
+        }
+        .confirmationDialog(
+            "Switch Save?",
+            isPresented: $showSwitchSaveConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Switch Save") { saveSlotStore.clearActiveSlot() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Your progress in this save is kept — you can come back to it anytime from the save picker.")
+        }
     }
 
     private var header: some View {
@@ -110,5 +132,6 @@ private struct DashboardLinkRow: View {
     }
     .environment(PreviewSampleData.characterStore)
     .environment(PreviewSampleData.contentStore)
+    .environment(PreviewSampleData.saveSlotStore)
     .preferredColorScheme(.dark)
 }
