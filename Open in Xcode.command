@@ -10,6 +10,19 @@ echo "UltrasEuropa — setting up the Xcode project"
 echo "============================================"
 echo
 
+if command -v git >/dev/null 2>&1 && [ -d .git ]; then
+    echo "Pulling the latest changes from GitHub..."
+    if ! git pull; then
+        echo
+        echo "git pull failed — see the error above. This doesn't use Xcode's"
+        echo "GitHub sign-in at all, so if it's still failing, it's a plain git/network"
+        echo "issue rather than an Xcode account problem. Continuing with what's"
+        echo "already on disk."
+        echo
+    fi
+    echo
+fi
+
 if ! command -v xcodegen >/dev/null 2>&1; then
     echo "XcodeGen isn't installed yet."
     if ! command -v brew >/dev/null 2>&1; then

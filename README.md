@@ -41,30 +41,43 @@ Store if you haven't already — everything below assumes it's installed.
 ### Easiest: double-click `Open in Xcode.command`
 
 In Finder, double-click **`Open in Xcode.command`** at the repo root. It
-opens Terminal and does everything for you: installs
-[XcodeGen](https://github.com/yonaskolb/XcodeGen) via Homebrew if it's
-missing, generates `UltrasEuropa.xcodeproj` from `project.yml`, and opens
-it in Xcode. (If you don't have Homebrew installed, it'll tell you and
-point you to https://brew.sh — that's the one thing it can't install for
-you.)
+opens Terminal and does everything for you: pulls the latest changes from
+GitHub with plain `git pull` (no Xcode account/sign-in involved at all —
+see below), installs [XcodeGen](https://github.com/yonaskolb/XcodeGen) via
+Homebrew if it's missing, generates `UltrasEuropa.xcodeproj` from
+`project.yml`, and opens it in Xcode. (If you don't have Homebrew
+installed, it'll tell you and point you to https://brew.sh — that's the
+one thing it can't install for you.)
 
 Once Xcode opens, select an iPhone Simulator (iOS 17+) in the scheme
 selector and press Cmd+R.
+
+**Every time there's a new update, just double-click this file again** —
+don't use Xcode's own Source Control → Pull. Xcode's Source Control needs
+its own separate GitHub sign-in (Xcode → Settings → Accounts) and can fail
+in confusing ways ("the repository could not be found") that have nothing
+to do with whether your actual git checkout is fine. This project never
+needs that sign-in — `git pull` over plain HTTPS from the command line
+works with no login needed, and the `.command` script always uses that.
 
 ### Manual alternative (Terminal)
 
 Equivalent to what the script above does, if you'd rather run it yourself:
 
-1. Install [XcodeGen](https://github.com/yonaskolb/XcodeGen):
+1. Pull the latest changes:
+   ```sh
+   git pull
+   ```
+2. Install [XcodeGen](https://github.com/yonaskolb/XcodeGen):
    ```sh
    brew install xcodegen
    ```
-2. Generate the Xcode project (this regenerates `UltrasEuropa.xcodeproj` from
+3. Generate the Xcode project (this regenerates `UltrasEuropa.xcodeproj` from
    `project.yml` — the `.xcodeproj` itself is gitignored, not committed):
    ```sh
    xcodegen generate
    ```
-3. Open it and run:
+4. Open it and run:
    ```sh
    open UltrasEuropa.xcodeproj
    ```
