@@ -92,7 +92,7 @@ final class CharacterStore {
     func createCharacter(name: String, favoriteClubId: String, crewName: String, slotIndex: Int, today: Date = .now) {
         let entity = CharacterEntity(
             name: name, favoriteClubId: favoriteClubId, slotIndex: slotIndex, crewName: crewName,
-            createdAt: today, lastActiveDate: today
+            createdAt: today, lastActiveDate: today, simulatedDate: today
         )
         modelContext.insert(entity)
         character = entity
@@ -272,6 +272,42 @@ final class CharacterStore {
         UltrasGroupMembershipStage.forRank(rank)
     }
 
+    // MARK: - Season simulation & match schedule
+
+    /// The in-game "today" — starts at the real device date when the
+    /// character is created, and only moves when the player simulates a
+    /// matchday (see `simulateDays`). Every match schedule shown anywhere
+    /// in the app is generated fresh from this, not the device clock.
+    var simulatedDate: Date {
+        character?.simulatedDate ?? .now
+    }
+
+    func matchesForClub(_ clubId: String) -> [Match] {
+        content.matchesForClub(clubId, asOf: simulatedDate)
+    }
+
+    /// Advances the season clock by `days` (a week for "next matchday"),
+    /// revealing more fixtures' results. Doesn't touch real-world activity
+    /// pacing (streaks, daily check-ins, diminishing returns) — those still
+    /// run off the device's actual date.
+    func simulateDays(_ days: Int, calendar: Calendar = .current) {
+        guard let character, days > 0 else { return }
+        character.simulatedDate = calendar.date(byAdding: .day, value: days, to: character.simulatedDate)
+            ?? character.simulatedDate
+        try? modelContext.save()
+    }
+
+    /// Whether tickets for `match` have gone on sale yet, as of the season
+    /// clock — see `TicketSaleWindow`.
+    func ticketsAreOnSale(for match: Match) -> Bool {
+        TicketSaleWindow.isOnSale(matchDate: match.date, asOf: simulatedDate)
+    }
+
+    /// The date tickets for `match` go on sale.
+    func ticketSaleDate(for match: Match) -> Date {
+        TicketSaleWindow.saleDate(matchDate: match.date)
+    }
+
     // MARK: - Home season ticket & away tickets
 
     var homeSeasonTicketLoyaltyThreshold: Int {
@@ -298,35 +334,53 @@ final class CharacterStore {
         )
     }
 
+    /// The locked-in outcome of a past away-ticket request for `matchId`,
+    /// or `nil` if one hasn't been requested yet. Once set, this can't
+    /// change — see `attemptAwayTicket`.
+    func awayTicketAttempt(forMatchId matchId: String) -> Bool? {
+        character?.awayTicketAttempts.first { $0.matchId == matchId }?.gotTicket
+    }
+
     /// Requests an away ticket for `match` (should only be called for the
-    /// favorite club's away games — see `MatchDetailView`). Always resolves
-    /// (win or lose — see `AwayTicketAllocationEngine`) and persists the
-    /// away-loyalty change; returns whether the ticket was won, or `nil` if
-    /// there's no character yet. Always succeeds once "Unlimited Away
-    /// Access" has been purchased, without touching away-loyalty at all.
+    /// favorite club's away games — see `MatchDetailView`). Only resolves
+    /// once per match — a match that's already been attempted returns its
+    /// locked-in result instead of rolling again, so a denial can't be
+    /// endlessly retried into a win. Always succeeds once "Unlimited Away
+    /// Access" has been purchased. Returns `nil` if there's no character yet.
     @discardableResult
     func attemptAwayTicket(for match: Match, travelMode: TravelMode, today: Date = .now) -> Bool? {
         guard let character else { return nil }
 
+        if let existing = awayTicketAttempt(forMatchId: match.id) {
+            return existing
+        }
+
+        let gotTicket: Bool
         if character.purchasedUnlimitedAwayPoints {
-            return true
+            gotTicket = true
+        } else {
+            var generator = SystemRandomNumberGenerator()
+            let outcome = AwayTicketAllocationEngine.resolve(
+                currentAwayLoyaltyPoints: character.awayLoyaltyPoints,
+                prestigeTier: favoriteClub?.prestigeTier ?? 3,
+                using: &generator
+            )
+
+            var newAwayLoyaltyPoints = outcome.newAwayLoyaltyPoints
+            if travelMode == .bus {
+                newAwayLoyaltyPoints += ProgressionConstants.busTravelAwayLoyaltyBonus
+            }
+            character.awayLoyaltyPoints = newAwayLoyaltyPoints
+            gotTicket = outcome.gotTicket
         }
 
-        var generator = SystemRandomNumberGenerator()
-        let outcome = AwayTicketAllocationEngine.resolve(
-            currentAwayLoyaltyPoints: character.awayLoyaltyPoints,
-            prestigeTier: favoriteClub?.prestigeTier ?? 3,
-            using: &generator
-        )
-
-        var newAwayLoyaltyPoints = outcome.newAwayLoyaltyPoints
-        if travelMode == .bus {
-            newAwayLoyaltyPoints += ProgressionConstants.busTravelAwayLoyaltyBonus
-        }
-        character.awayLoyaltyPoints = newAwayLoyaltyPoints
+        let attempt = AwayTicketAttemptEntity(matchId: match.id, gotTicket: gotTicket, dateAttempted: today)
+        attempt.character = character
+        modelContext.insert(attempt)
+        character.awayTicketAttempts.append(attempt)
         try? modelContext.save()
 
-        return outcome.gotTicket
+        return gotTicket
     }
 
     // MARK: - Wardrobe

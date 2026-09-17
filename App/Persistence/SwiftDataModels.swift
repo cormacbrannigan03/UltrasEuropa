@@ -23,6 +23,16 @@ final class CharacterEntity {
     var createdAt: Date
     var lastActiveDate: Date
 
+    /// The in-game "season clock" for this save — drives which matches in
+    /// `SeasonScheduleGenerator`'s generated schedule count as played (see
+    /// `CharacterStore.matchesForClub`/`simulateDays`). Starts at
+    /// the real device date when the character is created, same as the
+    /// old real-time-only behavior, but only advances when the player
+    /// simulates a matchday — it doesn't track the device clock after
+    /// that. Separate from `lastActiveDate`, which is real-world and drives
+    /// the daily loyalty streak.
+    var simulatedDate: Date = .now
+
     var loyalty: Int
     var knowledge: Int
     var influence: Int
@@ -77,6 +87,13 @@ final class CharacterEntity {
     @Relationship(deleteRule: .cascade, inverse: \DesignedClothingItemEntity.character)
     var designedClothingItems: [DesignedClothingItemEntity] = []
 
+    /// One row per away match the player has ever requested a ticket for —
+    /// the ticket outcome is locked in the first time, so re-opening the
+    /// same match can't be used to re-roll a denial into a win. See
+    /// `CharacterStore.attemptAwayTicket`.
+    @Relationship(deleteRule: .cascade, inverse: \AwayTicketAttemptEntity.character)
+    var awayTicketAttempts: [AwayTicketAttemptEntity] = []
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -85,6 +102,7 @@ final class CharacterEntity {
         crewName: String,
         createdAt: Date = .now,
         lastActiveDate: Date = .now,
+        simulatedDate: Date = .now,
         loyalty: Int = 0,
         knowledge: Int = 0,
         influence: Int = 0,
@@ -102,6 +120,7 @@ final class CharacterEntity {
         self.crewName = crewName
         self.createdAt = createdAt
         self.lastActiveDate = lastActiveDate
+        self.simulatedDate = simulatedDate
         self.loyalty = loyalty
         self.knowledge = knowledge
         self.influence = influence
@@ -229,5 +248,22 @@ final class DesignedClothingItemEntity {
         self.name = name
         self.slotRaw = slotRaw
         self.createdAt = createdAt
+    }
+}
+
+/// The locked-in outcome of requesting an away ticket for one match — see
+/// `CharacterStore.attemptAwayTicket`. Once this exists for a `matchId`,
+/// the player can't attempt again for that same match.
+@Model
+final class AwayTicketAttemptEntity {
+    var matchId: String
+    var gotTicket: Bool
+    var dateAttempted: Date
+    var character: CharacterEntity?
+
+    init(matchId: String, gotTicket: Bool, dateAttempted: Date = .now) {
+        self.matchId = matchId
+        self.gotTicket = gotTicket
+        self.dateAttempted = dateAttempted
     }
 }

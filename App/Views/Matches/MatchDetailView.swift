@@ -19,12 +19,12 @@ struct MatchDetailView: View {
     @State private var travelMode: TravelMode = .bus
     @State private var satInUltrasStand = false
     @State private var didPyro = false
-    @State private var pendingSummary: AttendanceSummary?
-    @State private var showOutcome = false
+    @State private var showCutscene = false
 
     private var homeClub: Club? { contentStore.repository.club(id: match.homeClubId) }
     private var awayClub: Club? { contentStore.repository.club(id: match.awayClubId) }
     private var alreadyAttended: Bool { characterStore.hasAttended(matchId: match.id) }
+    private var ticketsAreOnSale: Bool { characterStore.ticketsAreOnSale(for: match) }
 
     private var context: MatchContext {
         guard let favoriteClub = characterStore.favoriteClub else { return .neutral }
@@ -62,6 +62,8 @@ struct MatchDetailView: View {
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12))
+                } else if !ticketsAreOnSale {
+                    ticketsNotYetOnSaleCard
                 } else {
                     switch context {
                     case .favoriteHome:
@@ -78,11 +80,32 @@ struct MatchDetailView: View {
         .background(Theme.background)
         .navigationTitle("Match")
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Match", isPresented: $showOutcome, presenting: pendingSummary) { _ in
-            Button("OK") { pendingSummary = nil }
-        } message: { summary in
-            Text(summary.displayText)
+        .fullScreenCover(isPresented: $showCutscene) {
+            MatchDayCutsceneView(
+                match: match,
+                homeClub: homeClub,
+                awayClub: awayClub,
+                travelMode: context == .favoriteAway ? travelMode : nil,
+                satInUltrasStand: satInUltrasStand,
+                didPyro: didPyro
+            )
         }
+    }
+
+    // MARK: - Tickets not yet on sale
+
+    private var ticketsNotYetOnSaleCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Tickets Not Yet On Sale", systemImage: "lock.fill")
+                .font(.headline)
+                .foregroundStyle(Theme.secondaryText)
+            Text("Tickets for this match go on sale on \(characterStore.ticketSaleDate(for: match), style: .date).")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Home game: pick a seat
@@ -118,10 +141,9 @@ struct MatchDetailView: View {
 
             Button {
                 satInUltrasStand = selectedSeat == .ultrasSection
-                pendingSummary = recordAttendanceActivities(satInUltrasStand: satInUltrasStand, didPyro: didPyro)
-                showOutcome = true
+                showCutscene = true
             } label: {
-                ConfirmButtonLabel(text: "Confirm Attendance")
+                ConfirmButtonLabel(text: "Head to the Match")
             }
         }
         .padding(16)
@@ -131,6 +153,20 @@ struct MatchDetailView: View {
     // MARK: - Away game: request a ticket
 
     private var awayAttendanceSection: some View {
+        Group {
+            if let gotTicket = characterStore.awayTicketAttempt(forMatchId: match.id) {
+                if gotTicket {
+                    awayTicketGrantedSection
+                } else {
+                    awayTicketDeniedCard
+                }
+            } else {
+                awayTicketRequestSection
+            }
+        }
+    }
+
+    private var awayTicketRequestSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Request an Away Ticket").font(.headline)
 
@@ -147,6 +183,57 @@ struct MatchDetailView: View {
                     .font(.caption).foregroundStyle(Theme.secondaryText)
             }
 
+            travelModePicker
+
+            Toggle("Do Pyro", isOn: $didPyro)
+
+            Button {
+                characterStore.attemptAwayTicket(for: match, travelMode: travelMode)
+            } label: {
+                ConfirmButtonLabel(text: "Request Away Ticket")
+            }
+        }
+        .padding(16)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var awayTicketGrantedSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("You've got a ticket for this game!", systemImage: "checkmark.seal.fill")
+                .font(.headline)
+                .foregroundStyle(Theme.accent)
+
+            travelModePicker
+
+            Toggle("Do Pyro", isOn: $didPyro)
+
+            Button {
+                satInUltrasStand = true
+                showCutscene = true
+            } label: {
+                ConfirmButtonLabel(text: "Head to the Match")
+            }
+        }
+        .padding(16)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var awayTicketDeniedCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("No Ticket This Time", systemImage: "xmark.seal.fill")
+                .font(.headline)
+                .foregroundStyle(Theme.secondaryText)
+            Text("You didn't get an away ticket for this match. Keep building away loyalty for the next one.")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var travelModePicker: some View {
+        VStack(alignment: .leading, spacing: 4) {
             Text("Travel By").font(.headline)
             Picker("Travel By", selection: $travelMode) {
                 ForEach(TravelMode.allCases, id: \.self) { mode in
@@ -155,24 +242,12 @@ struct MatchDetailView: View {
             }
             .pickerStyle(.segmented)
 
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(crewFlavorMembers) { member in
-                    Text("\(member.name) thinks the \(TravelMode.preferred(byMemberId: member.id).displayName.lowercased()) is the way to go.")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-            }
-
-            Toggle("Do Pyro", isOn: $didPyro)
-
-            Button {
-                requestAwayTicket()
-            } label: {
-                ConfirmButtonLabel(text: "Request Away Ticket")
+            ForEach(crewFlavorMembers) { member in
+                Text("\(member.name) thinks the \(TravelMode.preferred(byMemberId: member.id).displayName.lowercased()) is the way to go.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
             }
         }
-        .padding(16)
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Any other match
@@ -183,80 +258,13 @@ struct MatchDetailView: View {
             Toggle("Sit in the Ultras Stand", isOn: $satInUltrasStand)
             Toggle("Do Pyro", isOn: $didPyro)
             Button {
-                pendingSummary = recordAttendanceActivities(satInUltrasStand: satInUltrasStand, didPyro: didPyro)
-                showOutcome = true
+                showCutscene = true
             } label: {
-                ConfirmButtonLabel(text: "Confirm Attendance")
+                ConfirmButtonLabel(text: "Head to the Match")
             }
         }
         .padding(16)
         .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
-    }
-
-    // MARK: - Shared attendance recording
-
-    /// Records attending this match plus optionally sitting in the ultras
-    /// stand and/or doing pyro, aggregating the (up to three) resulting
-    /// `ActivityOutcomeSummary` values into one `AttendanceSummary`.
-    private func recordAttendanceActivities(satInUltrasStand: Bool, didPyro: Bool) -> AttendanceSummary {
-        var totalXP = 0
-        var achievements: [Achievement] = []
-        var items: [InventoryItem] = []
-        var membershipAnnouncement: String?
-        var seasonTicketAnnouncement: String?
-        let rankBefore = characterStore.rank
-
-        func absorb(_ outcome: ActivityOutcomeSummary) {
-            totalXP += outcome.xpAwarded
-            achievements += outcome.newlyUnlockedAchievements
-            items += outcome.newlyUnlockedItems
-            membershipAnnouncement = outcome.membershipAnnouncement ?? membershipAnnouncement
-            seasonTicketAnnouncement = outcome.seasonTicketAnnouncement ?? seasonTicketAnnouncement
-        }
-
-        if let outcome = characterStore.recordActivity(
-            .attendMatch, matchId: match.id, satInUltrasStand: satInUltrasStand, didPyro: didPyro
-        ) {
-            absorb(outcome)
-        }
-        if satInUltrasStand, let outcome = characterStore.recordActivity(.sitInUltrasStand) {
-            absorb(outcome)
-        }
-        if didPyro, let outcome = characterStore.recordActivity(.doPyroChallenge) {
-            absorb(outcome)
-        }
-
-        return AttendanceSummary(
-            xpAwarded: totalXP,
-            didRankUp: characterStore.rank > rankBefore,
-            newRank: characterStore.rank,
-            newlyUnlockedAchievements: achievements,
-            newlyUnlockedItems: items,
-            membershipAnnouncement: membershipAnnouncement,
-            seasonTicketAnnouncement: seasonTicketAnnouncement,
-            ticketDenied: false
-        )
-    }
-
-    private func requestAwayTicket() {
-        guard let gotTicket = characterStore.attemptAwayTicket(for: match, travelMode: travelMode) else { return }
-        if gotTicket {
-            // Getting the ticket through the ultras' away allocation means
-            // traveling with the group — that's the away-end experience.
-            pendingSummary = recordAttendanceActivities(satInUltrasStand: true, didPyro: didPyro)
-        } else {
-            pendingSummary = AttendanceSummary(
-                xpAwarded: 0,
-                didRankUp: false,
-                newRank: characterStore.rank,
-                newlyUnlockedAchievements: [],
-                newlyUnlockedItems: [],
-                membershipAnnouncement: nil,
-                seasonTicketAnnouncement: nil,
-                ticketDenied: true
-            )
-        }
-        showOutcome = true
     }
 }
 
@@ -292,11 +300,12 @@ private struct SeatRow: View {
     }
 }
 
-/// Combines the outcomes of up to three activities recorded together when
-/// attending a match (attend + optionally sit in the stand + optionally do
-/// pyro), since each is its own `ActivityOutcomeSummary` — or represents an
-/// away-ticket request that didn't come through.
-private struct AttendanceSummary {
+/// Combines the outcomes of everything recorded on one match day — showing
+/// up, sitting in the ultras stand, pyro, joining the chant, and (if one
+/// was prepared) contributing to a tifo — since each is its own
+/// `ActivityOutcomeSummary`. Also doubles as an away-ticket-denied result.
+/// Not `private` — `MatchDayCutsceneView` builds and displays these too.
+struct AttendanceSummary {
     let xpAwarded: Int
     let didRankUp: Bool
     let newRank: Rank

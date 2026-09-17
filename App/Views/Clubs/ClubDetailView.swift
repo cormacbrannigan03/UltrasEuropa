@@ -53,7 +53,7 @@ struct ClubDetailView: View {
                 NavigationLink {
                     MatchScheduleView(
                         title: "\(club.name) Fixtures",
-                        matches: contentStore.repository.matchesForClub(club.id)
+                        matches: characterStore.matchesForClub(club.id)
                     )
                 } label: {
                     ClubLinkRow(title: "Fixtures & Results", systemImage: "sportscourt.fill")

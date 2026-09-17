@@ -15,6 +15,12 @@ struct DashboardView: View {
             VStack(alignment: .leading, spacing: 20) {
                 header
 
+                SeasonClockCard(
+                    simulatedDate: characterStore.simulatedDate,
+                    onSimulateDay: { characterStore.simulateDays(1) },
+                    onSimulateWeek: { characterStore.simulateDays(7) }
+                )
+
                 RankProgressCard(
                     rank: characterStore.rank,
                     progress: characterStore.nextRankProgress,
