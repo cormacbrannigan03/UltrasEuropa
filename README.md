@@ -35,8 +35,27 @@ build and run.
 
 ## Building and running (on a Mac)
 
-1. Install [Xcode 15+](https://developer.apple.com/xcode/) and
-   [XcodeGen](https://github.com/yonaskolb/XcodeGen):
+First, install [Xcode 15+](https://developer.apple.com/xcode/) from the App
+Store if you haven't already — everything below assumes it's installed.
+
+### Easiest: double-click `Open in Xcode.command`
+
+In Finder, double-click **`Open in Xcode.command`** at the repo root. It
+opens Terminal and does everything for you: installs
+[XcodeGen](https://github.com/yonaskolb/XcodeGen) via Homebrew if it's
+missing, generates `UltrasEuropa.xcodeproj` from `project.yml`, and opens
+it in Xcode. (If you don't have Homebrew installed, it'll tell you and
+point you to https://brew.sh — that's the one thing it can't install for
+you.)
+
+Once Xcode opens, select an iPhone Simulator (iOS 17+) in the scheme
+selector and press Cmd+R.
+
+### Manual alternative (Terminal)
+
+Equivalent to what the script above does, if you'd rather run it yourself:
+
+1. Install [XcodeGen](https://github.com/yonaskolb/XcodeGen):
    ```sh
    brew install xcodegen
    ```
@@ -51,8 +70,9 @@ build and run.
    ```
    Select an iPhone Simulator (iOS 17+) and press Cmd+R.
 
-Re-run `xcodegen generate` any time files are added/removed under `App/` or
-`Core/`, or `project.yml` changes.
+Re-run `xcodegen generate` (or double-click the `.command` file again) any
+time files are added/removed under `App/` or `Core/`, or `project.yml`
+changes.
 
 ## Running Core's tests
 
