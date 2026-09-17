@@ -55,6 +55,9 @@ struct DashboardView: View {
                 NavigationLink { ChallengesListView() } label: {
                     DashboardLinkRow(title: "Challenges", subtitle: "Tasks to complete", systemImage: "checklist")
                 }
+                NavigationLink { StoreView() } label: {
+                    DashboardLinkRow(title: "Store", subtitle: "Fast-track your journey", systemImage: "cart.fill")
+                }
             }
             .padding()
         }

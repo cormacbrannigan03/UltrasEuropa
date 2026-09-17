@@ -42,6 +42,15 @@ final class CharacterEntity {
     var equippedScarfId: String?
     var equippedHatId: String?
 
+    /// Real-money store entitlements — see `CharacterStore.grantStorePurchase`
+    /// and `UltrasEuropaCore.StoreProductKind`. Each is a permanent, one-time
+    /// unlock granted the moment StoreKit reports a verified purchase (or
+    /// transaction restore) for the matching product.
+    var purchasedAllCosmeticsUnlock: Bool = false
+    var purchasedTopRank: Bool = false
+    var purchasedAnyHomeSeat: Bool = false
+    var purchasedUnlimitedAwayPoints: Bool = false
+
     @Relationship(deleteRule: .cascade, inverse: \OwnedItemEntity.character)
     var ownedItems: [OwnedItemEntity] = []
 

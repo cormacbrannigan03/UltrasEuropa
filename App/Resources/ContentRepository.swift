@@ -17,6 +17,7 @@ struct ContentRepository {
     let tasks: [ChallengeTask]
     let crewMembers: [CrewMember]
     let clothingItems: [ClothingItem]
+    let storeProducts: [StoreProduct]
     /// Each league's full generated double round-robin season, keyed by league id.
     let matchesByLeagueId: [String: [Match]]
 
@@ -42,6 +43,7 @@ struct ContentRepository {
             tasks: load([ChallengeTask].self, "tasks", bundle: bundle),
             crewMembers: load([CrewMember].self, "crew_members", bundle: bundle),
             clothingItems: load([ClothingItem].self, "clothing_items", bundle: bundle),
+            storeProducts: load([StoreProduct].self, "store_products", bundle: bundle),
             matchesByLeagueId: matchesByLeagueId
         )
     }
@@ -114,5 +116,9 @@ struct ContentRepository {
 
     func clothingItemsInSlot(_ slot: ClothingSlot) -> [ClothingItem] {
         clothingItems.filter { $0.slot == slot }
+    }
+
+    func storeProduct(kind: StoreProductKind) -> StoreProduct? {
+        storeProducts.first { $0.kind == kind }
     }
 }

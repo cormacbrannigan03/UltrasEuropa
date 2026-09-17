@@ -34,5 +34,6 @@ schemes:
         UltrasEuropa: all
     run:
       config: Debug
+      storeKitConfiguration: App/StoreKit/Configuration.storekit
     test:
       config: Debug

@@ -191,8 +191,14 @@ final class CharacterStore {
         character.map(PersistenceMapper.stats(from:)) ?? .initial
     }
 
+    /// The purchasable "Rise to the Top" entitlement overrides the earned
+    /// rank outright (it's meant to bypass the climb entirely). It doesn't
+    /// touch the persisted, stat-derived rank underneath, so if that were
+    /// ever revoked the character would fall back to whatever they've
+    /// actually earned rather than resetting to Regular.
     var rank: Rank {
-        character.map(PersistenceMapper.rank(from:)) ?? .regular
+        if character?.purchasedTopRank == true { return .capo }
+        return character.map(PersistenceMapper.rank(from:)) ?? .regular
     }
 
     var unlockedAchievementIDs: Set<String> {
@@ -203,8 +209,14 @@ final class CharacterStore {
         character.map(PersistenceMapper.lifetimeActivityCounts(from:)) ?? [:]
     }
 
+    /// Real, earned unlocks plus every catalog item at once if "Unlock All
+    /// Cosmetics" has been purchased — see `grantStorePurchase`.
     var ownedItemIDs: Set<String> {
-        Set(character?.ownedItems.map(\.itemId) ?? [])
+        var ids = Set(character?.ownedItems.map(\.itemId) ?? [])
+        if character?.purchasedAllCosmeticsUnlock == true {
+            ids.formUnion(content.inventoryCatalog.map(\.id))
+        }
+        return ids
     }
 
     var unlockedAchievements: [Achievement] {
@@ -252,7 +264,8 @@ final class CharacterStore {
     }
 
     var hasUltrasSeasonTicket: Bool {
-        ProgressionConstants.hasEarnedSeasonTicket(loyalty: stats.loyalty, prestigeTier: favoriteClub?.prestigeTier ?? 3)
+        if character?.purchasedAnyHomeSeat == true { return true }
+        return ProgressionConstants.hasEarnedSeasonTicket(loyalty: stats.loyalty, prestigeTier: favoriteClub?.prestigeTier ?? 3)
     }
 
     var awayLoyaltyPoints: Int {
@@ -264,7 +277,8 @@ final class CharacterStore {
     }
 
     var awayTicketChance: Double {
-        ProgressionConstants.awayTicketChance(
+        if character?.purchasedUnlimitedAwayPoints == true { return 1.0 }
+        return ProgressionConstants.awayTicketChance(
             awayLoyaltyPoints: awayLoyaltyPoints, prestigeTier: favoriteClub?.prestigeTier ?? 3
         )
     }
@@ -273,10 +287,15 @@ final class CharacterStore {
     /// favorite club's away games — see `MatchDetailView`). Always resolves
     /// (win or lose — see `AwayTicketAllocationEngine`) and persists the
     /// away-loyalty change; returns whether the ticket was won, or `nil` if
-    /// there's no character yet.
+    /// there's no character yet. Always succeeds once "Unlimited Away
+    /// Access" has been purchased, without touching away-loyalty at all.
     @discardableResult
     func attemptAwayTicket(for match: Match, travelMode: TravelMode, today: Date = .now) -> Bool? {
         guard let character else { return nil }
+
+        if character.purchasedUnlimitedAwayPoints {
+            return true
+        }
 
         var generator = SystemRandomNumberGenerator()
         let outcome = AwayTicketAllocationEngine.resolve(
@@ -370,6 +389,37 @@ final class CharacterStore {
         )
         try? modelContext.save()
         return outcome
+    }
+
+    // MARK: - Store
+
+    /// Whether `kind`'s entitlement has already been purchased (and so
+    /// should show as "Owned" rather than a buy button — every store
+    /// product here is a permanent, non-consumable unlock).
+    func hasPurchased(_ kind: StoreProductKind) -> Bool {
+        guard let character else { return false }
+        switch kind {
+        case .unlockAllCosmetics: return character.purchasedAllCosmeticsUnlock
+        case .riseToTop: return character.purchasedTopRank
+        case .anyHomeSeat: return character.purchasedAnyHomeSeat
+        case .unlimitedAwayPoints: return character.purchasedUnlimitedAwayPoints
+        }
+    }
+
+    /// Applies the entitlement for a StoreKit-verified purchase of `kind`.
+    /// Called only after `PurchaseManager` has confirmed a verified
+    /// transaction (a real purchase, restore, or Ask to Buy approval) —
+    /// this method itself does no payment processing, it just flips the
+    /// persisted flag the rest of `CharacterStore` already reads.
+    func grantStorePurchase(_ kind: StoreProductKind) {
+        guard let character else { return }
+        switch kind {
+        case .unlockAllCosmetics: character.purchasedAllCosmeticsUnlock = true
+        case .riseToTop: character.purchasedTopRank = true
+        case .anyHomeSeat: character.purchasedAnyHomeSeat = true
+        case .unlimitedAwayPoints: character.purchasedUnlimitedAwayPoints = true
+        }
+        try? modelContext.save()
     }
 
     // MARK: - Private

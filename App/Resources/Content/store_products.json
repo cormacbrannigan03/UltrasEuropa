@@ -1,0 +1,26 @@
+[
+  {
+    "kind": "unlockAllCosmetics",
+    "name": "Unlock All Cosmetics",
+    "description": "Instantly own every scarf, flag, banner, pin, and jersey in the inventory catalog — no more waiting on activity thresholds.",
+    "priceDisplay": "$2.99"
+  },
+  {
+    "kind": "riseToTop",
+    "name": "Rise to the Top",
+    "description": "Skip straight to Capo, the top rank in the game.",
+    "priceDisplay": "$9.99"
+  },
+  {
+    "kind": "anyHomeSeat",
+    "name": "Any Home Section Seat",
+    "description": "Instantly get a standing season ticket in your club's ultras section — no loyalty grind required.",
+    "priceDisplay": "$0.99"
+  },
+  {
+    "kind": "unlimitedAwayPoints",
+    "name": "Unlimited Away Access",
+    "description": "Every away ticket request is guaranteed to succeed, however big the club.",
+    "priceDisplay": "$0.99"
+  }
+]

@@ -180,6 +180,52 @@ traditionally dominant clubs — see `prestigeTier` in `clubs.json` and treat
 it the same as the rest of the club data: a reasonable starting point, not
 a precisely researched ranking.
 
+## The real-money store — and the trade-off it makes
+
+`StoreView` (reachable from the Dashboard) sells four permanent,
+non-consumable entitlements via real StoreKit 2 (`App/Store/PurchaseManager.swift`):
+
+| Product | Price | What it does |
+| --- | --- | --- |
+| Unlock All Cosmetics | $2.99 | Instantly owns every `inventory_catalog.json` item (scarves, flags, banners, pins, jerseys), regardless of its normal unlock criteria |
+| Rise to the Top | $9.99 | Instantly sets rank to Capo, overriding the earned rank everywhere it's read |
+| Any Home Section Seat | $0.99 | Instantly grants a standing season ticket in the favorite club's ultras section, bypassing the loyalty threshold |
+| Unlimited Away Access | $0.99 | Every away-ticket request succeeds, bypassing `AwayTicketAllocationEngine` entirely |
+
+This is a deliberate departure from every other system in this app: the
+whole point of the progression design above (steep XP curves, prestige
+scaling, activity-diversity gates, loyalty grinds) is that ranking up
+*shouldn't* be easy — these four purchases exist specifically to let a
+player pay to skip that, at the player's choice. `StoreProductKind`
+(`Core/Sources/UltrasEuropaCore/Store/StoreProductKind.swift`) keeps this
+short and explicit rather than open-ended, and each entitlement is a
+simple persisted flag on `CharacterEntity` that the relevant
+`CharacterStore` property already checks first (see `rank`,
+`ownedItemIDs`, `hasUltrasSeasonTicket`, `awayTicketChance`,
+`attemptAwayTicket`) — none of it touches or recalculates the underlying
+earned progress, so a refund or a bug in the entitlement flag can't erase
+real progress underneath it.
+
+**Getting real purchases working requires two things this environment
+can't do:** registering these four product identifiers
+(`StoreProductKind.productID`, e.g.
+`com.cormacbrannigan03.UltrasEuropa.store.riseToTop`) as non-consumable
+In-App Purchases in App Store Connect, and setting their pricing/tax/banking
+details there — both need an Apple Developer account and the App Store
+Connect web UI, neither of which is reachable from this sandbox. Until
+that's done, `Product.products(for:)` returns nothing and `StoreView` shows
+its "no products found" message.
+
+For local testing before that setup exists, `App/StoreKit/Configuration.storekit`
+defines the same four products with sandbox prices, and `project.yml`
+wires it into the `UltrasEuropa` scheme's run configuration
+(`storeKitConfiguration`) — running the app in the iOS Simulator from Xcode
+should let you buy, cancel, and restore all four products against Apple's
+local StoreKit testing environment with no App Store Connect account or
+network connection needed. That local configuration is just for testing;
+it has no effect on a real device or a TestFlight/App Store build; those
+still need the real App Store Connect products described above.
+
 ## Every club has an ultras group — but it's a generic label, not invented lore
 
 Every club's ultras group is surfaced as `Club.ultrasGroupName`

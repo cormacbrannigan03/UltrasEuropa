@@ -1,0 +1,126 @@
+{
+  "identifier": "A37B0B18-002D-4355-9204-F05D8AC00BDD",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "2.99",
+      "familyShareable": false,
+      "internalID": "D08EF178-BC86-4C4A-B747-F01D23D7D3FE",
+      "localizations": [
+        {
+          "description": "Instantly own every scarf, flag, banner, pin, and jersey in the inventory catalog — no more waiting on activity thresholds.",
+          "displayName": "Unlock All Cosmetics",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.cormacbrannigan03.UltrasEuropa.store.unlockAllCosmetics",
+      "referenceName": "Unlock All Cosmetics",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "9.99",
+      "familyShareable": false,
+      "internalID": "78ECAA3B-216A-4158-AA12-2203291CFABC",
+      "localizations": [
+        {
+          "description": "Skip straight to Capo, the top rank in the game.",
+          "displayName": "Rise to the Top",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.cormacbrannigan03.UltrasEuropa.store.riseToTop",
+      "referenceName": "Rise to the Top",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "46670F9A-9750-4DDA-A425-E707CF22D712",
+      "localizations": [
+        {
+          "description": "Instantly get a standing season ticket in your club's ultras section — no loyalty grind required.",
+          "displayName": "Any Home Section Seat",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.cormacbrannigan03.UltrasEuropa.store.anyHomeSeat",
+      "referenceName": "Any Home Section Seat",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "B7AE8C77-A93C-4884-B51F-9161B2626F87",
+      "localizations": [
+        {
+          "description": "Every away ticket request is guaranteed to succeed, however big the club.",
+          "displayName": "Unlimited Away Access",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.cormacbrannigan03.UltrasEuropa.store.unlimitedAwayPoints",
+      "referenceName": "Unlimited Away Access",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_applicationInternalID": "0",
+    "_developerTeamID": "0",
+    "_failTransactionsEnabled": false,
+    "_lastSynchronizedDate": 0,
+    "_locale": "en_US",
+    "_storeKitErrors": [
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Load Products"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Purchase"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Verification"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "App Store Sync"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Subscription Status"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "App Transaction"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Manage Subscriptions Sheet"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Refund Request Sheet"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Offer Code Redeem Sheet"
+      }
+    ],
+    "_storefront": "USA"
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
+}
