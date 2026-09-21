@@ -18,4 +18,13 @@ public enum ActivityType: String, Codable, CaseIterable, Hashable, Sendable {
     /// `CharacterStore.launchClothingRange`). Also excluded from the
     /// diversity gate — same reasoning as `socializeWithCrew`.
     case launchClothingRange
+    /// Reacting to a goal during the match-day live-watch beat, at one of
+    /// four severities (see `ReactionSeverity`) — each is its own activity
+    /// type rather than one activity with an intensity parameter, so each
+    /// can carry its own fixed reward. All four are excluded from the
+    /// diversity gate, same reasoning as `socializeWithCrew`.
+    case reactMildly
+    case reactModerately
+    case reactStrongly
+    case reactExtremely
 }

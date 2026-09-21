@@ -32,6 +32,10 @@ public enum ProgressionConstants {
         .dailyLoyaltyCheckIn: ActivityReward(xp: 5, loyalty: 1, knowledge: 0, influence: 0, notoriety: 0),
         .socializeWithCrew: ActivityReward(xp: 20, loyalty: 1, knowledge: 0, influence: 3, notoriety: 0),
         .launchClothingRange: ActivityReward(xp: 30, loyalty: 0, knowledge: 0, influence: 5, notoriety: 10),
+        .reactMildly: ActivityReward(xp: 5, loyalty: 1, knowledge: 0, influence: 0, notoriety: 0),
+        .reactModerately: ActivityReward(xp: 10, loyalty: 1, knowledge: 0, influence: 1, notoriety: 2),
+        .reactStrongly: ActivityReward(xp: 18, loyalty: 0, knowledge: 0, influence: 2, notoriety: 6),
+        .reactExtremely: ActivityReward(xp: 28, loyalty: 0, knowledge: 0, influence: 3, notoriety: 14),
     ]
 
     /// Bond-score bump every crew member gets when the player launches a

@@ -4,10 +4,12 @@ import UltrasEuropaCore
 /// The full-screen "you're at the match" sequence, presented once
 /// attendance is locked in (seat picked, away ticket granted, or the
 /// neutral toggle confirmed) — arriving (by bus/train first, for an away
-/// day), joining in the chant, raising a tifo if one's prepared for this
-/// fixture, and a closing summary. This is where `.participateInChant` and
-/// `.contributeToTifo` actually get earned now — not a standalone menu
-/// button reachable from anywhere, anytime.
+/// day), a security search if carrying pyro, watching the match live with
+/// a reaction to each goal, joining in the chant, raising a tifo if one's
+/// prepared for this fixture, and a closing summary. This is where
+/// `.participateInChant`, `.contributeToTifo`, and `.reactMildly`...
+/// `.reactExtremely` actually get earned now — not standalone menu buttons
+/// reachable from anywhere, anytime.
 struct MatchDayCutsceneView: View {
     let match: Match
     let homeClub: Club?
@@ -24,6 +26,7 @@ struct MatchDayCutsceneView: View {
     private enum Beat: Equatable {
         case travel
         case arrival
+        case security
         case liveMatch
         case chant
         case tifo
@@ -34,7 +37,21 @@ struct MatchDayCutsceneView: View {
     @State private var beatIndex = 0
     @State private var didJoinChant = false
     @State private var didContributeTifo = false
+
+    @State private var selectedHidingSpot: PyroHidingSpot = .insideJacket
+    @State private var securitySearchResolved = false
+    @State private var pyroConfiscated = false
+
     @State private var currentMinute = 0
+    @State private var acknowledgedGoalIDs: Set<String> = []
+    @State private var pendingReactionGoal: GoalEvent?
+    @State private var heat = 0
+    @State private var securityOutcome: SecurityOutcome = .noAction
+    /// Guards against `liveMatchCard`'s `.task` re-firing every time the
+    /// reaction prompt swaps it out and back in — the goal reaction cycle
+    /// tears down and remounts that view repeatedly, but base attendance
+    /// must only ever be recorded once per match day.
+    @State private var didRecordBaseActivities = false
 
     @State private var rankBefore: Rank = .regular
     @State private var totalXP = 0
@@ -45,6 +62,10 @@ struct MatchDayCutsceneView: View {
 
     private var chant: Chant? { contentStore.repository.chantOfTheDay(matchId: match.id) }
     private var tifo: TifoPhoto? { contentStore.repository.preparedTifo(matchId: match.id) }
+
+    /// Whether the player still actually has the pyro to use — `false` if
+    /// it was never brought, or if security caught it at the door.
+    private var effectiveHasPyro: Bool { didPyro && !pyroConfiscated }
 
     /// The match's live state as of right now — re-derived fresh from the
     /// season clock rather than the `match` snapshot passed in, so it
@@ -63,14 +84,24 @@ struct MatchDayCutsceneView: View {
         liveGoalEvents.filter { $0.minute <= currentMinute }
     }
 
+    /// The minute of the next goal that hasn't had its reaction resolved
+    /// yet, or full time if none remain — where "Continue Watching" jumps to.
+    private var nextStopMinute: Int {
+        liveGoalEvents
+            .filter { !acknowledgedGoalIDs.contains($0.id) }
+            .map(\.minute)
+            .min() ?? MatchDayContentPlanner.matchLengthMinutes
+    }
+
     private var beats: [Beat] {
         var beats: [Beat] = []
         if travelMode != nil { beats.append(.travel) }
         beats.append(.arrival)
+        if didPyro { beats.append(.security) }
         beats.append(.liveMatch)
         beats.append(.chant)
         if tifo != nil { beats.append(.tifo) }
-        if didPyro { beats.append(.pyro) }
+        if effectiveHasPyro { beats.append(.pyro) }
         beats.append(.summary)
         return beats
     }
@@ -78,6 +109,13 @@ struct MatchDayCutsceneView: View {
     private var currentBeat: Beat {
         let all = beats
         return all.indices.contains(beatIndex) ? all[beatIndex] : .summary
+    }
+
+    private var wasEjected: Bool {
+        switch securityOutcome {
+        case .ejected, .ejectedWithBan: return true
+        case .noAction, .warned: return false
+        }
     }
 
     private var summary: AttendanceSummary {
@@ -124,8 +162,14 @@ struct MatchDayCutsceneView: View {
                 title: "You've Arrived",
                 body: "You arrive at \(match.venue), \((homeClub?.name).map { "home of \($0)" } ?? "")."
             )
+        case .security:
+            securityCard
         case .liveMatch:
-            liveMatchCard
+            if let pendingReactionGoal {
+                reactionPromptCard(for: pendingReactionGoal)
+            } else {
+                liveMatchCard
+            }
         case .chant:
             chantCard
         case .tifo:
@@ -156,11 +200,58 @@ struct MatchDayCutsceneView: View {
         }
     }
 
+    // MARK: - Security search
+
+    private var securityCard: some View {
+        VStack(spacing: 16) {
+            if !securitySearchResolved {
+                Image(systemName: "shield.lefthalf.filled")
+                    .font(.system(size: 48))
+                    .foregroundStyle(Theme.secondaryText)
+                Text("Security Search").font(.title2.bold())
+                Text("You're carrying pyro. Where do you hide it before the pat-down?")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Theme.secondaryText)
+
+                VStack(spacing: 8) {
+                    ForEach(PyroHidingSpot.allCases, id: \.self) { spot in
+                        Button {
+                            selectedHidingSpot = spot
+                        } label: {
+                            HStack {
+                                Image(systemName: selectedHidingSpot == spot ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(Theme.accent)
+                                Text(spot.displayName).foregroundStyle(Theme.primaryText)
+                                Spacer()
+                            }
+                            .padding(10)
+                            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 10))
+                        }
+                    }
+                }
+            } else if pyroConfiscated {
+                Image(systemName: "xmark.shield.fill").font(.system(size: 48)).foregroundStyle(.red)
+                Text("Caught").font(.title2.bold())
+                Text("Security found the pyro and confiscated it before you got in.")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Theme.secondaryText)
+            } else {
+                Image(systemName: "checkmark.shield.fill").font(.system(size: 48)).foregroundStyle(Theme.accent)
+                Text("You're In").font(.title2.bold())
+                Text("The pyro made it past the search.")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+        }
+    }
+
+    // MARK: - Live match
+
     /// Watching the match unfold — if the season clock hasn't reached
     /// kickoff yet, prompts to fast forward instead of showing a
-    /// scoreboard; once it has, runs a minute-by-minute clock revealing
-    /// `liveGoalEvents` as they occur, ending at the same fixed final
-    /// score `SeasonScheduleGenerator` already generated for this match.
+    /// scoreboard; once it has, lets the player continue toward each of
+    /// `liveGoalEvents` in turn, ending at the same fixed final score
+    /// `SeasonScheduleGenerator` already generated for this match.
     private var liveMatchCard: some View {
         VStack(spacing: 16) {
             if !currentMatchState.isPlayed {
@@ -182,6 +273,12 @@ struct MatchDayCutsceneView: View {
                     scoreColumn(name: awayClub?.name ?? match.awayClubId, goals: visibleGoalEvents.filter { !$0.isHomeTeam }.count)
                 }
 
+                if securityOutcome == .warned {
+                    Label("Security is watching you closely", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(visibleGoalEvents) { event in
                         Text("⚽️ \(event.minute)' — \((event.isHomeTeam ? homeClub?.name : awayClub?.name) ?? "Goal!")")
@@ -192,10 +289,10 @@ struct MatchDayCutsceneView: View {
             }
         }
         .task(id: currentMatchState.isPlayed) {
-            guard currentMatchState.isPlayed else { return }
+            guard currentMatchState.isPlayed, !didRecordBaseActivities else { return }
+            didRecordBaseActivities = true
             rankBefore = characterStore.rank
             recordBaseActivities()
-            await runMatchClock()
         }
     }
 
@@ -207,13 +304,52 @@ struct MatchDayCutsceneView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func runMatchClock() async {
-        for minute in 1...MatchDayContentPlanner.matchLengthMinutes {
-            if Task.isCancelled { return }
-            try? await Task.sleep(nanoseconds: 150_000_000)
-            currentMinute = minute
+    private func reactionPromptCard(for goal: GoalEvent) -> some View {
+        let isOwnGoalForFavorite = isGoalForFavoriteClub(goal)
+        return VStack(spacing: 16) {
+            Image(systemName: "soccerball")
+                .font(.system(size: 48))
+                .foregroundStyle(Theme.accent)
+            Text("GOAL! \(goal.minute)'").font(.title.bold())
+            Text(isOwnGoalForFavorite ? "Your side scores — how do you react?" : "They've scored — how do you react?")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Theme.secondaryText)
         }
     }
+
+    private func isGoalForFavoriteClub(_ goal: GoalEvent) -> Bool {
+        guard let favoriteClubId = characterStore.favoriteClub?.id else { return false }
+        let scoringClubId = goal.isHomeTeam ? match.homeClubId : match.awayClubId
+        return scoringClubId == favoriteClubId
+    }
+
+    private func resolveReaction(_ severity: ReactionSeverity) {
+        guard let goal = pendingReactionGoal else { return }
+        absorb(characterStore.recordActivity(severity.activityType))
+        acknowledgedGoalIDs.insert(goal.id)
+        heat += severity.heat
+        pendingReactionGoal = nil
+
+        let outcome = SecurityIncidentEngine.outcome(forHeat: heat)
+        securityOutcome = outcome
+        if case .ejectedWithBan(let days) = outcome {
+            characterStore.applyStadiumBan(days: days)
+        }
+        switch outcome {
+        case .noAction, .warned:
+            break
+        case .ejected, .ejectedWithBan:
+            jumpToSummary()
+        }
+    }
+
+    private func jumpToSummary() {
+        if let index = beats.firstIndex(of: .summary) {
+            beatIndex = index
+        }
+    }
+
+    // MARK: - Chant / tifo
 
     private var chantCard: some View {
         VStack(spacing: 16) {
@@ -259,16 +395,31 @@ struct MatchDayCutsceneView: View {
         }
     }
 
+    // MARK: - Summary
+
     private var summaryCard: some View {
         VStack(spacing: 16) {
-            Image(systemName: "sportscourt.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(Theme.accent)
-            Text("Full Time").font(.title.bold())
-            Text(summary.displayText)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(Theme.secondaryText)
+            if wasEjected {
+                Image(systemName: "hand.raised.fill").font(.system(size: 48)).foregroundStyle(.red)
+                Text("Thrown Out").font(.title.bold())
+                Text(ejectionSummaryText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+            } else {
+                Image(systemName: "sportscourt.fill").font(.system(size: 48)).foregroundStyle(Theme.accent)
+                Text("Full Time").font(.title.bold())
+                Text(summary.displayText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+            }
         }
+    }
+
+    private var ejectionSummaryText: String {
+        var lines = [
+            "Security pulled you out of the crowd and threw you out of the ground.",
+            "+\(totalXP) XP before you were ejected",
+        ]
+        if case .ejectedWithBan(let days) = securityOutcome {
+            lines.append("Banned from attending any match for \(days) days.")
+        }
+        return lines.joined(separator: "\n")
     }
 
     // MARK: - Action button
@@ -276,6 +427,25 @@ struct MatchDayCutsceneView: View {
     @ViewBuilder
     private var actionButton: some View {
         switch currentBeat {
+        case .security where !securitySearchResolved:
+            Button {
+                var generator = SystemRandomNumberGenerator()
+                let gotThrough = SecurityCheckEngine.resolvePyroSearch(spot: selectedHidingSpot, using: &generator)
+                pyroConfiscated = !gotThrough
+                securitySearchResolved = true
+            } label: {
+                cutsceneButtonLabel("Go Through Security")
+            }
+        case .liveMatch where pendingReactionGoal != nil:
+            VStack(spacing: 8) {
+                ForEach(ReactionSeverity.allCases, id: \.self) { severity in
+                    Button {
+                        resolveReaction(severity)
+                    } label: {
+                        cutsceneButtonLabel("\(severity.displayName) Reaction")
+                    }
+                }
+            }
         case .liveMatch where !currentMatchState.isPlayed:
             Button {
                 characterStore.simulateForward(to: match.date)
@@ -284,9 +454,12 @@ struct MatchDayCutsceneView: View {
             }
         case .liveMatch where currentMinute < MatchDayContentPlanner.matchLengthMinutes:
             Button {
-                currentMinute = MatchDayContentPlanner.matchLengthMinutes
+                withAnimation { currentMinute = nextStopMinute }
+                if let goal = liveGoalEvents.first(where: { $0.minute == currentMinute && !acknowledgedGoalIDs.contains($0.id) }) {
+                    pendingReactionGoal = goal
+                }
             } label: {
-                cutsceneButtonLabel("Skip to Full Time")
+                cutsceneButtonLabel(nextStopMinute >= MatchDayContentPlanner.matchLengthMinutes ? "Play to Full Time" : "Continue Watching")
             }
         case .chant where !didJoinChant:
             Button {
@@ -330,12 +503,12 @@ struct MatchDayCutsceneView: View {
 
     private func recordBaseActivities() {
         absorb(characterStore.recordActivity(
-            .attendMatch, matchId: match.id, satInUltrasStand: satInUltrasStand, didPyro: didPyro
+            .attendMatch, matchId: match.id, satInUltrasStand: satInUltrasStand, didPyro: effectiveHasPyro
         ))
         if satInUltrasStand {
             absorb(characterStore.recordActivity(.sitInUltrasStand))
         }
-        if didPyro {
+        if effectiveHasPyro {
             absorb(characterStore.recordActivity(.doPyroChallenge))
         }
     }

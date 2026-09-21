@@ -318,6 +318,30 @@ final class CharacterStore {
         TicketSaleWindow.saleDate(matchDate: match.date)
     }
 
+    // MARK: - Stadium security
+
+    /// The date an active stadium ban lifts, or `nil` if there isn't one —
+    /// see `applyStadiumBan`.
+    var stadiumBanUntilDate: Date? {
+        character?.stadiumBanUntilDate
+    }
+
+    /// Whether the player is currently banned from attending any match —
+    /// true only while the season clock is still before `stadiumBanUntilDate`.
+    var isBannedFromStadium: Bool {
+        guard let banUntil = stadiumBanUntilDate else { return false }
+        return simulatedDate < banUntil
+    }
+
+    /// Applies a stadium ban starting from the current season clock —
+    /// called by `MatchDayCutsceneView` when accumulated reaction "heat"
+    /// crosses `SecurityIncidentEngine.banThreshold`.
+    func applyStadiumBan(days: Int, calendar: Calendar = .current) {
+        guard let character else { return }
+        character.stadiumBanUntilDate = calendar.date(byAdding: .day, value: days, to: simulatedDate)
+        try? modelContext.save()
+    }
+
     // MARK: - Home season ticket & away tickets
 
     var homeSeasonTicketLoyaltyThreshold: Int {

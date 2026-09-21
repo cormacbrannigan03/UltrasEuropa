@@ -141,7 +141,9 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Dashboard shows a Season Clock card with today's in-game date; "+1 Day"/"+1 Week" advance it and reveal more matches' results
 - [ ] Dashboard's "Season Calendar" link shows the favorite club's fixtures grouped by month; "Fast Forward to Next Match" jumps the season clock straight to the next unplayed fixture's date
 - [ ] A match more than 30 days out (by the season clock) shows a "Tickets Not Yet On Sale" card instead of the attendance flow; simulating forward past that date unlocks it
-- [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, then (if the season clock hasn't reached the match date yet) a "Fast Forward to Kickoff" prompt before a live-watch beat with a running minute counter and goals appearing over time, a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled, then a Full Time summary with total XP
+- [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, a security search (hide the pyro, then a chance of getting caught) only if pyro was toggled, then (if the season clock hasn't reached the match date yet) a "Fast Forward to Kickoff" prompt before the live-watch beat
+- [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; choosing bigger reactions repeatedly eventually triggers a security warning, then an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo/pyro), and eventually an ejection + stadium ban that blocks attending any match until the season clock reaches the ban's end date
+- [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled and it made it through security, then a Full Time summary with total XP
 - [ ] Chants/Gallery tabs are reference-only now (no XP button) — Gallery greys out tifo displays with no upcoming match "Planned", and taps through to that match on ones that are
 - [ ] Requesting an away ticket resolves once and locks in — reopening that same match shows the granted or denied result, never a fresh roll
 - [ ] Completing a challenge/task awards XP
@@ -243,10 +245,10 @@ happens:
   up to 30 days early and went straight into the cutscene without using
   the calendar), it prompts you to fast forward to the match date right
   there — you can't watch a match that hasn't happened.
-- **Once it has**, a running minute counter climbs from 0 to 90 over real
-  time, with goals appearing at their assigned minute rather than all at
-  once. A "Skip to Full Time" option is always available for anyone who'd
-  rather not wait.
+- **Once it has**, tapping "Continue Watching" advances the clock to the
+  next goal (or straight to full time if there isn't one), one stop at a
+  time — rather than a real-time animation, because each goal now needs
+  your input before the match can move on (see below).
 
 Nothing about the actual result changes based on watching — the final
 score was already fixed the moment the season clock reached that match's
@@ -257,6 +259,37 @@ minute for each of those already-fixed goals (a seeded shuffle of 1–90, so
 the same match always plays out the same way), purely to pace how it's
 *revealed* — the same principle as the deterministic score itself, applied
 to how it unfolds rather than just what it ends up being.
+
+## Reacting to goals, security searches, and the risk of getting thrown out
+
+Every goal during the live-watch beat stops the match and asks how the
+player reacts — `ReactionSeverity` (`Core/Sources/UltrasEuropaCore/MatchDay/`)
+runs from Mild through Moderate and Strong to Extreme. Each is its own
+`ActivityType` (`reactMildly`...`reactExtremely`) with its own fixed reward
+in `ProgressionConstants.activityRewards` — bigger reactions earn more XP
+and notoriety, exactly the trade-off a real ultra faces: staying quiet is
+safe but forgettable, going off is what actually builds a reputation.
+
+That reward isn't free. Every reaction (beyond the safest, Mild) adds
+"heat" for the rest of that match — `SecurityIncidentEngine` compares
+accumulated heat against three thresholds and is deliberately deterministic
+rather than a hidden dice roll, so the risk is something the player can see
+coming and manage, not luck:
+
+| Heat | Outcome |
+| --- | --- |
+| < 40 | Nothing |
+| ≥ 40 | Warned — security starts watching you |
+| ≥ 70 | Ejected — the cutscene cuts straight to a "Thrown Out" summary, skipping the chant/tifo/pyro beats entirely |
+| ≥ 100 | Ejected **and banned** — `CharacterStore.applyStadiumBan` sets `CharacterEntity.stadiumBanUntilDate` 14 days out from the season clock, and `MatchDetailView` blocks attendance at *any* match (home, away, or neutral) until the season clock reaches that date |
+
+Separately, bringing pyro means passing a security search on the way in —
+before the security beat, if `didPyro` is set, the player picks a
+`PyroHidingSpot` (jacket lining, scarf, taped to a leg, a sock), each with
+its own chance of getting through (`SecurityCheckEngine.resolvePyroSearch`).
+Getting caught confiscates the pyro for that match (no pyro beat, and the
+`.doPyroChallenge` reward isn't earned) but doesn't block getting into the
+ground — only a *bad reaction*, not a failed search, gets you ejected.
 
 ## Chants, tifo, and inventory belong to the player's crew, not a real club
 

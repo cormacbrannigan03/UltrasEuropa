@@ -62,6 +62,8 @@ struct MatchDetailView: View {
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12))
+                } else if characterStore.isBannedFromStadium {
+                    stadiumBanCard
                 } else if !ticketsAreOnSale {
                     ticketsNotYetOnSaleCard
                 } else {
@@ -90,6 +92,24 @@ struct MatchDetailView: View {
                 didPyro: didPyro
             )
         }
+    }
+
+    // MARK: - Stadium ban
+
+    private var stadiumBanCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Banned from the Stadium", systemImage: "nosign")
+                .font(.headline)
+                .foregroundStyle(.red)
+            if let banUntil = characterStore.stadiumBanUntilDate {
+                Text("Security threw you out and banned you until \(banUntil, style: .date). Simulate forward to serve it out.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Tickets not yet on sale

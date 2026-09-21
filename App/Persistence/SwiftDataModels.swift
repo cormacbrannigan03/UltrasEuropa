@@ -66,6 +66,12 @@ final class CharacterEntity {
     var purchasedAnyHomeSeat: Bool = false
     var purchasedUnlimitedAwayPoints: Bool = false
 
+    /// Set when stadium security ejects the player with a ban (see
+    /// `SecurityIncidentEngine`) — `nil` means no active ban. The player
+    /// can't confirm attendance at any match while the season clock
+    /// (`simulatedDate`) is still before this date.
+    var stadiumBanUntilDate: Date?
+
     @Relationship(deleteRule: .cascade, inverse: \OwnedItemEntity.character)
     var ownedItems: [OwnedItemEntity] = []
 
