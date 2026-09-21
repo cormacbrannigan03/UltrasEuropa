@@ -24,6 +24,7 @@ struct MatchDayCutsceneView: View {
     private enum Beat: Equatable {
         case travel
         case arrival
+        case liveMatch
         case chant
         case tifo
         case pyro
@@ -33,6 +34,7 @@ struct MatchDayCutsceneView: View {
     @State private var beatIndex = 0
     @State private var didJoinChant = false
     @State private var didContributeTifo = false
+    @State private var currentMinute = 0
 
     @State private var rankBefore: Rank = .regular
     @State private var totalXP = 0
@@ -44,10 +46,28 @@ struct MatchDayCutsceneView: View {
     private var chant: Chant? { contentStore.repository.chantOfTheDay(matchId: match.id) }
     private var tifo: TifoPhoto? { contentStore.repository.preparedTifo(matchId: match.id) }
 
+    /// The match's live state as of right now — re-derived fresh from the
+    /// season clock rather than the `match` snapshot passed in, so it
+    /// reflects a "Fast Forward to Kickoff" tap made during this beat.
+    private var currentMatchState: Match {
+        characterStore.matchesForClub(match.homeClubId).first { $0.id == match.id } ?? match
+    }
+
+    private var liveGoalEvents: [GoalEvent] {
+        let state = currentMatchState
+        guard let home = state.homeScore, let away = state.awayScore else { return [] }
+        return MatchDayContentPlanner.goalEvents(matchId: match.id, homeGoals: home, awayGoals: away)
+    }
+
+    private var visibleGoalEvents: [GoalEvent] {
+        liveGoalEvents.filter { $0.minute <= currentMinute }
+    }
+
     private var beats: [Beat] {
         var beats: [Beat] = []
         if travelMode != nil { beats.append(.travel) }
         beats.append(.arrival)
+        beats.append(.liveMatch)
         beats.append(.chant)
         if tifo != nil { beats.append(.tifo) }
         if didPyro { beats.append(.pyro) }
@@ -83,10 +103,6 @@ struct MatchDayCutsceneView: View {
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.background)
-        .task {
-            rankBefore = characterStore.rank
-            recordBaseActivities()
-        }
     }
 
     // MARK: - Beats
@@ -108,6 +124,8 @@ struct MatchDayCutsceneView: View {
                 title: "You've Arrived",
                 body: "You arrive at \(match.venue), \((homeClub?.name).map { "home of \($0)" } ?? "")."
             )
+        case .liveMatch:
+            liveMatchCard
         case .chant:
             chantCard
         case .tifo:
@@ -135,6 +153,65 @@ struct MatchDayCutsceneView: View {
 
             Text(title).font(.title2.bold())
             Text(body).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+        }
+    }
+
+    /// Watching the match unfold — if the season clock hasn't reached
+    /// kickoff yet, prompts to fast forward instead of showing a
+    /// scoreboard; once it has, runs a minute-by-minute clock revealing
+    /// `liveGoalEvents` as they occur, ending at the same fixed final
+    /// score `SeasonScheduleGenerator` already generated for this match.
+    private var liveMatchCard: some View {
+        VStack(spacing: 16) {
+            if !currentMatchState.isPlayed {
+                Image(systemName: "hourglass")
+                    .font(.system(size: 48))
+                    .foregroundStyle(Theme.secondaryText)
+                Text("Kickoff Hasn't Happened Yet").font(.title2.bold())
+                Text("It's still \(characterStore.simulatedDate.formatted(date: .abbreviated, time: .omitted)) — fast forward to \(match.date.formatted(date: .abbreviated, time: .omitted)) to watch this one live.")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Theme.secondaryText)
+            } else {
+                Text("\(currentMinute)'")
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .foregroundStyle(Theme.accent)
+
+                HStack(spacing: 20) {
+                    scoreColumn(name: homeClub?.name ?? match.homeClubId, goals: visibleGoalEvents.filter(\.isHomeTeam).count)
+                    Text("-").font(.title.bold()).foregroundStyle(Theme.secondaryText)
+                    scoreColumn(name: awayClub?.name ?? match.awayClubId, goals: visibleGoalEvents.filter { !$0.isHomeTeam }.count)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(visibleGoalEvents) { event in
+                        Text("⚽️ \(event.minute)' — \((event.isHomeTeam ? homeClub?.name : awayClub?.name) ?? "Goal!")")
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                }
+            }
+        }
+        .task(id: currentMatchState.isPlayed) {
+            guard currentMatchState.isPlayed else { return }
+            rankBefore = characterStore.rank
+            recordBaseActivities()
+            await runMatchClock()
+        }
+    }
+
+    private func scoreColumn(name: String, goals: Int) -> some View {
+        VStack(spacing: 4) {
+            Text(name).font(.caption).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+            Text("\(goals)").font(.title.bold())
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func runMatchClock() async {
+        for minute in 1...MatchDayContentPlanner.matchLengthMinutes {
+            if Task.isCancelled { return }
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            currentMinute = minute
         }
     }
 
@@ -199,6 +276,18 @@ struct MatchDayCutsceneView: View {
     @ViewBuilder
     private var actionButton: some View {
         switch currentBeat {
+        case .liveMatch where !currentMatchState.isPlayed:
+            Button {
+                characterStore.simulateForward(to: match.date)
+            } label: {
+                cutsceneButtonLabel("Fast Forward to Kickoff")
+            }
+        case .liveMatch where currentMinute < MatchDayContentPlanner.matchLengthMinutes:
+            Button {
+                currentMinute = MatchDayContentPlanner.matchLengthMinutes
+            } label: {
+                cutsceneButtonLabel("Skip to Full Time")
+            }
         case .chant where !didJoinChant:
             Button {
                 absorb(characterStore.recordActivity(.participateInChant))

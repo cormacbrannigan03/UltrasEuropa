@@ -37,4 +37,46 @@ public enum MatchDayContentPlanner {
         let hash = SeasonScheduleGenerator.hashSeed("\(matchId)-tifo")
         return Int(hash % UInt64(catalogCount))
     }
+
+    /// The regular length of a match, for pacing a live watch.
+    public static let matchLengthMinutes = 90
+
+    /// A deterministic minute-by-minute breakdown of `matchId`'s already-fixed
+    /// final score, for pacing watching a match "live" (see
+    /// `MatchDayCutsceneView`) — always exactly `homeGoals` home-side events
+    /// and `awayGoals` away-side events at distinct minutes, sorted, and the
+    /// same every time for the same match. Never changes the actual result —
+    /// `homeGoals`/`awayGoals` should come straight from the match's already
+    /// generated `homeScore`/`awayScore`.
+    public static func goalEvents(matchId: String, homeGoals: Int, awayGoals: Int) -> [GoalEvent] {
+        let totalGoals = homeGoals + awayGoals
+        guard totalGoals > 0 else { return [] }
+
+        let minutes = shuffledOrder(Array(1...matchLengthMinutes), seed: "\(matchId)-goal-minutes")
+            .prefix(totalGoals)
+            .sorted()
+        let sides = shuffledOrder(
+            Array(repeating: true, count: homeGoals) + Array(repeating: false, count: awayGoals),
+            seed: "\(matchId)-goal-sides"
+        )
+
+        return zip(minutes, sides).enumerated().map { index, pair in
+            GoalEvent(id: "\(matchId)-goal-\(index)", minute: pair.0, isHomeTeam: pair.1)
+        }
+    }
+
+    /// A deterministic Fisher-Yates shuffle of `array`, seeded off `seed` —
+    /// not cryptographic, just stable across launches for the same seed.
+    private static func shuffledOrder<T>(_ array: [T], seed: String) -> [T] {
+        var result = array
+        guard result.count > 1 else { return result }
+
+        var state = SeasonScheduleGenerator.hashSeed(seed)
+        for i in stride(from: result.count - 1, through: 1, by: -1) {
+            state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+            let j = Int(state % UInt64(i + 1))
+            result.swapAt(i, j)
+        }
+        return result
+    }
 }

@@ -139,8 +139,9 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Delete a save from the picker (trash icon) and confirm it's gone and its slot shows "New Save" again
 - [ ] After creating a character, Dashboard shows rank "Regular", 0 XP, all stats at their base value, and the crew name
 - [ ] Dashboard shows a Season Clock card with today's in-game date; "+1 Day"/"+1 Week" advance it and reveal more matches' results
+- [ ] Dashboard's "Season Calendar" link shows the favorite club's fixtures grouped by month; "Fast Forward to Next Match" jumps the season clock straight to the next unplayed fixture's date
 - [ ] A match more than 30 days out (by the season clock) shows a "Tickets Not Yet On Sale" card instead of the attendance flow; simulating forward past that date unlocks it
-- [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled, then a Full Time summary with total XP
+- [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, then (if the season clock hasn't reached the match date yet) a "Fast Forward to Kickoff" prompt before a live-watch beat with a running minute counter and goals appearing over time, a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled, then a Full Time summary with total XP
 - [ ] Chants/Gallery tabs are reference-only now (no XP button) — Gallery greys out tifo displays with no upcoming match "Planned", and taps through to that match on ones that are
 - [ ] Requesting an away ticket resolves once and locks in — reopening that same match shows the granted or denied result, never a fresh roll
 - [ ] Completing a challenge/task awards XP
@@ -219,6 +220,43 @@ all generated fresh from this one value, simulating forward is enough to
 reveal new results, open up tickets for a previously-locked match, and
 change what's showing as "next up" — there's no separate "advance the
 season" system to keep in sync with it.
+
+## Season Calendar — fast forward to a match, not just blindly forward
+
+The Dashboard's Season Clock card is a quick nudge (+1 day/week); the
+**Season Calendar** (`App/Views/Matches/SeasonCalendarView.swift`, linked
+from the Dashboard) is the intended way to actually get somewhere: it lists
+the favorite club's fixtures grouped by month, and its "Fast Forward to
+Next Match" button calls `CharacterStore.simulateForward(to:)` to jump the
+season clock straight to the next unplayed fixture's date — no need to
+mash "+1 Day" dozens of times to close a three-week gap between matches.
+Every row also shows whether that fixture is upcoming, already played (with
+its score), or is today's match.
+
+## Watching a match live — a paced reveal of an already-fixed result
+
+Attending a match no longer just hands you an instant final score. Once
+the match-day cutscene reaches its live-match beat, one of two things
+happens:
+
+- **If the season clock hasn't reached kickoff yet** (you bought a ticket
+  up to 30 days early and went straight into the cutscene without using
+  the calendar), it prompts you to fast forward to the match date right
+  there — you can't watch a match that hasn't happened.
+- **Once it has**, a running minute counter climbs from 0 to 90 over real
+  time, with goals appearing at their assigned minute rather than all at
+  once. A "Skip to Full Time" option is always available for anyone who'd
+  rather not wait.
+
+Nothing about the actual result changes based on watching — the final
+score was already fixed the moment the season clock reached that match's
+date (`SeasonScheduleGenerator.deterministicScore`), exactly as before.
+`MatchDayContentPlanner.goalEvents(matchId:homeGoals:awayGoals:)`
+(`Core/Sources/UltrasEuropaCore/MatchDay/`) just derives a deterministic
+minute for each of those already-fixed goals (a seeded shuffle of 1–90, so
+the same match always plays out the same way), purely to pace how it's
+*revealed* — the same principle as the deterministic score itself, applied
+to how it unfolds rather than just what it ends up being.
 
 ## Chants, tifo, and inventory belong to the player's crew, not a real club
 

@@ -43,6 +43,9 @@ struct DashboardView: View {
 
                 StatsGridView(stats: characterStore.stats)
 
+                NavigationLink { SeasonCalendarView() } label: {
+                    DashboardLinkRow(title: "Season Calendar", subtitle: "Fast forward to your next match", systemImage: "calendar")
+                }
                 NavigationLink { CrewMembersView() } label: {
                     DashboardLinkRow(title: "Crew Members", subtitle: "Build relationships", systemImage: "person.3.fill")
                 }

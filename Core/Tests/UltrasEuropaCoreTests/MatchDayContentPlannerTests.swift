@@ -62,4 +62,41 @@ final class MatchDayContentPlannerTests: XCTestCase {
         XCTAssertNotNil(chant)
         _ = tifo
     }
+
+    func testGoalEventsProduceCorrectCounts() {
+        let events = MatchDayContentPlanner.goalEvents(matchId: "m1", homeGoals: 2, awayGoals: 1)
+        XCTAssertEqual(events.count, 3)
+        XCTAssertEqual(events.filter(\.isHomeTeam).count, 2)
+        XCTAssertEqual(events.filter { !$0.isHomeTeam }.count, 1)
+    }
+
+    func testGoalEventsAreEmptyForScorelessDraw() {
+        XCTAssertEqual(MatchDayContentPlanner.goalEvents(matchId: "m1", homeGoals: 0, awayGoals: 0), [])
+    }
+
+    func testGoalEventsAreSortedByMinute() {
+        let events = MatchDayContentPlanner.goalEvents(matchId: "m1", homeGoals: 3, awayGoals: 2)
+        XCTAssertEqual(events.map(\.minute), events.map(\.minute).sorted())
+    }
+
+    func testGoalEventMinutesAreDistinctAndInRange() {
+        let events = MatchDayContentPlanner.goalEvents(matchId: "m1", homeGoals: 4, awayGoals: 4)
+        let minutes = events.map(\.minute)
+        XCTAssertEqual(Set(minutes).count, minutes.count, "No two goals should land on the same minute")
+        for minute in minutes {
+            XCTAssertTrue((1...MatchDayContentPlanner.matchLengthMinutes).contains(minute))
+        }
+    }
+
+    func testGoalEventsAreDeterministic() {
+        let first = MatchDayContentPlanner.goalEvents(matchId: "premier-league-arsenal-chelsea", homeGoals: 2, awayGoals: 2)
+        let second = MatchDayContentPlanner.goalEvents(matchId: "premier-league-arsenal-chelsea", homeGoals: 2, awayGoals: 2)
+        XCTAssertEqual(first, second)
+    }
+
+    func testGoalEventsDifferByMatch() {
+        let a = MatchDayContentPlanner.goalEvents(matchId: "match-a", homeGoals: 2, awayGoals: 1)
+        let b = MatchDayContentPlanner.goalEvents(matchId: "match-b", homeGoals: 2, awayGoals: 1)
+        XCTAssertNotEqual(a.map(\.minute), b.map(\.minute))
+    }
 }

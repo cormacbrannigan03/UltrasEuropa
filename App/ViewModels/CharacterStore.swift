@@ -297,6 +297,16 @@ final class CharacterStore {
         try? modelContext.save()
     }
 
+    /// Jumps the season clock straight to `targetDate` — used by the
+    /// calendar's "Fast Forward to Next Match" and the match-day cutscene's
+    /// "Fast Forward to Kickoff" prompt. A no-op if `targetDate` isn't
+    /// after the current season clock.
+    func simulateForward(to targetDate: Date, calendar: Calendar = .current) {
+        guard let character else { return }
+        let days = calendar.dateComponents([.day], from: character.simulatedDate, to: targetDate).day ?? 0
+        simulateDays(days, calendar: calendar)
+    }
+
     /// Whether tickets for `match` have gone on sale yet, as of the season
     /// clock — see `TicketSaleWindow`.
     func ticketsAreOnSale(for match: Match) -> Bool {
