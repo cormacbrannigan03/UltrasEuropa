@@ -36,6 +36,10 @@ public enum ProgressionConstants {
         .reactModerately: ActivityReward(xp: 7, loyalty: 1, knowledge: 0, influence: 1, notoriety: 2),
         .reactStrongly: ActivityReward(xp: 12, loyalty: 0, knowledge: 0, influence: 2, notoriety: 6),
         .reactExtremely: ActivityReward(xp: 18, loyalty: 0, knowledge: 0, influence: 3, notoriety: 14),
+        .foundYouthGroup: ActivityReward(xp: 20, loyalty: 0, knowledge: 0, influence: 3, notoriety: 0),
+        .recruitYouthGroupMember: ActivityReward(xp: 10, loyalty: 0, knowledge: 0, influence: 2, notoriety: 1),
+        .mergeYouthGroup: ActivityReward(xp: 150, loyalty: 10, knowledge: 0, influence: 15, notoriety: 0),
+        .takeOverUltrasGroup: ActivityReward(xp: 250, loyalty: 0, knowledge: 0, influence: 25, notoriety: 20),
     ]
 
     /// Bond-score bump every crew member gets when the player launches a

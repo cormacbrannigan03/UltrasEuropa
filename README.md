@@ -159,6 +159,9 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Dashboard's "Crew Members" link shows 15 members grouped by rank (Capo first); each has a relationship label that starts at "Stranger"
 - [ ] Interacting with a member shows an outcome (which can go either way), moves their relationship level up or down accordingly, and also awards a little XP — force-quit and relaunch to confirm the relationship persists
 - [ ] A Lead Ultra- or Capo-tier crew member shows a "won't really acknowledge you" note and every interaction with them is a flat rejection capped at Stranger, until the player's own rank catches up (Ultra Group for a Lead Ultra-tier member, Lead Ultra for a Capo-tier one)
+- [ ] Dashboard's "Youth Group" link shows "Start your own following" before founding; founding it starts the stage at "Just Founded" with 1 member and shows the main ultras group's (initially indifferent) reaction text
+- [ ] Recruiting fails far more often than it succeeds, and the shown success percentage visibly drops as the member count climbs; the main ultras reaction text escalates in tone at 5, 15, and 30 members
+- [ ] At 50 members, the recruit button is replaced by a Merge/Take Over choice, each behind a confirmation dialog; choosing either shows a permanent result card and recruiting stops being available
 - [ ] Clubs tab lists all 20 leagues; drilling into one shows its real clubs; a club's detail screen shows its generated fixtures/results
 - [ ] Matches tab shows only the favorite club's own fixtures/results (browse any other club's schedule from the Clubs tab instead)
 - [ ] Buttons, badges, progress bars, and the tab bar tint match the favorite club's primary color; creating a second save with a different club and switching to it via "Switch Save" changes all of those immediately; button text stays readable even for a club with a very light primary color
@@ -331,6 +334,37 @@ records a `.socializeWithCrew` activity, so it earns a little XP the same
 way every other activity does — but it's deliberately left out of the
 activity-diversity rank gate, so it's a bonus on top of the existing ladder,
 not a new required step.
+
+## Founding your own youth group — a slow, hostile rival path
+
+Alongside the favorite club's existing ultras group, the Dashboard's
+"Youth Group" link (`YouthGroupView`) lets the player found and grow a
+breakaway group of their own — a genuine alternative power base, not just
+flavor text.
+
+- **Founding** (`CharacterStore.foundYouthGroup`) is a one-time action that
+  starts the group at 1 member (the player). From there,
+  **`YouthGroupStage`** tracks its size against fixed thresholds — Just
+  Founded (1) → Small Following (5) → Growing Crew (15) → Established
+  Rival (30) → Empire Built (50) — each with its own
+  `mainUltrasReaction` text shown right on the screen, escalating from
+  total indifference to open hostility as the group grows. The main
+  ultras group is never happy about it, and says so.
+- **Recruiting** (`CharacterStore.recruitToYouthGroup`) is deliberately
+  brutal: `YouthGroupEngine.recruitChance` starts at just 30% for the very
+  first member and drops by half a percentage point per existing member,
+  down to a 5% floor — poaching people away from an already-established
+  following only gets harder the bigger the rival group gets. There's no
+  guaranteed-success threshold like the away-ticket or home-seat systems
+  have; every attempt is a coin flip stacked against the player.
+- **Reaching 50 members** ("Empire Built") unlocks a one-time, mutually
+  exclusive ending: **merge** peacefully with the main ultras group
+  (`mergeYouthGroupWithMainUltras`) or **take over** outright
+  (`takeOverMainUltrasGroup`), both gated behind a confirmation dialog
+  since neither can be undone. Both award a large one-off XP/influence
+  reward reflecting how big a moment it is, and `YouthGroupOutcome` (Core)
+  persists which ending was chosen so the screen shows a permanent result
+  card afterward instead of the recruiting flow.
 
 ## Progression design
 

@@ -72,6 +72,17 @@ final class CharacterEntity {
     /// (`simulatedDate`) is still before this date.
     var stadiumBanUntilDate: Date?
 
+    /// Whether the player has founded their own breakaway youth group —
+    /// see `CharacterStore.foundYouthGroup`/`YouthGroupEngine`.
+    var youthGroupFounded: Bool = false
+    /// How many members the youth group has recruited (including the
+    /// player, counted from founding). Drives `YouthGroupStage`.
+    var youthGroupMemberCount: Int = 0
+    /// Raw value of `UltrasEuropaCore.YouthGroupOutcome` — `"none"` until
+    /// the player chooses to merge with or take over the main ultras
+    /// group once the youth group is large enough to rival it.
+    var youthGroupOutcomeRaw: String = "none"
+
     @Relationship(deleteRule: .cascade, inverse: \OwnedItemEntity.character)
     var ownedItems: [OwnedItemEntity] = []
 

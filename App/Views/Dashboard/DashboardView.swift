@@ -72,6 +72,15 @@ struct DashboardView: View {
                 NavigationLink { CrewMembersView() } label: {
                     DashboardLinkRow(title: "Crew Members", subtitle: "Build relationships", systemImage: "person.3.fill")
                 }
+                NavigationLink { YouthGroupView() } label: {
+                    DashboardLinkRow(
+                        title: "Youth Group",
+                        subtitle: characterStore.youthGroupFounded
+                            ? characterStore.youthGroupStage.displayName
+                            : "Start your own following",
+                        systemImage: "flag.2.crossed.fill"
+                    )
+                }
                 NavigationLink { WardrobeView() } label: {
                     DashboardLinkRow(title: "Wardrobe", subtitle: "Dress your character", systemImage: "tshirt.fill")
                 }

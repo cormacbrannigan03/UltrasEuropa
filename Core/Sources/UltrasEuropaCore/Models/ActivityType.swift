@@ -27,4 +27,15 @@ public enum ActivityType: String, Codable, CaseIterable, Hashable, Sendable {
     case reactModerately
     case reactStrongly
     case reactExtremely
+    /// Founding, and later recruiting into, the player's own breakaway
+    /// youth group — see `YouthGroupEngine`. Excluded from the diversity
+    /// gate, same reasoning as `socializeWithCrew`: a bonus system, not a
+    /// required part of the core rank ladder.
+    case foundYouthGroup
+    case recruitYouthGroupMember
+    /// The two mutually-exclusive endings once the youth group grows large
+    /// enough to rival the main ultras group — see
+    /// `CharacterStore.mergeYouthGroupWithMainUltras`/`takeOverMainUltrasGroup`.
+    case mergeYouthGroup
+    case takeOverUltrasGroup
 }

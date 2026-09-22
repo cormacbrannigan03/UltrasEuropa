@@ -516,6 +516,90 @@ final class CharacterStore {
         return granted
     }
 
+    // MARK: - Youth group
+
+    /// The player's own breakaway youth group — separate from, and
+    /// eventually a rival to, the favorite club's main ultras group. See
+    /// `YouthGroupEngine`.
+    var youthGroupFounded: Bool { character?.youthGroupFounded ?? false }
+    var youthGroupMemberCount: Int { character?.youthGroupMemberCount ?? 0 }
+    var youthGroupStage: YouthGroupStage {
+        YouthGroupEngine.stage(forMemberCount: youthGroupMemberCount, founded: youthGroupFounded)
+    }
+    var youthGroupOutcome: YouthGroupOutcome {
+        character.flatMap { YouthGroupOutcome(rawValue: $0.youthGroupOutcomeRaw) } ?? .none
+    }
+    var youthGroupRecruitChance: Double {
+        YouthGroupEngine.recruitChance(currentMembers: youthGroupMemberCount)
+    }
+    /// Whether the youth group has grown large enough to unlock the
+    /// merge-or-takeover choice, and that choice hasn't been made yet.
+    var youthGroupReadyForTakeoverChoice: Bool {
+        youthGroupFounded && youthGroupOutcome == .none && youthGroupMemberCount >= YouthGroupEngine.takeoverThreshold
+    }
+
+    /// Founds the player's own breakaway youth group, starting at 1 member
+    /// (the player themselves). One-time — does nothing if already founded.
+    @discardableResult
+    func foundYouthGroup(today: Date = .now) -> ActivityOutcomeSummary? {
+        guard let character, !character.youthGroupFounded else { return nil }
+        character.youthGroupFounded = true
+        character.youthGroupMemberCount = 1
+        return apply(
+            activity: .foundYouthGroup, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
+    }
+
+    /// Attempts to recruit one more member — deliberately a long shot that
+    /// gets harder the bigger the group already is (see
+    /// `YouthGroupEngine.recruitChance`). Returns whether it succeeded, or
+    /// `nil` if there's no character, the group isn't founded yet, or a
+    /// merge/takeover outcome has already been chosen.
+    @discardableResult
+    func recruitToYouthGroup(today: Date = .now) -> Bool? {
+        guard let character, character.youthGroupFounded, youthGroupOutcome == .none else { return nil }
+
+        var generator = SystemRandomNumberGenerator()
+        let recruited = YouthGroupEngine.resolveRecruit(
+            currentMembers: character.youthGroupMemberCount, using: &generator
+        )
+        if recruited {
+            character.youthGroupMemberCount += 1
+        }
+        apply(
+            activity: .recruitYouthGroupMember, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
+        return recruited
+    }
+
+    /// Folds the youth group into the main ultras group — the peaceful
+    /// ending. One-time; does nothing unless
+    /// `youthGroupReadyForTakeoverChoice` is true.
+    @discardableResult
+    func mergeYouthGroupWithMainUltras(today: Date = .now) -> ActivityOutcomeSummary? {
+        guard let character, youthGroupReadyForTakeoverChoice else { return nil }
+        character.youthGroupOutcomeRaw = YouthGroupOutcome.merged.rawValue
+        return apply(
+            activity: .mergeYouthGroup, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
+    }
+
+    /// Takes over the main ultras group outright — the confrontational
+    /// ending. One-time; does nothing unless
+    /// `youthGroupReadyForTakeoverChoice` is true.
+    @discardableResult
+    func takeOverMainUltrasGroup(today: Date = .now) -> ActivityOutcomeSummary? {
+        guard let character, youthGroupReadyForTakeoverChoice else { return nil }
+        character.youthGroupOutcomeRaw = YouthGroupOutcome.tookOver.rawValue
+        return apply(
+            activity: .takeOverUltrasGroup, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
+    }
+
     // MARK: - Wardrobe
 
     func equippedItemId(for slot: ClothingSlot) -> String? {
