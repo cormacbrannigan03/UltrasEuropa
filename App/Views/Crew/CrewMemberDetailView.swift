@@ -10,6 +10,10 @@ struct CrewMemberDetailView: View {
 
     private var bondScore: Int { characterStore.bondScore(forMember: member.id) }
     private var relationshipLevel: RelationshipLevel { RelationshipLevel.level(forBond: bondScore) }
+    private var isAcknowledged: Bool {
+        CrewInteractionConstants.acknowledges(memberRank: member.rank, playerRank: characterStore.rank)
+    }
+    private var requiredRank: Rank? { Rank(rawValue: member.rank.rawValue - 1) }
 
     var body: some View {
         ScrollView {
@@ -28,6 +32,15 @@ struct CrewMemberDetailView: View {
                     }
                     ProgressView(value: Double(bondScore + 100), total: 200)
                         .tint(Theme.accent)
+
+                    if !isAcknowledged, let requiredRank {
+                        Label(
+                            "\(member.name) won't really acknowledge you until you reach \(requiredRank.displayName).",
+                            systemImage: "eye.slash"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                    }
                 }
                 .padding(16)
                 .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))

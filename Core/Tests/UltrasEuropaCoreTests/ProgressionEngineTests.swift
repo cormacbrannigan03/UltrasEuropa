@@ -11,10 +11,10 @@ final class ProgressionEngineTests: XCTestCase {
             activityCounts: [:],
             unlockedAchievementIDs: []
         )
-        XCTAssertEqual(outcome.xpAwarded, 50)
+        XCTAssertEqual(outcome.xpAwarded, 38)
         XCTAssertEqual(outcome.updatedStats.loyalty, 4)
         XCTAssertEqual(outcome.updatedStats.matchesAttended, 1)
-        XCTAssertEqual(outcome.updatedStats.totalXP, 50)
+        XCTAssertEqual(outcome.updatedStats.totalXP, 38)
     }
 
     func testDiminishingReturnsReduceLaterSameDayRewards() {
@@ -31,7 +31,7 @@ final class ProgressionEngineTests: XCTestCase {
             currentStats: .initial, activityCounts: [:], unlockedAchievementIDs: []
         )
 
-        XCTAssertEqual(first.xpAwarded, 20, "First two occurrences per day should be full reward")
+        XCTAssertEqual(first.xpAwarded, 15, "First occurrence per day should be full reward")
         XCTAssertLessThan(third.xpAwarded, first.xpAwarded, "Third same-day occurrence should start decaying")
         XCTAssertLessThan(tenth.xpAwarded, third.xpAwarded, "Reward should keep shrinking with repetition")
         XCTAssertGreaterThan(tenth.xpAwarded, 0, "Reward should never hit zero (floor applies)")
@@ -61,9 +61,9 @@ final class ProgressionEngineTests: XCTestCase {
             }
         }
 
-        // completeTask base is 25; grinding 20x at that base would be 500
+        // completeTask base is 18; grinding 20x at that base would be 360
         // without decay. With decay it must be substantially less.
-        XCTAssertLessThan(grindXP, 25 * 20)
+        XCTAssertLessThan(grindXP, 18 * 20)
         // Sanity: varied play across higher-value activities comfortably
         // out-earns pure grinding of a single mid-value activity.
         XCTAssertGreaterThan(variedXP, grindXP)
@@ -71,7 +71,7 @@ final class ProgressionEngineTests: XCTestCase {
 
     func testRankUpIsDetected() {
         var stats = CharacterStats.initial
-        stats.totalXP = 299
+        stats.totalXP = 382
         stats.matchesAttended = 4
 
         let outcome = ProgressionEngine.apply(

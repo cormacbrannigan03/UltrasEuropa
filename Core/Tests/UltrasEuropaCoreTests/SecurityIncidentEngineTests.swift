@@ -38,9 +38,16 @@ final class SecurityIncidentEngineTests: XCTestCase {
         XCTAssertEqual(SecurityIncidentEngine.outcome(forHeat: heat), .noAction)
     }
 
-    func testTwoExtremeReactionsTriggerEjection() {
+    func testOneExtremeReactionTriggersEjection() {
+        XCTAssertEqual(SecurityIncidentEngine.outcome(forHeat: ReactionSeverity.extreme.heat), .ejected)
+    }
+
+    func testTwoExtremeReactionsTriggerABan() {
         let heat = ReactionSeverity.extreme.heat * 2
-        XCTAssertEqual(SecurityIncidentEngine.outcome(forHeat: heat), .ejected)
+        XCTAssertEqual(
+            SecurityIncidentEngine.outcome(forHeat: heat),
+            .ejectedWithBan(days: SecurityIncidentEngine.banDurationDays)
+        )
     }
 
     func testEachReactionSeverityMapsToItsOwnActivityType() {

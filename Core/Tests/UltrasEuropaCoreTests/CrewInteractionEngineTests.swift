@@ -81,6 +81,43 @@ final class CrewInteractionEngineTests: XCTestCase {
         )
         XCTAssertTrue(outcome.message.contains("Priya"))
     }
+
+    func testCapoDoesNotAcknowledgeARegularPlayer() {
+        var generator = SeededGenerator(seed: 8)
+        let (outcome, newBond) = CrewInteractionEngine.resolve(
+            interaction: .chat, memberName: "Big Marco", memberRank: .capo, playerRank: .regular,
+            currentBond: 10, using: &generator
+        )
+        XCTAssertFalse(outcome.didGoWell)
+        XCTAssertEqual(outcome.bondDelta, 0)
+        XCTAssertTrue(outcome.message.contains("Big Marco"))
+        XCTAssertLessThanOrEqual(newBond, CrewInteractionConstants.unacknowledgedBondCeiling)
+    }
+
+    func testCapoAcknowledgesOnceLeadUltra() {
+        var generator = SeededGenerator(seed: 8)
+        let (outcome, _) = CrewInteractionEngine.resolve(
+            interaction: .chat, memberName: "Big Marco", memberRank: .capo, playerRank: .leadUltra,
+            currentBond: 10, using: &generator
+        )
+        // Once acknowledged, the interaction resolves normally again — a
+        // nonzero bond delta either way, not the forced-zero gate outcome.
+        XCTAssertNotEqual(outcome.bondDelta, 0)
+    }
+
+    func testUnacknowledgedBondNeverExceedsCeiling() {
+        var generator = SeededGenerator(seed: 99)
+        let (_, newBond) = CrewInteractionEngine.resolve(
+            interaction: .standUpForThem, memberName: "Big Marco", memberRank: .capo, playerRank: .regular,
+            currentBond: CrewInteractionConstants.unacknowledgedBondCeiling, using: &generator
+        )
+        XCTAssertLessThanOrEqual(newBond, CrewInteractionConstants.unacknowledgedBondCeiling)
+    }
+
+    func testPeerTierMembersAlwaysAcknowledgePlayer() {
+        XCTAssertTrue(CrewInteractionConstants.acknowledges(memberRank: .regular, playerRank: .regular))
+        XCTAssertTrue(CrewInteractionConstants.acknowledges(memberRank: .youngUltra, playerRank: .regular))
+    }
 }
 
 final class RelationshipLevelTests: XCTestCase {

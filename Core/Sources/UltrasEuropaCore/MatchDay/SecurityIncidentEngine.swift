@@ -15,9 +15,9 @@ public enum SecurityOutcome: Equatable, Sendable {
 /// is something the player can see coming and choose to manage, not a
 /// hidden dice roll.
 public enum SecurityIncidentEngine {
-    public static let warningThreshold = 40
-    public static let ejectionThreshold = 70
-    public static let banThreshold = 100
+    public static let warningThreshold = 30
+    public static let ejectionThreshold = 55
+    public static let banThreshold = 85
     public static let banDurationDays = 14
 
     public static func outcome(forHeat heat: Int) -> SecurityOutcome {

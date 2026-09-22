@@ -23,19 +23,19 @@ public enum ProgressionConstants {
     // MARK: - Activity rewards
 
     public static let activityRewards: [ActivityType: ActivityReward] = [
-        .attendMatch: ActivityReward(xp: 50, loyalty: 4, knowledge: 1, influence: 1, notoriety: 0),
-        .sitInUltrasStand: ActivityReward(xp: 30, loyalty: 5, knowledge: 0, influence: 2, notoriety: 1),
-        .doPyroChallenge: ActivityReward(xp: 40, loyalty: 1, knowledge: 0, influence: 2, notoriety: 6),
-        .participateInChant: ActivityReward(xp: 20, loyalty: 2, knowledge: 4, influence: 1, notoriety: 0),
-        .contributeToTifo: ActivityReward(xp: 35, loyalty: 2, knowledge: 3, influence: 3, notoriety: 1),
-        .completeTask: ActivityReward(xp: 25, loyalty: 2, knowledge: 2, influence: 2, notoriety: 0),
+        .attendMatch: ActivityReward(xp: 38, loyalty: 4, knowledge: 1, influence: 1, notoriety: 0),
+        .sitInUltrasStand: ActivityReward(xp: 22, loyalty: 5, knowledge: 0, influence: 2, notoriety: 1),
+        .doPyroChallenge: ActivityReward(xp: 30, loyalty: 1, knowledge: 0, influence: 2, notoriety: 6),
+        .participateInChant: ActivityReward(xp: 15, loyalty: 2, knowledge: 4, influence: 1, notoriety: 0),
+        .contributeToTifo: ActivityReward(xp: 25, loyalty: 2, knowledge: 3, influence: 3, notoriety: 1),
+        .completeTask: ActivityReward(xp: 18, loyalty: 2, knowledge: 2, influence: 2, notoriety: 0),
         .dailyLoyaltyCheckIn: ActivityReward(xp: 5, loyalty: 1, knowledge: 0, influence: 0, notoriety: 0),
-        .socializeWithCrew: ActivityReward(xp: 20, loyalty: 1, knowledge: 0, influence: 3, notoriety: 0),
+        .socializeWithCrew: ActivityReward(xp: 15, loyalty: 1, knowledge: 0, influence: 3, notoriety: 0),
         .launchClothingRange: ActivityReward(xp: 30, loyalty: 0, knowledge: 0, influence: 5, notoriety: 10),
-        .reactMildly: ActivityReward(xp: 5, loyalty: 1, knowledge: 0, influence: 0, notoriety: 0),
-        .reactModerately: ActivityReward(xp: 10, loyalty: 1, knowledge: 0, influence: 1, notoriety: 2),
-        .reactStrongly: ActivityReward(xp: 18, loyalty: 0, knowledge: 0, influence: 2, notoriety: 6),
-        .reactExtremely: ActivityReward(xp: 28, loyalty: 0, knowledge: 0, influence: 3, notoriety: 14),
+        .reactMildly: ActivityReward(xp: 4, loyalty: 1, knowledge: 0, influence: 0, notoriety: 0),
+        .reactModerately: ActivityReward(xp: 7, loyalty: 1, knowledge: 0, influence: 1, notoriety: 2),
+        .reactStrongly: ActivityReward(xp: 12, loyalty: 0, knowledge: 0, influence: 2, notoriety: 6),
+        .reactExtremely: ActivityReward(xp: 18, loyalty: 0, knowledge: 0, influence: 3, notoriety: 14),
     ]
 
     /// Bond-score bump every crew member gets when the player launches a
@@ -46,12 +46,12 @@ public enum ProgressionConstants {
 
     /// How many times per day an activity pays out its full reward before
     /// decaying.
-    public static let diminishingReturnsFreeOccurrencesPerDay = 2
+    public static let diminishingReturnsFreeOccurrencesPerDay = 1
     /// Multiplicative decay applied per occurrence beyond the free count.
-    public static let diminishingReturnsDecayFactor = 0.55
+    public static let diminishingReturnsDecayFactor = 0.5
     /// Reward never decays below this fraction of the base reward, so an
     /// activity always grants *something* but stops being worth repeating.
-    public static let diminishingReturnsFloor = 0.15
+    public static let diminishingReturnsFloor = 0.12
 
     /// Returns the multiplier (0...1] to apply to an activity's base reward
     /// given it's the `occurrenceIndexToday`-th time (1-based) that activity
@@ -191,25 +191,25 @@ public enum ProgressionConstants {
         ),
         RankRequirement(
             rank: .youngUltra,
-            minimumXP: 300,
+            minimumXP: 420,
             minimumMatchesAttended: 5
         ),
         RankRequirement(
             rank: .ultraGroup,
-            minimumXP: 900,
+            minimumXP: 1400,
             minimumMatchesAttended: 15,
             minimumActivityDiversity: 4
         ),
         RankRequirement(
             rank: .leadUltra,
-            minimumXP: 2200,
+            minimumXP: 3400,
             minimumMatchesAttended: 30,
             minimumActivityDiversity: 6,
             requiredAchievementIDs: [GatingAchievementID.pyroVeteran]
         ),
         RankRequirement(
             rank: .capo,
-            minimumXP: 4500,
+            minimumXP: 6800,
             minimumMatchesAttended: 50,
             minimumActivityDiversity: 6,
             minimumStreakDays: 30,

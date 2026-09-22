@@ -148,12 +148,15 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Requesting an away ticket resolves once and locks in — reopening that same match shows the granted or denied result, never a fresh roll
 - [ ] Completing a challenge/task awards XP
 - [ ] Rank only advances once XP **and** the rank's gating requirements (activity variety / achievements — see below) are met — it should NOT be possible to reach Capo quickly by repeating one action
+- [ ] A couple of matches' worth of activities no longer blows past the Young Ultra threshold on their own — progress should feel noticeably slower than before this pass
+- [ ] A single Extreme goal reaction gets you ejected from the match on its own; two in the same match draw a stadium ban, not just an ejection
 - [ ] The Dashboard's rank-progress card shows a difficulty note (harder/easier) when the favorite club's prestige tier isn't 3, and a club's detail screen shows its prestige stars
 - [ ] Achievements unlock and appear under Achievements once their criteria are met
 - [ ] Inventory items appear as they're earned
 - [ ] Force-quit and relaunch the app — character, stats, rank, inventory, achievements, and the season clock all persist
 - [ ] Dashboard's "Crew Members" link shows 15 members grouped by rank (Capo first); each has a relationship label that starts at "Stranger"
 - [ ] Interacting with a member shows an outcome (which can go either way), moves their relationship level up or down accordingly, and also awards a little XP — force-quit and relaunch to confirm the relationship persists
+- [ ] A Lead Ultra- or Capo-tier crew member shows a "won't really acknowledge you" note and every interaction with them is a flat rejection capped at Stranger, until the player's own rank catches up (Ultra Group for a Lead Ultra-tier member, Lead Ultra for a Capo-tier one)
 - [ ] Clubs tab lists all 20 leagues; drilling into one shows its real clubs; a club's detail screen shows its generated fixtures/results
 - [ ] Matches tab shows only the favorite club's own fixtures/results (browse any other club's schedule from the Clubs tab instead)
 - [ ] Buttons, badges, progress bars, and the tab bar tint match the favorite club's primary color; creating a second save with a different club and switching to it via "Switch Save" changes all of those immediately; button text stays readable even for a club with a very light primary color
@@ -349,6 +352,51 @@ baseline (bigger leagues start higher) plus a bonus for each league's
 traditionally dominant clubs — see `prestigeTier` in `clubs.json` and treat
 it the same as the rest of the club data: a reasonable starting point, not
 a precisely researched ranking.
+
+### A difficulty pass: progress was too fast, setbacks too rare
+
+Playtesting flagged rank progress as remarkably fast — a couple of matches
+with the full spread of match-day activities (attend, sit in the Ultras
+Section, pyro, chant, tifo, several goal reactions) was piling up XP much
+faster than the rank ladder's steep-threshold design intended. Retuned in
+three places:
+
+- **Lower per-activity XP.** Every activity in
+  `ProgressionConstants.activityRewards` pays roughly 20-30% less XP than
+  before (e.g. attending a match: 50 → 38 XP; a Mild goal reaction: 5 → 4
+  XP), and diminishing returns now bite from the *second* occurrence of an
+  activity in a day instead of the third, decaying faster once they start.
+- **Higher rank thresholds.** Young Ultra through Capo all need
+  meaningfully more XP than before (Young Ultra: 300 → 420; Ultra Group:
+  900 → 1,400; Lead Ultra: 2,200 → 3,400; Capo: 4,500 → 6,800) — on top of
+  the unchanged matches-attended/activity-diversity/achievement gates.
+- **Harsher security setbacks.** Every `ReactionSeverity` now carries more
+  heat (a once-"free" Mild reaction now draws a little attention too, not
+  zero), and `SecurityIncidentEngine`'s warning/ejection/ban thresholds are
+  all lower — a single Extreme reaction alone is now enough to get ejected,
+  and two are enough to draw a stadium ban, where before it took several
+  reactions stacked together to escalate that far.
+
+### Top ultras don't know who you are yet
+
+Every `CrewMember` already carries its own `rank` (Regular through Capo),
+representing how senior they are within the player's crew. That tier now
+gates how far a relationship can go:
+`CrewInteractionConstants.acknowledges(memberRank:playerRank:)` returns
+false whenever the player's own rank hasn't yet reached the rank just
+below that crew member's — so a Capo-tier member won't take a newcomer
+seriously until the player is themselves a Lead Ultra, a Lead Ultra-tier
+member needs the player to be Ultra Group, and so on. Regular and Young
+Ultra-tier members are peers and always acknowledge the player.
+
+Interacting with a crew member who doesn't acknowledge you yet still
+"happens" (so there's no dead button and no crash), but
+`CrewInteractionEngine.resolve` forces the outcome to a flat rejection —
+zero bond change, capped at "Stranger" (bond ≤ 15) regardless of how high
+it already was — with a message naming the rank the player still needs to
+reach. `CrewMemberDetailView` also shows this as a standing note under the
+relationship card, so it's clear before every attempt, not just after a
+failed one.
 
 ## The real-money store — and the trade-off it makes
 

@@ -30,7 +30,7 @@ final class RankCalculatorTests: XCTestCase {
 
     func testYoungUltraRequiresMatchesAttended() {
         var stats = CharacterStats.initial
-        stats.totalXP = 300
+        stats.totalXP = 420
         stats.matchesAttended = 0
 
         XCTAssertEqual(
@@ -47,7 +47,7 @@ final class RankCalculatorTests: XCTestCase {
 
     func testUltraGroupRequiresActivityDiversity() {
         var stats = CharacterStats.initial
-        stats.totalXP = 900
+        stats.totalXP = 1400
         stats.matchesAttended = 15
 
         let lowDiversityCounts: [ActivityType: Int] = [.attendMatch: 15]
@@ -68,7 +68,7 @@ final class RankCalculatorTests: XCTestCase {
 
     func testLeadUltraRequiresPyroVeteranAchievement() {
         var stats = CharacterStats.initial
-        stats.totalXP = 2200
+        stats.totalXP = 3400
         stats.matchesAttended = 30
         let counts: [ActivityType: Int] = [
             .attendMatch: 30, .sitInUltrasStand: 10, .doPyroChallenge: 10,
@@ -92,7 +92,7 @@ final class RankCalculatorTests: XCTestCase {
 
     func testCapoRequiresStreakAndMultipleAchievements() {
         var stats = CharacterStats.initial
-        stats.totalXP = 4500
+        stats.totalXP = 6800
         stats.matchesAttended = 50
         stats.currentStreakDays = 10 // below the 30-day requirement
         let counts: [ActivityType: Int] = [
@@ -121,7 +121,7 @@ final class RankCalculatorTests: XCTestCase {
 
     func testNextRankProgressReportsMissingAchievements() {
         var stats = CharacterStats.initial
-        stats.totalXP = 2200
+        stats.totalXP = 3400
         stats.matchesAttended = 30
         let counts: [ActivityType: Int] = [
             .attendMatch: 30, .sitInUltrasStand: 10, .doPyroChallenge: 10,
@@ -156,7 +156,7 @@ final class RankCalculatorTests: XCTestCase {
         // NOT be Young Ultra yet on XP that would be enough for a smaller
         // club's fan.
         var stats = CharacterStats.initial
-        stats.totalXP = 300 // exactly the base (multiplier 1.0) threshold
+        stats.totalXP = 420 // exactly the base (multiplier 1.0) threshold
         stats.matchesAttended = 5
 
         let smallClubRank = RankCalculator.achievableRank(
@@ -181,7 +181,7 @@ final class RankCalculatorTests: XCTestCase {
             xpMultiplier: ProgressionConstants.xpMultiplier(forPrestigeTier: 5)
         )
 
-        XCTAssertEqual(baseProgress?.xpNeeded, 300)
+        XCTAssertEqual(baseProgress?.xpNeeded, 420)
         XCTAssertGreaterThan(giantClubProgress?.xpNeeded ?? 0, baseProgress?.xpNeeded ?? 0)
     }
 }

@@ -33,13 +33,15 @@ public enum ReactionSeverity: Int, CaseIterable, Codable, Hashable, Sendable {
 
     /// How much stadium-security attention this reaction draws on its own.
     /// Accumulates with every reaction across a single match — see
-    /// `SecurityIncidentEngine`.
+    /// `SecurityIncidentEngine`. Even a "safe" mild reaction draws a
+    /// trickle of attention — standing out at all in a packed stand always
+    /// carries some risk, not just the showy reactions.
     public var heat: Int {
         switch self {
-        case .mild: return 0
-        case .moderate: return 8
-        case .strong: return 20
-        case .extreme: return 40
+        case .mild: return 2
+        case .moderate: return 12
+        case .strong: return 30
+        case .extreme: return 55
         }
     }
 }

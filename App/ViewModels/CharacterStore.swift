@@ -192,7 +192,8 @@ final class CharacterStore {
         let currentBond = PersistenceMapper.bondScore(forMemberId: member.id, on: character)
         var generator = SystemRandomNumberGenerator()
         let (outcome, newBond) = CrewInteractionEngine.resolve(
-            interaction: type, memberName: member.name, currentBond: currentBond, using: &generator
+            interaction: type, memberName: member.name, memberRank: member.rank, playerRank: rank,
+            currentBond: currentBond, using: &generator
         )
 
         if let relationship = character.crewRelationships.first(where: { $0.memberId == member.id }) {

@@ -31,6 +31,27 @@ public enum CrewInteractionConstants {
     /// Bond score is clamped to this range.
     public static let bondRange = -100...100
 
+    /// The highest bond score a crew member ranked above the player will
+    /// allow — kept inside `RelationshipLevel.stranger`, short of
+    /// `.acquaintance` (bond 20) — until the player has proven themselves
+    /// enough to be worth their time. See `acknowledges(memberRank:playerRank:)`.
+    public static let unacknowledgedBondCeiling = 15
+
+    /// Whether a crew member ranked `memberRank` will treat the player as
+    /// more than a passing stranger yet. Regular/Young Ultra-tier members
+    /// are peers and always will. A member ranked Ultra Group or above —
+    /// the "top ultras" — needs the player to have already reached the
+    /// rank just below their own first; a Capo-tier member won't take a
+    /// newcomer seriously until the player is themselves a Lead Ultra.
+    public static func acknowledges(memberRank: Rank, playerRank: Rank) -> Bool {
+        guard let requiredRank = Rank(rawValue: memberRank.rawValue - 1) else { return true }
+        return playerRank >= requiredRank
+    }
+
+    public static func unacknowledgedMessage(memberName: String, memberRank: Rank) -> String {
+        "\(memberName) barely gives you the time of day. As a \(memberRank.displayName), they're not interested in a newcomer who hasn't proven themselves further up the ladder yet."
+    }
+
     public static func message(for interaction: CrewInteractionType, memberName: String, didGoWell: Bool) -> String {
         switch interaction {
         case .chat:
