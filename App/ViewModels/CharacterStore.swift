@@ -79,12 +79,25 @@ final class CharacterStore {
     func loadCharacter(inSlot slotIndex: Int) {
         let all = (try? modelContext.fetch(FetchDescriptor<CharacterEntity>())) ?? []
         character = all.first { $0.slotIndex == slotIndex }
+        syncTheme()
     }
 
     /// Returns to no active character — used when backing out to the
     /// save-slot picker (see `SaveSlotStore.clearActiveSlot`).
     func clearActiveCharacter() {
         character = nil
+        Theme.resetToDefaultColors()
+    }
+
+    /// Re-themes the app's accent colors to the active character's
+    /// favorite club (or back to the default if there's no character) —
+    /// called any time `character` changes. See `Theme.applyClubColors`.
+    private func syncTheme() {
+        guard let favoriteClub else {
+            Theme.resetToDefaultColors()
+            return
+        }
+        Theme.applyClubColors(primaryHex: favoriteClub.primaryColorHex, secondaryHex: favoriteClub.secondaryColorHex)
     }
 
     // MARK: - Character creation
@@ -97,6 +110,7 @@ final class CharacterStore {
         modelContext.insert(entity)
         character = entity
         try? modelContext.save()
+        syncTheme()
         // Starts the streak at day 1 without granting a duplicate check-in
         // reward on the very first app open.
         entity.currentStreakDays = 1

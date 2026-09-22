@@ -63,7 +63,7 @@ private struct TifoThumbnail: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Theme.accent, in: Capsule())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.accentForeground)
                     .padding(6)
             }
         }

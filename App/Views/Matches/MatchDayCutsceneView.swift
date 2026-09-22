@@ -496,7 +496,7 @@ struct MatchDayCutsceneView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.accentForeground)
     }
 
     // MARK: - Recording

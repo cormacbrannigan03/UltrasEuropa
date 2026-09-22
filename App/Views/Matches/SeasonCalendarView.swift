@@ -128,7 +128,7 @@ private struct CalendarMatchRow: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Theme.accent, in: Capsule())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.accentForeground)
             } else if match.isPlayed, let h = match.homeScore, let a = match.awayScore {
                 Text("\(h) - \(a)").font(.subheadline.bold())
             } else {

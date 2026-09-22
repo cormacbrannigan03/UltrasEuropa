@@ -156,6 +156,7 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Interacting with a member shows an outcome (which can go either way), moves their relationship level up or down accordingly, and also awards a little XP — force-quit and relaunch to confirm the relationship persists
 - [ ] Clubs tab lists all 20 leagues; drilling into one shows its real clubs; a club's detail screen shows its generated fixtures/results
 - [ ] Matches tab shows only the favorite club's own fixtures/results (browse any other club's schedule from the Clubs tab instead)
+- [ ] Buttons, badges, progress bars, and the tab bar tint match the favorite club's primary color; creating a second save with a different club and switching to it via "Switch Save" changes all of those immediately; button text stays readable even for a club with a very light primary color
 
 ## The club/league data — real, but not live-verified
 
@@ -526,3 +527,35 @@ activity for a burst of XP and notoriety — reusing the same
 activity, and left out of the activity-diversity gate for the same reason
 `.socializeWithCrew` is: it's a capstone reward for reaching the top rank,
 not a required step to get there.
+
+## The UI retheme to the favorite club's colors
+
+`Theme.accent` (buttons, badges, progress bars, the tab bar tint — every
+highlight color across the app) isn't a fixed constant: it follows
+whichever club the active save supports. `CharacterStore` calls
+`Theme.applyClubColors(primaryHex:secondaryHex:)` any time the active
+character changes (`loadCharacter`, `createCharacter`) and
+`Theme.resetToDefaultColors()` when there isn't one (the save-slot picker,
+or before a character's created) — both read straight from that club's
+existing `primaryColorHex`/`secondaryColorHex` in `clubs.json`, no new
+content needed. `background`, `cardBackground`, and the text colors stay
+fixed regardless of club, so contrast and readability never depend on
+which team's colors happen to be in play.
+
+Implementation-wise, `Theme` itself didn't need to change shape to callers
+— `Theme.accent` was already a global constant read directly (no
+`@Environment` plumbing) from around 50 call sites across the app, so
+making it retheme-able without touching every one of them meant backing
+it with a small `@Observable` singleton (`ThemeState`, private to
+`DesignSystem.swift`) instead of a `static let`. Reading any `@Observable`
+instance's properties during a view's `body` registers as a normal
+Observation dependency regardless of how the instance was obtained, so
+every existing `Theme.accent` reference still updates live the moment the
+active club changes — no per-file changes required.
+
+One real wrinkle real club colors create: some clubs' primary color is
+very light (near-white or pale yellow), which would make hardcoded white
+button text unreadable. `Theme.accentForeground` picks white or black
+based on the accent color's relative luminance, and every place in the app
+that draws text or an icon directly on an `accent`-colored background uses
+it instead of a hardcoded `.white`.

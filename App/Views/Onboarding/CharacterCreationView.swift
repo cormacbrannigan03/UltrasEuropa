@@ -76,7 +76,7 @@ struct CharacterCreationView: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.accentForeground)
                     }
                     .disabled(trimmedName.isEmpty || trimmedCrewName.isEmpty || selectedClubId == nil)
                 }
