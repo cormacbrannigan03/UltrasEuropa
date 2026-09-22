@@ -13,6 +13,30 @@ final class HomeSeatRequestEngineTests: XCTestCase {
         }
     }
 
+    func testBehindTheGoalSharesTheUltrasSectionsStandAndIsHarderThanTheOtherTwo() {
+        // Behind the Goal is drawn as the same end of the ground as the
+        // Ultras Section (see StadiumMapView) — overflow demand from that
+        // end should make it noticeably harder than the Main Stand or
+        // Family Section on the other side of the pitch, even though it's
+        // still easier than the Ultras Section itself.
+        let behindTheGoalChance = HomeSeatRequestEngine.chance(
+            for: .behindTheGoal, prestigeTier: 3, hasUltrasSeasonTicket: false
+        )
+        let mainStandChance = HomeSeatRequestEngine.chance(
+            for: .mainStand, prestigeTier: 3, hasUltrasSeasonTicket: false
+        )
+        let familySectionChance = HomeSeatRequestEngine.chance(
+            for: .familySection, prestigeTier: 3, hasUltrasSeasonTicket: false
+        )
+        let ultrasChance = HomeSeatRequestEngine.chance(
+            for: .ultrasSection, prestigeTier: 3, hasUltrasSeasonTicket: false
+        )
+
+        XCTAssertLessThan(behindTheGoalChance, mainStandChance)
+        XCTAssertLessThan(behindTheGoalChance, familySectionChance)
+        XCTAssertGreaterThan(behindTheGoalChance, ultrasChance)
+    }
+
     func testSeasonTicketHolderIsGuaranteedUltrasSection() {
         let chance = HomeSeatRequestEngine.chance(for: .ultrasSection, prestigeTier: 5, hasUltrasSeasonTicket: true)
         XCTAssertEqual(chance, 1.0)

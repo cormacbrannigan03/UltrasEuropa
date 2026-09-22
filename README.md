@@ -142,7 +142,7 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Dashboard's "Season Calendar" link shows the favorite club's fixtures grouped by month; "Fast Forward to Next Match" jumps the season clock straight to the next unplayed fixture's date
 - [ ] A match more than 30 days out (by the season clock) shows a "Tickets Not Yet On Sale" card instead of the attendance flow; simulating forward past that date unlocks it
 - [ ] A home match's attendance card opens a schematic stadium map with four tappable sections, each showing a success percentage (or "Guaranteed" for the Ultras Section with a season ticket); tapping one resolves immediately and locks in — a denied section shows "Denied" on the map and can't be retapped, but a different section can still be tried
-- [ ] The Ultras Section's chance is meaningfully lower than the other three sections, and a bigger/more prestigious favorite club lowers every section's chance further
+- [ ] The Ultras Section's chance is meaningfully lower than the other three sections; Behind the Goal (drawn alongside it as the same end of the ground) is also noticeably harder than the Main Stand or Family Section, though still easier than the Ultras Section itself; a bigger/more prestigious favorite club lowers every section's chance further
 - [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, a security search (hide the pyro, then a chance of getting caught) only if pyro was toggled, then (if the season clock hasn't reached the match date yet) a "Fast Forward to Kickoff" prompt before the live-watch beat
 - [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; choosing bigger reactions repeatedly eventually triggers a security warning, then an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo/pyro), and eventually an ejection + stadium ban that blocks attending any match until the season clock reaches the ban's end date
 - [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled and it made it through security, then a Full Time summary with total XP
@@ -528,10 +528,14 @@ opening a schematic stadium map (`StadiumMapView`, reachable from
 Section) arranged around a pitch, each showing its current chance of
 success. `HomeSeatRequestEngine`
 (`Core/Sources/UltrasEuropaCore/Tickets/HomeSeatRequestEngine.swift`) gives
-each section its own base chance — Family Section and Behind the Goal are
-easy (85-95%), the Main Stand is competitive (75%), and the Ultras Section
-is deliberately the hardest of all at just 30% — then scales every
-section's odds down further for a more prestigious club
+each section its own base chance, and it isn't just the Ultras Section
+itself that's hard: Behind the Goal is drawn right alongside it as the
+same end of the ground, and its chance (50%) is deliberately well below
+the Main Stand (75%) and Family Section (95%) on the other side of the
+pitch, to reflect overflow demand from fans who couldn't get into the
+Ultras Section spilling into the rest of that end. The Ultras Section
+itself stays the hardest of all at just 30%. Every section's odds then
+scale down further for a more prestigious club
 (`prestigeDifficultyMultiplier`, 1.15× easier for a tier-1 club down to
 0.65× for a tier-5 giant).
 

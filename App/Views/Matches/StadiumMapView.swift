@@ -1,12 +1,16 @@
 import SwiftUI
 import UltrasEuropaCore
 
-/// A schematic top-down view of the stadium — four stands around a pitch,
-/// each tappable to apply for that section. Sections are far from equally
+/// A schematic top-down view of the stadium — stands around a pitch, each
+/// tappable to apply for that section. Sections are far from equally
 /// contested (the Ultras Section hardest of all), so each shows its
-/// current chance of success before the player commits to it. A section
-/// already applied for this match shows its locked-in result instead and
-/// can't be tapped again — see `CharacterStore.requestHomeSeat`.
+/// current chance of success before the player commits to it. Behind the
+/// Goal is drawn right alongside the Ultras Section, at the same end of
+/// the ground, so it's visually obvious why that whole end is harder to
+/// get into than the Main Stand or Family Section across the pitch — see
+/// `HomeSeatRequestEngine`. A section already applied for this match shows
+/// its locked-in result instead and can't be tapped again — see
+/// `CharacterStore.requestHomeSeat`.
 struct StadiumMapView: View {
     let triedSeats: [SeatCategory: Bool]
     let chance: (SeatCategory) -> Double
@@ -24,19 +28,27 @@ struct StadiumMapView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
 
-                ZStack {
-                    stand(.ultrasSection, alignment: .top)
-                    stand(.mainStand, alignment: .leading)
-                    stand(.familySection, alignment: .trailing)
-                    stand(.behindTheGoal, alignment: .bottom)
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        stand(.ultrasSection)
+                        stand(.behindTheGoal)
+                    }
+                    Text("Same end of the ground — the Ultras Section's overflow makes both harder to get into")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.secondaryText)
+                        .multilineTextAlignment(.center)
 
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(red: 0.09, green: 0.35, blue: 0.14))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.35), lineWidth: 1.5))
-                        .frame(width: 120, height: 190)
+                    HStack(spacing: 8) {
+                        stand(.mainStand)
+
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(red: 0.09, green: 0.35, blue: 0.14))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.35), lineWidth: 1.5))
+                            .frame(width: 90, height: 140)
+
+                        stand(.familySection)
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .aspectRatio(1, contentMode: .fit)
                 .padding()
             }
             .padding(.top)
@@ -52,7 +64,7 @@ struct StadiumMapView: View {
     }
 
     @ViewBuilder
-    private func stand(_ seat: SeatCategory, alignment: Alignment) -> some View {
+    private func stand(_ seat: SeatCategory) -> some View {
         let outcome = triedSeats[seat]
         let guaranteed = isGuaranteed(seat)
 
@@ -67,7 +79,7 @@ struct StadiumMapView: View {
             }
         }
         .padding(10)
-        .frame(minWidth: 100)
+        .frame(maxWidth: .infinity)
         .background(
             seat == .ultrasSection ? Theme.accent : Theme.cardBackground,
             in: RoundedRectangle(cornerRadius: 10)
@@ -79,7 +91,6 @@ struct StadiumMapView: View {
             guard outcome == nil else { return }
             onSelect(seat)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
     }
 }
 

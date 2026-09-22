@@ -10,11 +10,16 @@ import Foundation
 /// spot in the Ultras Section instead of rolling for it.
 public enum HomeSeatRequestEngine {
     /// Base chance (0...1) of a request for a section succeeding, before
-    /// the favorite club's prestige tier is factored in.
+    /// the favorite club's prestige tier is factored in. `behindTheGoal`
+    /// shares its stand with `ultrasSection` — the same end of the ground,
+    /// just the seated part of it rather than the singing terrace — so
+    /// demand spills over from fans who couldn't get into the Ultras
+    /// Section, making that whole end harder to get into than the Main
+    /// Stand or Family Section on the other side of the pitch.
     public static let baseChance: [SeatCategory: Double] = [
         .mainStand: 0.75,
         .familySection: 0.95,
-        .behindTheGoal: 0.85,
+        .behindTheGoal: 0.50,
         .ultrasSection: 0.30,
     ]
 
