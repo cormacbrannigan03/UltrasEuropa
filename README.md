@@ -141,6 +141,8 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Dashboard shows a Season Clock card with today's in-game date; "+1 Day"/"+1 Week" advance it and reveal more matches' results
 - [ ] Dashboard's "Season Calendar" link shows the favorite club's fixtures grouped by month; "Fast Forward to Next Match" jumps the season clock straight to the next unplayed fixture's date
 - [ ] A match more than 30 days out (by the season clock) shows a "Tickets Not Yet On Sale" card instead of the attendance flow; simulating forward past that date unlocks it
+- [ ] A home match's attendance card opens a schematic stadium map with four tappable sections, each showing a success percentage (or "Guaranteed" for the Ultras Section with a season ticket); tapping one resolves immediately and locks in — a denied section shows "Denied" on the map and can't be retapped, but a different section can still be tried
+- [ ] The Ultras Section's chance is meaningfully lower than the other three sections, and a bigger/more prestigious favorite club lowers every section's chance further
 - [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, a security search (hide the pyro, then a chance of getting caught) only if pyro was toggled, then (if the season clock hasn't reached the match date yet) a "Fast Forward to Kickoff" prompt before the live-watch beat
 - [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; choosing bigger reactions repeatedly eventually triggers a security warning, then an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo/pyro), and eventually an ejection + stadium ban that blocks attending any match until the season clock reaches the ban's end date
 - [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled and it made it through security, then a Full Time summary with total XP
@@ -470,19 +472,43 @@ alongside season-ticket and away-ticket progress.
 
 ## Home season tickets: loyalty-gated, and harder for bigger clubs
 
-Attending a home match now means picking a seat (`SeatCategory`: Main
-Stand, Family Section, Behind the Goal, or Ultras Section) via
-`MatchDetailView`'s home-attendance flow. Sitting in the Ultras Section
-every so often isn't enough to make it a season ticket — that has to be
-*earned* with loyalty, and the bigger the club, the more it takes.
-`ProgressionConstants.seasonTicketLoyaltyThreshold` scales by the club's
-existing `prestigeTier` (40 loyalty for a tier-1 club up to 280 for a
-tier-5 giant), and `CharacterStore.hasUltrasSeasonTicket` compares the
-player's accumulated `loyalty` stat against that threshold. Loyalty accrues
-the same slow way every other stat does (see Progression design above), so
-there's no separate grind system to learn — just a harder bar for the
-biggest clubs' ultras sections, reusing the prestige scaling that already
-governs XP.
+Sitting in the Ultras Section every so often isn't enough to make it a
+season ticket — that has to be *earned* with loyalty, and the bigger the
+club, the more it takes. `ProgressionConstants.seasonTicketLoyaltyThreshold`
+scales by the club's existing `prestigeTier` (40 loyalty for a tier-1 club
+up to 280 for a tier-5 giant), and `CharacterStore.hasUltrasSeasonTicket`
+compares the player's accumulated `loyalty` stat against that threshold.
+Loyalty accrues the same slow way every other stat does (see Progression
+design above), so there's no separate grind system to learn — just a
+harder bar for the biggest clubs' ultras sections, reusing the prestige
+scaling that already governs XP. A season-ticket holder is guaranteed a
+spot in the Ultras Section from then on (see the stadium map below)
+instead of rolling for it every match.
+
+### The stadium map: applying for a section is a chance, not a pick
+
+Attending a home match no longer means instantly picking a seat — it means
+opening a schematic stadium map (`StadiumMapView`, reachable from
+`MatchDetailView`'s "Open Stadium Map" button) with the four stands
+(`SeatCategory`: Main Stand, Family Section, Behind the Goal, Ultras
+Section) arranged around a pitch, each showing its current chance of
+success. `HomeSeatRequestEngine`
+(`Core/Sources/UltrasEuropaCore/Tickets/HomeSeatRequestEngine.swift`) gives
+each section its own base chance — Family Section and Behind the Goal are
+easy (85-95%), the Main Stand is competitive (75%), and the Ultras Section
+is deliberately the hardest of all at just 30% — then scales every
+section's odds down further for a more prestigious club
+(`prestigeDifficultyMultiplier`, 1.15× easier for a tier-1 club down to
+0.65× for a tier-5 giant).
+
+Tapping a section rolls it immediately and locks in the result for that
+(match, section) pair — `CharacterStore.requestHomeSeat`, mirroring how
+away tickets already lock in a first attempt so a denial can't be
+re-rolled into a win. Unlike away tickets, though, a denial for one
+section doesn't block the match entirely: the player can reopen the map
+and try a different, easier section instead, they just can't retry the
+exact section they were already denied for. Once any section succeeds,
+that's the seat for the match and the map won't reopen.
 
 ## Away tickets: a loyalty-driven chance, not a guarantee — and locked in once rolled
 

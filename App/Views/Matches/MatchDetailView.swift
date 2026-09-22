@@ -15,11 +15,11 @@ struct MatchDetailView: View {
     @Environment(CharacterStore.self) private var characterStore
     @Environment(ContentStore.self) private var contentStore
 
-    @State private var selectedSeat: SeatCategory = .mainStand
     @State private var travelMode: TravelMode = .bus
     @State private var satInUltrasStand = false
     @State private var didPyro = false
     @State private var showCutscene = false
+    @State private var showStadiumMap = false
 
     private var homeClub: Club? { contentStore.repository.club(id: match.homeClubId) }
     private var awayClub: Club? { contentStore.repository.club(id: match.awayClubId) }
@@ -134,40 +134,69 @@ struct MatchDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Pick Your Seat").font(.headline)
 
-            ForEach(SeatCategory.allCases, id: \.self) { seat in
-                let isLocked = seat == .ultrasSection && !characterStore.hasUltrasSeasonTicket
-                SeatRow(seat: seat, isSelected: selectedSeat == seat, isLocked: isLocked)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        guard !isLocked else { return }
-                        selectedSeat = seat
-                        if seat != .ultrasSection { didPyro = false }
-                    }
-            }
+            if let grantedSeat = characterStore.grantedHomeSeat(forMatchId: match.id) {
+                Label("You've got a ticket in the \(grantedSeat.displayName)!", systemImage: "checkmark.seal.fill")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(Theme.accent)
 
-            if !characterStore.hasUltrasSeasonTicket {
-                let threshold = characterStore.homeSeasonTicketLoyaltyThreshold
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Ultras Section season ticket: \(characterStore.stats.loyalty)/\(threshold) loyalty")
-                        .font(.caption).foregroundStyle(Theme.secondaryText)
-                    ProgressView(value: Double(characterStore.stats.loyalty), total: Double(max(threshold, 1)))
-                        .tint(Theme.accent)
+                if grantedSeat == .ultrasSection {
+                    Toggle("Do Pyro", isOn: $didPyro)
                 }
-            }
 
-            if selectedSeat == .ultrasSection {
-                Toggle("Do Pyro", isOn: $didPyro)
-            }
+                Button {
+                    satInUltrasStand = grantedSeat == .ultrasSection
+                    showCutscene = true
+                } label: {
+                    ConfirmButtonLabel(text: "Head to the Match")
+                }
+            } else {
+                let tried = characterStore.homeSeatRequests(forMatchId: match.id)
+                if !tried.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(tried, id: \.seat) { entry in
+                            Text("Denied for the \(entry.seat.displayName) — try a different section.")
+                                .font(.caption)
+                                .foregroundStyle(Theme.secondaryText)
+                        }
+                    }
+                }
 
-            Button {
-                satInUltrasStand = selectedSeat == .ultrasSection
-                showCutscene = true
-            } label: {
-                ConfirmButtonLabel(text: "Head to the Match")
+                Text("Open the stadium map to apply for a section. The Ultras Section is by far the most contested.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+
+                Button {
+                    showStadiumMap = true
+                } label: {
+                    ConfirmButtonLabel(text: "Open Stadium Map")
+                }
+
+                if !characterStore.hasUltrasSeasonTicket {
+                    let threshold = characterStore.homeSeasonTicketLoyaltyThreshold
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Ultras Section season ticket: \(characterStore.stats.loyalty)/\(threshold) loyalty")
+                            .font(.caption).foregroundStyle(Theme.secondaryText)
+                        ProgressView(value: Double(characterStore.stats.loyalty), total: Double(max(threshold, 1)))
+                            .tint(Theme.accent)
+                    }
+                }
             }
         }
         .padding(16)
         .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+        .sheet(isPresented: $showStadiumMap) {
+            StadiumMapView(
+                triedSeats: Dictionary(
+                    uniqueKeysWithValues: characterStore.homeSeatRequests(forMatchId: match.id).map { ($0.seat, $0.granted) }
+                ),
+                chance: { seat in characterStore.homeSeatChance(for: seat) },
+                isGuaranteed: { seat in seat == .ultrasSection && characterStore.hasUltrasSeasonTicket },
+                onSelect: { seat in
+                    characterStore.requestHomeSeat(for: match, seat: seat)
+                    showStadiumMap = false
+                }
+            )
+        }
     }
 
     // MARK: - Away game: request a ticket
@@ -298,25 +327,6 @@ private struct ConfirmButtonLabel: View {
             .padding()
             .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
             .foregroundStyle(Theme.accentForeground)
-    }
-}
-
-private struct SeatRow: View {
-    let seat: SeatCategory
-    let isSelected: Bool
-    let isLocked: Bool
-
-    var body: some View {
-        HStack {
-            Image(systemName: isLocked ? "lock.fill" : (isSelected ? "checkmark.circle.fill" : "circle"))
-                .foregroundStyle(isLocked ? Theme.secondaryText : Theme.accent)
-            Text(seat.displayName)
-                .foregroundStyle(isLocked ? Theme.secondaryText : Theme.primaryText)
-            Spacer()
-        }
-        .padding(10)
-        .background(Theme.background, in: RoundedRectangle(cornerRadius: 10))
-        .opacity(isLocked ? 0.6 : 1)
     }
 }
 

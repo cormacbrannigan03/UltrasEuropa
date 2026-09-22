@@ -100,6 +100,14 @@ final class CharacterEntity {
     @Relationship(deleteRule: .cascade, inverse: \AwayTicketAttemptEntity.character)
     var awayTicketAttempts: [AwayTicketAttemptEntity] = []
 
+    /// One row per (match, stadium section) the player has ever applied
+    /// for at a home game — each section's outcome for a given match is
+    /// locked in the first time it's tried, so a denial for one section
+    /// can't be re-rolled, though a different, easier section can still be
+    /// tried afterward. See `CharacterStore.requestHomeSeat`.
+    @Relationship(deleteRule: .cascade, inverse: \HomeSeatRequestEntity.character)
+    var homeSeatRequests: [HomeSeatRequestEntity] = []
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -271,5 +279,26 @@ final class AwayTicketAttemptEntity {
         self.matchId = matchId
         self.gotTicket = gotTicket
         self.dateAttempted = dateAttempted
+    }
+}
+
+/// The locked-in outcome of applying for one stadium section at one home
+/// match — see `CharacterStore.requestHomeSeat`. Once this exists for a
+/// (matchId, seatRawValue) pair, that exact section can't be re-applied
+/// for on that match, though a different section still can be.
+@Model
+final class HomeSeatRequestEntity {
+    var matchId: String
+    /// Raw value of `UltrasEuropaCore.SeatCategory`.
+    var seatRawValue: String
+    var granted: Bool
+    var dateRequested: Date
+    var character: CharacterEntity?
+
+    init(matchId: String, seatRawValue: String, granted: Bool, dateRequested: Date = .now) {
+        self.matchId = matchId
+        self.seatRawValue = seatRawValue
+        self.granted = granted
+        self.dateRequested = dateRequested
     }
 }

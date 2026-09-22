@@ -20,6 +20,7 @@ enum PreviewSampleData {
             CrewRelationshipEntity.self,
             DesignedClothingItemEntity.self,
             AwayTicketAttemptEntity.self,
+            HomeSeatRequestEntity.self,
         ])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         guard let container = try? ModelContainer(for: schema, configurations: [configuration]) else {

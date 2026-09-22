@@ -444,6 +444,78 @@ final class CharacterStore {
         return gotTicket
     }
 
+    // MARK: - Home stadium section requests
+
+    /// Every section already applied for at this match, successful or
+    /// not — drives the stadium map's "already tried" state.
+    func homeSeatRequests(forMatchId matchId: String) -> [(seat: SeatCategory, granted: Bool)] {
+        (character?.homeSeatRequests ?? [])
+            .filter { $0.matchId == matchId }
+            .compactMap { entity in
+                guard let seat = SeatCategory(rawValue: entity.seatRawValue) else { return nil }
+                return (seat, entity.granted)
+            }
+    }
+
+    /// The locked-in outcome of a past request for `seat` at this match, or
+    /// `nil` if that exact section hasn't been tried yet. Once set, it
+    /// can't change — see `requestHomeSeat`.
+    func homeSeatRequest(forMatchId matchId: String, seat: SeatCategory) -> Bool? {
+        homeSeatRequests(forMatchId: matchId).first { $0.seat == seat }?.granted
+    }
+
+    /// The section the player has actually been granted for this match, if
+    /// any — there's at most one, since once a request succeeds there's no
+    /// reason to try another section.
+    func grantedHomeSeat(forMatchId matchId: String) -> SeatCategory? {
+        homeSeatRequests(forMatchId: matchId).first { $0.granted }?.seat
+    }
+
+    /// The chance (0...1) of a request for `seat` succeeding right now —
+    /// shown on the stadium map before the player commits to a section.
+    func homeSeatChance(for seat: SeatCategory) -> Double {
+        HomeSeatRequestEngine.chance(
+            for: seat, prestigeTier: favoriteClub?.prestigeTier ?? 3, hasUltrasSeasonTicket: hasUltrasSeasonTicket
+        )
+    }
+
+    /// Applies for `seat` at `match`. Only resolves once per (match, seat)
+    /// pair — trying the same section again for the same match returns its
+    /// locked-in result instead of rolling again, so a denial can't be
+    /// endlessly retried into a win. A different, easier section can still
+    /// be tried afterward. Returns `nil` if there's no character yet, or if
+    /// a different section has already been granted for this match.
+    @discardableResult
+    func requestHomeSeat(for match: Match, seat: SeatCategory, today: Date = .now) -> Bool? {
+        guard let character else { return nil }
+
+        if let existing = homeSeatRequest(forMatchId: match.id, seat: seat) {
+            return existing
+        }
+        guard grantedHomeSeat(forMatchId: match.id) == nil else { return nil }
+
+        let granted: Bool
+        if seat == .ultrasSection && hasUltrasSeasonTicket {
+            granted = true
+        } else {
+            var generator = SystemRandomNumberGenerator()
+            granted = HomeSeatRequestEngine.resolve(
+                seat: seat, prestigeTier: favoriteClub?.prestigeTier ?? 3,
+                hasUltrasSeasonTicket: hasUltrasSeasonTicket, using: &generator
+            )
+        }
+
+        let request = HomeSeatRequestEntity(
+            matchId: match.id, seatRawValue: seat.rawValue, granted: granted, dateRequested: today
+        )
+        request.character = character
+        modelContext.insert(request)
+        character.homeSeatRequests.append(request)
+        try? modelContext.save()
+
+        return granted
+    }
+
     // MARK: - Wardrobe
 
     func equippedItemId(for slot: ClothingSlot) -> String? {
