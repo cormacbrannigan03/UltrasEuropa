@@ -300,6 +300,18 @@ final class CharacterStore {
         content.matchesForClub(clubId, asOf: simulatedDate)
     }
 
+    /// The favorite club's soonest fixture that hasn't been played yet —
+    /// what the Dashboard's "Next Match" card shows, so the player always
+    /// has a one-tap way into the match they're building toward without
+    /// detouring through the Season Calendar first.
+    var nextMatchForFavoriteClub: Match? {
+        guard let favoriteClub else { return nil }
+        return matchesForClub(favoriteClub.id)
+            .filter { !$0.isPlayed }
+            .sorted { $0.date < $1.date }
+            .first
+    }
+
     /// Advances the season clock by `days` (a week for "next matchday"),
     /// revealing more fixtures' results. Doesn't touch real-world activity
     /// pacing (streaks, daily check-ins, diminishing returns) — those still

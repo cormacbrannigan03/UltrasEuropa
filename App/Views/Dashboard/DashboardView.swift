@@ -11,6 +11,17 @@ struct DashboardView: View {
     private var favoriteClub: Club? { characterStore.favoriteClub }
     private var localization: LocalizationManager { LocalizationManager.shared }
 
+    private var nextMatch: Match? { characterStore.nextMatchForFavoriteClub }
+
+    private func isHomeMatch(_ match: Match) -> Bool {
+        match.homeClubId == favoriteClub?.id
+    }
+
+    private func opponentName(for match: Match) -> String {
+        let opponentId = isHomeMatch(match) ? match.awayClubId : match.homeClubId
+        return contentStore.repository.club(id: opponentId)?.name ?? opponentId
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -21,6 +32,17 @@ struct DashboardView: View {
                     onSimulateDay: { characterStore.simulateDays(1) },
                     onSimulateWeek: { characterStore.simulateDays(7) }
                 )
+
+                if let nextMatch {
+                    NextMatchCard(
+                        match: nextMatch,
+                        isHome: isHomeMatch(nextMatch),
+                        opponentName: opponentName(for: nextMatch),
+                        isToday: Calendar.current.isDate(nextMatch.date, inSameDayAs: characterStore.simulatedDate)
+                    )
+                } else if favoriteClub != nil {
+                    NoUpcomingMatchCard()
+                }
 
                 RankProgressCard(
                     rank: characterStore.rank,
@@ -76,6 +98,9 @@ struct DashboardView: View {
         }
         .background(Theme.background)
         .navigationTitle("Dashboard")
+        .navigationDestination(for: Match.self) { match in
+            MatchDetailView(match: match)
+        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Menu {

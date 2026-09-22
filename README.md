@@ -158,6 +158,7 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Matches tab shows only the favorite club's own fixtures/results (browse any other club's schedule from the Clubs tab instead)
 - [ ] Buttons, badges, progress bars, and the tab bar tint match the favorite club's primary color; creating a second save with a different club and switching to it via "Switch Save" changes all of those immediately; button text stays readable even for a club with a very light primary color
 - [ ] Dashboard's toolbar shows a flag emblem (🇬🇧 by default); tapping it opens a dropdown of all 27 languages with a checkmark on the current one; picking another immediately relabels the tab bar and the "Season Calendar"/"Store" Dashboard links in that language; force-quit and relaunch — the chosen language is still selected
+- [ ] Dashboard shows a "Next Match" card right under the Season Clock with the favorite club's soonest unplayed fixture (opponent, home/away, date); tapping it goes straight to that match's detail screen, same as tapping it from the Season Calendar; once every fixture is played, the card reads "No fixtures left this season" instead
 
 ## The club/league data — real, but not live-verified
 
