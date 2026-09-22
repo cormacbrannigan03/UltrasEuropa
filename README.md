@@ -138,6 +138,7 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Create a second save in an empty slot, switch back to the first via the picker, and confirm each save's stats are independent of the other
 - [ ] Delete a save from the picker (trash icon) and confirm it's gone and its slot shows "New Save" again
 - [ ] After creating a character, Dashboard shows rank "Regular", 0 XP, all stats at their base value, and the crew name
+- [ ] The Dashboard's stats grid shows a fifth "Away Loyalty" tile alongside Loyalty/Knowledge/Influence/Notoriety, and its number rises after a successful away-ticket request (win or lose — see below) rather than staying at 0
 - [ ] Dashboard shows a Season Clock card with today's in-game date; "+1 Day"/"+1 Week" advance it and reveal more matches' results
 - [ ] Dashboard's "Season Calendar" link shows the favorite club's fixtures grouped by month; "Fast Forward to Next Match" jumps the season clock straight to the next unplayed fixture's date
 - [ ] A match more than 30 days out (by the season clock) shows a "Tickets Not Yet On Sale" card instead of the attendance flow; simulating forward past that date unlocks it

@@ -3,6 +3,12 @@ import UltrasEuropaCore
 
 struct StatsGridView: View {
     let stats: CharacterStats
+    /// Separate from `stats` — it's tracked per-character on
+    /// `CharacterEntity`/`CharacterStore`, not part of the pure Core
+    /// `CharacterStats` value type, since it's specifically about away-day
+    /// standing rather than general progression (see
+    /// `ProgressionConstants.awayTicketChance`).
+    let awayLoyaltyPoints: Int
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -12,6 +18,7 @@ struct StatsGridView: View {
             StatTile(label: "Knowledge", value: stats.knowledge, systemImage: "book.fill")
             StatTile(label: "Influence", value: stats.influence, systemImage: "megaphone.fill")
             StatTile(label: "Notoriety", value: stats.notoriety, systemImage: "flame.fill")
+            StatTile(label: "Away Loyalty", value: awayLoyaltyPoints, systemImage: "bus.fill")
         }
     }
 }

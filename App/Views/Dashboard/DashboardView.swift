@@ -64,7 +64,7 @@ struct DashboardView: View {
                     )
                 }
 
-                StatsGridView(stats: characterStore.stats)
+                StatsGridView(stats: characterStore.stats, awayLoyaltyPoints: characterStore.awayLoyaltyPoints)
 
                 NavigationLink { SeasonCalendarView() } label: {
                     DashboardLinkRow(title: localization.string(.seasonCalendar), subtitle: "Fast forward to your next match", systemImage: "calendar")
