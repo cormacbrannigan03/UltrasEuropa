@@ -9,6 +9,7 @@ struct DashboardView: View {
     @State private var showSwitchSaveConfirmation = false
 
     private var favoriteClub: Club? { characterStore.favoriteClub }
+    private var localization: LocalizationManager { LocalizationManager.shared }
 
     var body: some View {
         ScrollView {
@@ -44,7 +45,7 @@ struct DashboardView: View {
                 StatsGridView(stats: characterStore.stats)
 
                 NavigationLink { SeasonCalendarView() } label: {
-                    DashboardLinkRow(title: "Season Calendar", subtitle: "Fast forward to your next match", systemImage: "calendar")
+                    DashboardLinkRow(title: localization.string(.seasonCalendar), subtitle: "Fast forward to your next match", systemImage: "calendar")
                 }
                 NavigationLink { CrewMembersView() } label: {
                     DashboardLinkRow(title: "Crew Members", subtitle: "Build relationships", systemImage: "person.3.fill")
@@ -68,7 +69,7 @@ struct DashboardView: View {
                     DashboardLinkRow(title: "Challenges", subtitle: "Tasks to complete", systemImage: "checklist")
                 }
                 NavigationLink { StoreView() } label: {
-                    DashboardLinkRow(title: "Store", subtitle: "Fast-track your journey", systemImage: "cart.fill")
+                    DashboardLinkRow(title: localization.string(.store), subtitle: "Fast-track your journey", systemImage: "cart.fill")
                 }
             }
             .padding()
@@ -76,6 +77,26 @@ struct DashboardView: View {
         .background(Theme.background)
         .navigationTitle("Dashboard")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Menu {
+                    ForEach(AppLanguage.allCases) { language in
+                        Button {
+                            LocalizationManager.shared.setLanguage(language)
+                        } label: {
+                            HStack {
+                                Text("\(language.flagEmoji) \(language.nativeName)")
+                                if language == localization.currentLanguage {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    Text(localization.currentLanguage.flagEmoji)
+                        .font(.title2)
+                }
+                .accessibilityLabel(localization.string(.language))
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showSwitchSaveConfirmation = true

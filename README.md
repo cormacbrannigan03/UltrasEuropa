@@ -157,6 +157,7 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Clubs tab lists all 20 leagues; drilling into one shows its real clubs; a club's detail screen shows its generated fixtures/results
 - [ ] Matches tab shows only the favorite club's own fixtures/results (browse any other club's schedule from the Clubs tab instead)
 - [ ] Buttons, badges, progress bars, and the tab bar tint match the favorite club's primary color; creating a second save with a different club and switching to it via "Switch Save" changes all of those immediately; button text stays readable even for a club with a very light primary color
+- [ ] Dashboard's toolbar shows a flag emblem (🇬🇧 by default); tapping it opens a dropdown of all 27 languages with a checkmark on the current one; picking another immediately relabels the tab bar and the "Season Calendar"/"Store" Dashboard links in that language; force-quit and relaunch — the chosen language is still selected
 
 ## The club/league data — real, but not live-verified
 
@@ -559,3 +560,40 @@ button text unreadable. `Theme.accentForeground` picks white or black
 based on the accent color's relative luminance, and every place in the app
 that draws text or an icon directly on an `accent`-colored background uses
 it instead of a hardcoded `.white`.
+
+## Language picker — the interface, not (yet) the full text
+
+A flag emblem sits in the Dashboard's toolbar, showing the currently
+selected language (🇬🇧 by default, for English). Tapping it opens a
+dropdown (`Menu`) listing all 27 supported languages — every official
+language of the European Union, plus Norwegian, Turkish, and Serbian so
+every nation with a league in `leagues.json` is covered too — each shown
+with its own flag and name written in that language, with a checkmark on
+whichever one is active. Picking one calls
+`LocalizationManager.shared.setLanguage(_:)` and the choice is remembered
+across launches via `UserDefaults`, the same way the active save slot is
+— it's a per-device preference, not something tied to a save.
+
+`AppLanguage` (Core) lists the 27 languages with their ISO code, flag
+emoji, and native name. `LocalizationManager` (App) is a small
+`@Observable` singleton — the same trick `ThemeState` uses for club
+colors — so anywhere in the app that reads
+`LocalizationManager.shared.string(_:)` during its `body` updates live the
+moment the language changes, with no `@Environment` plumbing needed.
+
+**Honest scope note:** the picker and the full 27-language list work today
+— pick any language and the tab bar (Dashboard/Clubs/Matches/Chants/
+Gallery) and the "Season Calendar"/"Store" Dashboard links relabel
+immediately, translated by hand into all 27 languages. The rest of the
+app's text — match descriptions, activity prompts, achievement copy, crew
+dialogue, and everything else, several hundred strings across roughly 30
+files — stays in English regardless of the picked language. Translating
+all of that accurately into 27 languages is a large task that deserves
+native-speaker review, which this pass didn't have; rather than paper over
+that with machine-translated flavor text, `LocalizedStrings.swift` covers
+only the `L10nKey` cases the interface chrome actually uses today
+(`tabDashboard`, `tabClubs`, `tabMatches`, `tabChants`, `tabGallery`,
+`seasonCalendar`, `store`, `language`). Extending coverage to more screens
+is just a matter of adding new `L10nKey` cases and translation rows to
+that same table — the infrastructure (the language list, the picker, the
+persistence, the live-update mechanism) is already built for it.
