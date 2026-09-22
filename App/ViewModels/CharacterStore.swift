@@ -328,9 +328,22 @@ final class CharacterStore {
     /// calendar's "Fast Forward to Next Match" and the match-day cutscene's
     /// "Fast Forward to Kickoff" prompt. A no-op if `targetDate` isn't
     /// after the current season clock.
+    ///
+    /// Compares calendar days (via `startOfDay`), not raw elapsed time:
+    /// `simulatedDate` carries whatever time-of-day the character was
+    /// created at, while every generated `Match.date` lands at midnight
+    /// (see `SeasonScheduleGenerator`), so a raw
+    /// `dateComponents([.day], from:to:)` between them almost always
+    /// undercounts by a day — e.g. from "9 Oct, 15:45" to "10 Oct, 00:00"
+    /// is under 24 hours, so `.day` comes out 0 and this silently did
+    /// nothing. Normalizing both sides to the start of their calendar day
+    /// first fixes that while still adding the days to the real
+    /// `simulatedDate` (via `simulateDays`), so its time-of-day is kept.
     func simulateForward(to targetDate: Date, calendar: Calendar = .current) {
         guard let character else { return }
-        let days = calendar.dateComponents([.day], from: character.simulatedDate, to: targetDate).day ?? 0
+        let currentDay = calendar.startOfDay(for: character.simulatedDate)
+        let targetDay = calendar.startOfDay(for: targetDate)
+        let days = calendar.dateComponents([.day], from: currentDay, to: targetDay).day ?? 0
         simulateDays(days, calendar: calendar)
     }
 

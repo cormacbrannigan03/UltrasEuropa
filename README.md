@@ -145,6 +145,8 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] A home match's attendance card opens a schematic stadium map with four tappable sections, each showing a success percentage (or "Guaranteed" for the Ultras Section with a season ticket); tapping one resolves immediately and locks in — a denied section shows "Denied" on the map and can't be retapped, but a different section can still be tried
 - [ ] The Ultras Section's chance is meaningfully lower than the other three sections; Behind the Goal (drawn alongside it as the same end of the ground) is also noticeably harder than the Main Stand or Family Section, though still easier than the Ultras Section itself; a bigger/more prestigious favorite club lowers every section's chance further
 - [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, a security search (hide the pyro, then a chance of getting caught) only if pyro was toggled, then (if the season clock hasn't reached the match date yet) a "Fast Forward to Kickoff" prompt before the live-watch beat
+- [ ] Tapping "Fast Forward to Kickoff" actually advances the season clock and reveals the match as played, instead of silently doing nothing; the same goes for "Fast Forward to Next Match" on the Season Calendar
+- [ ] A small X button in the top-right corner of the match-day cutscene closes it at any beat, without needing to reach the end
 - [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; choosing bigger reactions repeatedly eventually triggers a security warning, then an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo/pyro), and eventually an ejection + stadium ban that blocks attending any match until the season clock reaches the ban's end date
 - [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled and it made it through security, then a Full Time summary with total XP
 - [ ] Chants/Gallery tabs are reference-only now (no XP button) — Gallery greys out tifo displays with no upcoming match "Planned", and taps through to that match on ones that are
@@ -271,6 +273,22 @@ minute for each of those already-fixed goals (a seeded shuffle of 1–90, so
 the same match always plays out the same way), purely to pace how it's
 *revealed* — the same principle as the deterministic score itself, applied
 to how it unfolds rather than just what it ends up being.
+
+**Fixed bug:** "Fast Forward to Kickoff" (and the Season Calendar's "Fast
+Forward to Next Match", which shares the same code path) could silently do
+nothing. `CharacterStore.simulateForward(to:)` was computing the number of
+days to advance from the raw, exact-time difference between the season
+clock and the target date — but `simulatedDate` carries whatever
+time-of-day the character happened to be created at, while every generated
+`Match.date` lands at midnight, so going from e.g. "9 Oct, 15:45" to
+"10 Oct, 00:00" is under 24 hours and `dateComponents([.day], ...)` came
+out 0, which `simulateDays` then silently no-ops on. It now normalizes
+both dates to the start of their calendar day before computing the
+difference, so it correctly advances a full day (or more) regardless of
+what time the season clock happens to read. The match-day cutscene also
+gained a small X button (top-right, at every beat) so it can be closed
+without needing to reach the summary — there was previously no way out of
+it at all.
 
 ## Reacting to goals, security searches, and the risk of getting thrown out
 

@@ -141,6 +141,16 @@ struct MatchDayCutsceneView: View {
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.background)
+        .overlay(alignment: .topTrailing) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+            .padding()
+        }
     }
 
     // MARK: - Beats
