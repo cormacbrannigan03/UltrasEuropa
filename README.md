@@ -155,7 +155,10 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] A police intervention cuts straight to a "Pulled Aside By Police" summary (skipping the rest of the beats, including base attendance — `matchesAttended` should NOT increase for that match) and applies a 30-day stadium ban, separate from and longer than a stewards' ejection's 14-day ban
 - [ ] Reopening a match already attempted for a confrontation shows the locked-in result on the confrontation beat instead of offering to roll again
 - [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; choosing bigger reactions repeatedly eventually triggers a security warning, then an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo/pyro), and eventually an ejection + stadium ban that blocks attending any match until the season clock reaches the ban's end date
-- [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled and it made it through security, then a Full Time summary with total XP
+- [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled and it made it through security, then a Full Time summary with total XP and a Match Stats card (possession/shots/shots on target/corners, as comparison bars)
+- [ ] The live-watch feed shows goal scorer names (generic fictional names, e.g. "J. Marsh"), not just "Goal!"; some matches also show yellow/red card entries mixed into the same chronological feed
+- [ ] A card during the live-watch beat pauses it for the same Mild/Moderate/Strong/Extreme reaction choice as a goal, and reacting to it can raise heat toward a warning/ejection the same way a goal reaction does
+- [ ] Any already-played match's detail screen (`MatchDetailView`) shows a Match Stats card and a "Match Events" list of goal scorers and cards, even for matches you didn't personally attend
 - [ ] The Gallery tab is reference-only (no XP button) — greys out tifo displays with no upcoming match "Planned", and taps through to that match on ones that are; there's no standalone Chants tab any more
 - [ ] Requesting an away ticket resolves once and locks in — reopening that same match shows the granted or denied result, never a fresh roll
 - [ ] Completing a challenge/task awards XP
@@ -375,6 +378,47 @@ its own chance of getting through (`SecurityCheckEngine.resolvePyroSearch`).
 Getting caught confiscates the pyro for that match (no pyro beat, and the
 `.doPyroChallenge` reward isn't earned) but doesn't block getting into the
 ground — only a *bad reaction*, not a failed search, gets you ejected.
+
+## Match stats, goal scorer names, and reactable cards
+
+The match screen and live-watch beat now read more like a real match
+report instead of just a scoreline:
+
+- **Basic stats** — possession, shots, shots on target, and corners —
+  come from `MatchStatsEngine.generate(matchId:homeGoals:awayGoals:)`
+  (`Core/Sources/UltrasEuropaCore/MatchDay/MatchStatsEngine.swift`), the
+  same deterministic-seeded-hash technique as everything else in
+  `MatchDay/`: the same match always shows the same stats, and they're
+  biased toward whichever side actually won (more shots, more corners,
+  more possession) without ever contradicting the real score. Shots on
+  target are always at least the number of goals scored and never more
+  than total shots; home and away possession always sum to 100. A shared
+  `MatchStatsCard` (`App/Views/Matches/MatchStatsCard.swift`) renders these
+  as side-by-side comparison bars, and appears both in `MatchDetailView`
+  for any already-played match and in the cutscene's full-time summary.
+- **Goal scorers** — every `GoalEvent` now carries a `scorerName`, and
+  every card carries a `playerName`. Both are drawn from
+  `MatchPlayerNames`, a pool of ~30 clearly-generic, fictional names (e.g.
+  "J. Marsh", "D. Okafor") — never real footballers. This follows the same
+  honesty policy already applied to invented crew, chants, and tifo
+  content: real clubs and leagues are used, but nothing invented is
+  attributed to a real person.
+- **Cards** — `MatchDayContentPlanner.cardEvents(matchId:)` deterministically
+  generates 0–4 cards per match (yellow, or red roughly 1 in 10 times), each
+  with its own minute, side, and player. The live-watch feed merges goals
+  and cards into one chronological list (`MatchDayCutsceneView.FeedEntry`),
+  and `MatchDetailView` shows the same list as a "Match Events" summary for
+  any played match.
+
+**Cards are reactable, just like goals.** A card pauses the live-watch beat
+exactly the way a goal does, prompting the same Mild/Moderate/Strong/Extreme
+`ReactionSeverity` choice, earning the same `reactMildly`...`reactExtremely`
+rewards, and adding the same stadium-security heat — reusing the existing
+system rather than inventing a parallel one, since "how do you react in the
+stands" doesn't really change based on what triggered it. When a goal and a
+card land on the same minute, goals take priority, then cards, then a
+stance checkpoint (`MatchDayCutsceneView.advanceWithinLiveMatch()`), so
+nothing gets silently skipped.
 
 ## Match categories and police presence: a pre-match risk, separate from in-stadium security
 

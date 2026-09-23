@@ -9,10 +9,14 @@ public struct GoalEvent: Identifiable, Hashable, Sendable {
     public let id: String
     public let minute: Int
     public let isHomeTeam: Bool
+    /// Always a generic fictional name (see `MatchPlayerNames`), never a
+    /// real footballer.
+    public let scorerName: String
 
-    public init(id: String, minute: Int, isHomeTeam: Bool) {
+    public init(id: String, minute: Int, isHomeTeam: Bool, scorerName: String) {
         self.id = id
         self.minute = minute
         self.isHomeTeam = isHomeTeam
+        self.scorerName = scorerName
     }
 }

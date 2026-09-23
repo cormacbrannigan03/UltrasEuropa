@@ -61,7 +61,35 @@ public enum MatchDayContentPlanner {
         )
 
         return zip(minutes, sides).enumerated().map { index, pair in
-            GoalEvent(id: "\(matchId)-goal-\(index)", minute: pair.0, isHomeTeam: pair.1)
+            let scorerName = MatchPlayerNames.name(seed: "\(matchId)-goal-\(index)-scorer")
+            return GoalEvent(id: "\(matchId)-goal-\(index)", minute: pair.0, isHomeTeam: pair.1, scorerName: scorerName)
+        }
+    }
+
+    /// A deterministic set of 0-4 cards shown during `matchId`'s live-watch
+    /// breakdown — same seeded-hash technique as `goalEvents`, entirely
+    /// independent of the score. Roughly 1 in 10 cards is a red.
+    public static func cardEvents(matchId: String) -> [CardEvent] {
+        let countHash = SeasonScheduleGenerator.hashSeed("\(matchId)-card-count")
+        let count = Int(countHash % 5) // 0...4
+        guard count > 0 else { return [] }
+
+        let minutes = shuffledOrder(Array(1...matchLengthMinutes), seed: "\(matchId)-card-minutes")
+            .prefix(count)
+            .sorted()
+
+        return minutes.enumerated().map { index, minute in
+            let baseSeed = "\(matchId)-card-\(index)"
+            let isHomeTeam = SeasonScheduleGenerator.hashSeed("\(baseSeed)-side") % 2 == 0
+            let isRed = SeasonScheduleGenerator.hashSeed("\(baseSeed)-red") % 10 == 0
+            let playerName = MatchPlayerNames.name(seed: "\(baseSeed)-player")
+            return CardEvent(
+                id: "\(matchId)-card-\(index)",
+                minute: minute,
+                isHomeTeam: isHomeTeam,
+                playerName: playerName,
+                isRed: isRed
+            )
         }
     }
 

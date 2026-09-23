@@ -46,6 +46,8 @@ struct MatchDayCutsceneView: View {
     @State private var currentMinute = 0
     @State private var acknowledgedGoalIDs: Set<String> = []
     @State private var pendingReactionGoal: GoalEvent?
+    @State private var acknowledgedCardIDs: Set<String> = []
+    @State private var pendingReactionCard: CardEvent?
     @State private var heat = 0
     @State private var securityOutcome: SecurityOutcome = .noAction
 
@@ -96,6 +98,29 @@ struct MatchDayCutsceneView: View {
         liveGoalEvents.filter { $0.minute <= currentMinute }
     }
 
+    private var liveCardEvents: [CardEvent] {
+        MatchDayContentPlanner.cardEvents(matchId: match.id)
+    }
+
+    private var visibleCardEvents: [CardEvent] {
+        liveCardEvents.filter { $0.minute <= currentMinute }
+    }
+
+    /// Goals and cards merged into one chronological feed for the live-watch
+    /// card — see `feedEntryRow`.
+    private var visibleFeedEntries: [FeedEntry] {
+        (visibleGoalEvents.map(FeedEntry.goal) + visibleCardEvents.map(FeedEntry.card))
+            .sorted { $0.minute < $1.minute }
+    }
+
+    /// This fixture's fabricated match stats — see `MatchStatsEngine`. `nil`
+    /// until the match has actually been played.
+    private var matchStats: MatchStats? {
+        let state = currentMatchState
+        guard let home = state.homeScore, let away = state.awayScore else { return nil }
+        return MatchStatsEngine.generate(matchId: match.id, homeGoals: home, awayGoals: away)
+    }
+
     /// Fixed 15-minute stops (15, 30, ... full time) where the live-watch
     /// beat pauses for a stance check-in regardless of whether a goal
     /// happens to land there too — see `MatchStance`.
@@ -111,8 +136,12 @@ struct MatchDayCutsceneView: View {
             .filter { !acknowledgedGoalIDs.contains($0.id) }
             .map(\.minute)
             .min()
+        let nextCard = liveCardEvents
+            .filter { !acknowledgedCardIDs.contains($0.id) }
+            .map(\.minute)
+            .min()
         let nextCheckpoint = checkpointMinutes.first { $0 > currentMinute && !acknowledgedCheckpoints.contains($0) }
-        return [nextGoal, nextCheckpoint].compactMap { $0 }.min() ?? MatchDayContentPlanner.matchLengthMinutes
+        return [nextGoal, nextCard, nextCheckpoint].compactMap { $0 }.min() ?? MatchDayContentPlanner.matchLengthMinutes
     }
 
     /// This fixture's police/rivalry profile — see `MatchProfileEngine`.
@@ -221,6 +250,8 @@ struct MatchDayCutsceneView: View {
         case .liveMatch:
             if let pendingReactionGoal {
                 reactionPromptCard(for: pendingReactionGoal)
+            } else if let pendingReactionCard {
+                reactionPromptCard(for: pendingReactionCard)
             } else if let pendingCheckpointMinute {
                 stanceCheckInCard(at: pendingCheckpointMinute)
             } else if currentMatchState.isPlayed && currentStance == nil && currentMinute == 0 {
@@ -379,10 +410,8 @@ struct MatchDayCutsceneView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(visibleGoalEvents) { event in
-                        Text("⚽️ \(event.minute)' — \((event.isHomeTeam ? homeClub?.name : awayClub?.name) ?? "Goal!")")
-                            .font(.caption)
-                            .foregroundStyle(Theme.secondaryText)
+                    ForEach(visibleFeedEntries) { entry in
+                        feedEntryRow(entry)
                     }
                 }
 
@@ -413,6 +442,41 @@ struct MatchDayCutsceneView: View {
             Text("\(goals)").font(.title.bold())
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// A goal or a card, merged into one chronologically-sorted feed for
+    /// `liveMatchCard` — see `visibleFeedEntries`.
+    private enum FeedEntry: Identifiable {
+        case goal(GoalEvent)
+        case card(CardEvent)
+
+        var id: String {
+            switch self {
+            case .goal(let event): return event.id
+            case .card(let event): return event.id
+            }
+        }
+
+        var minute: Int {
+            switch self {
+            case .goal(let event): return event.minute
+            case .card(let event): return event.minute
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func feedEntryRow(_ entry: FeedEntry) -> some View {
+        switch entry {
+        case .goal(let event):
+            Text("⚽️ \(event.minute)' — \(event.scorerName) (\((event.isHomeTeam ? homeClub?.name : awayClub?.name) ?? "Goal!"))")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+        case .card(let event):
+            Text("\(event.isRed ? "🟥" : "🟨") \(event.minute)' — \(event.playerName) (\((event.isHomeTeam ? homeClub?.name : awayClub?.name) ?? "Card"))")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+        }
     }
 
     // MARK: - Match stance
@@ -487,6 +551,28 @@ struct MatchDayCutsceneView: View {
         return scoringClubId == favoriteClubId
     }
 
+    private func reactionPromptCard(for card: CardEvent) -> some View {
+        let isOwnPlayerCarded = isCardOnFavoriteClub(card)
+        return VStack(spacing: 16) {
+            Image(systemName: "rectangle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(card.isRed ? .red : .yellow)
+            Text("\(card.isRed ? "RED" : "YELLOW") CARD! \(card.minute)'").font(.title.bold())
+            Text("\(card.playerName) (\((card.isHomeTeam ? homeClub?.name : awayClub?.name) ?? "Unknown"))")
+                .font(.headline)
+                .foregroundStyle(Theme.secondaryText)
+            Text(isOwnPlayerCarded ? "One of your side's players is booked — how do you react?" : "A rival gets a card — how do you react?")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Theme.secondaryText)
+        }
+    }
+
+    private func isCardOnFavoriteClub(_ card: CardEvent) -> Bool {
+        guard let favoriteClubId = characterStore.favoriteClub?.id else { return false }
+        let cardedClubId = card.isHomeTeam ? match.homeClubId : match.awayClubId
+        return cardedClubId == favoriteClubId
+    }
+
     private func resolveReaction(_ severity: ReactionSeverity) {
         guard let goal = pendingReactionGoal else { return }
         absorb(characterStore.recordActivity(severity.activityType))
@@ -494,6 +580,29 @@ struct MatchDayCutsceneView: View {
         pendingReactionGoal = nil
         applyHeat(severity.heat)
         if !wasEjected {
+            advanceWithinLiveMatch()
+        }
+    }
+
+    private func resolveCardReaction(_ severity: ReactionSeverity) {
+        guard let card = pendingReactionCard else { return }
+        absorb(characterStore.recordActivity(severity.activityType))
+        acknowledgedCardIDs.insert(card.id)
+        pendingReactionCard = nil
+        applyHeat(severity.heat)
+        if !wasEjected {
+            advanceWithinLiveMatch()
+        }
+    }
+
+    /// After a goal or card reaction resolves, checks whether another
+    /// reaction is waiting at the same minute before falling through to a
+    /// stance checkpoint — preserves goal > card > checkpoint priority when
+    /// more than one coincides on the same minute.
+    private func advanceWithinLiveMatch() {
+        if let card = liveCardEvents.first(where: { $0.minute == currentMinute && !acknowledgedCardIDs.contains($0.id) }) {
+            pendingReactionCard = card
+        } else {
             checkForPendingCheckpoint()
         }
     }
@@ -602,6 +711,13 @@ struct MatchDayCutsceneView: View {
                 Image(systemName: "sportscourt.fill").font(.system(size: 48)).foregroundStyle(Theme.accent)
                 Text("Full Time").font(.title.bold())
                 Text(summary.displayText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+                if let matchStats {
+                    MatchStatsCard(
+                        stats: matchStats,
+                        homeName: homeClub?.name ?? match.homeClubId,
+                        awayName: awayClub?.name ?? match.awayClubId
+                    )
+                }
             }
         }
     }
@@ -677,6 +793,16 @@ struct MatchDayCutsceneView: View {
                     }
                 }
             }
+        case .liveMatch where pendingReactionCard != nil:
+            VStack(spacing: 8) {
+                ForEach(ReactionSeverity.allCases, id: \.self) { severity in
+                    Button {
+                        resolveCardReaction(severity)
+                    } label: {
+                        cutsceneButtonLabel("\(severity.displayName) Reaction")
+                    }
+                }
+            }
         case .liveMatch where pendingCheckpointMinute != nil:
             VStack(spacing: 8) {
                 if let currentStance {
@@ -716,7 +842,7 @@ struct MatchDayCutsceneView: View {
                 if let goal = liveGoalEvents.first(where: { $0.minute == currentMinute && !acknowledgedGoalIDs.contains($0.id) }) {
                     pendingReactionGoal = goal
                 } else {
-                    checkForPendingCheckpoint()
+                    advanceWithinLiveMatch()
                 }
             } label: {
                 cutsceneButtonLabel(nextStopMinute >= MatchDayContentPlanner.matchLengthMinutes ? "Play to Full Time" : "Continue Watching")

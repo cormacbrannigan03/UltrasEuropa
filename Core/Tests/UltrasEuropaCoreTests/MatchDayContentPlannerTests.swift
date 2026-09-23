@@ -99,4 +99,71 @@ final class MatchDayContentPlannerTests: XCTestCase {
         let b = MatchDayContentPlanner.goalEvents(matchId: "match-b", homeGoals: 2, awayGoals: 1)
         XCTAssertNotEqual(a.map(\.minute), b.map(\.minute))
     }
+
+    func testGoalEventsHaveNonEmptyScorerNames() {
+        let events = MatchDayContentPlanner.goalEvents(matchId: "m1", homeGoals: 3, awayGoals: 2)
+        for event in events {
+            XCTAssertFalse(event.scorerName.isEmpty)
+        }
+    }
+
+    func testGoalScorerNamesAreDeterministic() {
+        let first = MatchDayContentPlanner.goalEvents(matchId: "premier-league-arsenal-chelsea", homeGoals: 2, awayGoals: 2)
+        let second = MatchDayContentPlanner.goalEvents(matchId: "premier-league-arsenal-chelsea", homeGoals: 2, awayGoals: 2)
+        XCTAssertEqual(first.map(\.scorerName), second.map(\.scorerName))
+    }
+
+    // MARK: - Card events
+
+    func testCardEventsAreDeterministic() {
+        let first = MatchDayContentPlanner.cardEvents(matchId: "premier-league-arsenal-chelsea")
+        let second = MatchDayContentPlanner.cardEvents(matchId: "premier-league-arsenal-chelsea")
+        XCTAssertEqual(first, second)
+    }
+
+    func testCardEventCountIsWithinBounds() {
+        let ids = (0..<100).map { "match-\($0)" }
+        for id in ids {
+            let count = MatchDayContentPlanner.cardEvents(matchId: id).count
+            XCTAssertTrue((0...4).contains(count))
+        }
+    }
+
+    func testSomeMatchesHaveNoCardsAndSomeHaveCards() {
+        let ids = (0..<200).map { "match-\($0)" }
+        let counts = ids.map { MatchDayContentPlanner.cardEvents(matchId: $0).count }
+        XCTAssertTrue(counts.contains(0), "At least some matches should have no cards")
+        XCTAssertTrue(counts.contains { $0 > 0 }, "At least some matches should have cards")
+    }
+
+    func testCardEventMinutesAreDistinctAndInRange() {
+        let events = MatchDayContentPlanner.cardEvents(matchId: "match-with-cards-1")
+        let minutes = events.map(\.minute)
+        XCTAssertEqual(Set(minutes).count, minutes.count, "No two cards should land on the same minute")
+        for minute in minutes {
+            XCTAssertTrue((1...MatchDayContentPlanner.matchLengthMinutes).contains(minute))
+        }
+    }
+
+    func testCardEventsAreSortedByMinute() {
+        let events = MatchDayContentPlanner.cardEvents(matchId: "match-with-cards-2")
+        XCTAssertEqual(events.map(\.minute), events.map(\.minute).sorted())
+    }
+
+    func testCardEventsHaveNonEmptyPlayerNames() {
+        let ids = (0..<50).map { "match-\($0)" }
+        for id in ids {
+            for event in MatchDayContentPlanner.cardEvents(matchId: id) {
+                XCTAssertFalse(event.playerName.isEmpty)
+            }
+        }
+    }
+
+    func testMostCardEventsAreYellowNotRed() {
+        let ids = (0..<200).map { "match-\($0)" }
+        let allCards = ids.flatMap { MatchDayContentPlanner.cardEvents(matchId: $0) }
+        let redCount = allCards.filter(\.isRed).count
+        XCTAssertGreaterThan(allCards.count, 0)
+        XCTAssertLessThan(redCount, allCards.count, "Reds should be rare relative to yellows")
+    }
 }

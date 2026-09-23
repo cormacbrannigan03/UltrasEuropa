@@ -42,6 +42,21 @@ struct MatchDetailView: View {
 
     private var matchCategory: MatchCategory { characterStore.matchCategory(for: match) }
 
+    private var matchStats: MatchStats? {
+        guard let home = match.homeScore, let away = match.awayScore else { return nil }
+        return MatchStatsEngine.generate(matchId: match.id, homeGoals: home, awayGoals: away)
+    }
+
+    private var matchGoalEvents: [GoalEvent] {
+        guard let home = match.homeScore, let away = match.awayScore else { return [] }
+        return MatchDayContentPlanner.goalEvents(matchId: match.id, homeGoals: home, awayGoals: away)
+    }
+
+    private var matchCardEvents: [CardEvent] {
+        guard match.isPlayed else { return [] }
+        return MatchDayContentPlanner.cardEvents(matchId: match.id)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -60,6 +75,15 @@ struct MatchDetailView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+
+                if match.isPlayed, let matchStats {
+                    MatchStatsCard(
+                        stats: matchStats,
+                        homeName: homeClub?.name ?? match.homeClubId,
+                        awayName: awayClub?.name ?? match.awayClubId
+                    )
+                    matchEventsSummary
+                }
 
                 if alreadyAttended {
                     Label("You attended this match", systemImage: "checkmark.seal.fill")
@@ -97,6 +121,31 @@ struct MatchDetailView: View {
                 didPyro: didPyro
             )
         }
+    }
+
+    // MARK: - Match events (scorers + cards)
+
+    private var matchEventsSummary: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Match Events").font(.headline)
+            if matchGoalEvents.isEmpty && matchCardEvents.isEmpty {
+                Text("No notable events.").font(.caption).foregroundStyle(Theme.secondaryText)
+            } else {
+                ForEach(matchGoalEvents) { event in
+                    Text("⚽️ \(event.minute)' — \(event.scorerName) (\((event.isHomeTeam ? homeClub?.name : awayClub?.name) ?? "Goal!"))")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                ForEach(matchCardEvents) { event in
+                    Text("\(event.isRed ? "🟥" : "🟨") \(event.minute)' — \(event.playerName) (\((event.isHomeTeam ? homeClub?.name : awayClub?.name) ?? "Card"))")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Stadium ban
