@@ -48,6 +48,17 @@ struct MatchDayCutsceneView: View {
     @State private var pendingReactionGoal: GoalEvent?
     @State private var heat = 0
     @State private var securityOutcome: SecurityOutcome = .noAction
+
+    /// The supporting style the player is currently keeping up, or `nil`
+    /// before it's first chosen (right at kickoff) or after choosing to
+    /// ease off at a checkpoint — see `MatchStance`.
+    @State private var currentStance: MatchStance?
+    @State private var acknowledgedCheckpoints: Set<Int> = []
+    /// Non-nil while the "keep it up or ease off?" check-in for this
+    /// checkpoint is being shown.
+    @State private var pendingCheckpointMinute: Int?
+    @State private var diaryEntries: [String] = []
+    @State private var lastDiaryLineByStance: [MatchStance: String] = [:]
     /// Guards against `liveMatchCard`'s `.task` re-firing every time the
     /// reaction prompt swaps it out and back in — the goal reaction cycle
     /// tears down and remounts that view repeatedly, but base attendance
@@ -85,13 +96,23 @@ struct MatchDayCutsceneView: View {
         liveGoalEvents.filter { $0.minute <= currentMinute }
     }
 
-    /// The minute of the next goal that hasn't had its reaction resolved
-    /// yet, or full time if none remain — where "Continue Watching" jumps to.
+    /// Fixed 15-minute stops (15, 30, ... full time) where the live-watch
+    /// beat pauses for a stance check-in regardless of whether a goal
+    /// happens to land there too — see `MatchStance`.
+    private var checkpointMinutes: [Int] {
+        Array(stride(from: 15, through: MatchDayContentPlanner.matchLengthMinutes, by: 15))
+    }
+
+    /// The minute of the next goal that hasn't had its reaction resolved,
+    /// or the next stance checkpoint, whichever comes first — or full time
+    /// if neither remain. Where "Continue Watching" jumps to.
     private var nextStopMinute: Int {
-        liveGoalEvents
+        let nextGoal = liveGoalEvents
             .filter { !acknowledgedGoalIDs.contains($0.id) }
             .map(\.minute)
-            .min() ?? MatchDayContentPlanner.matchLengthMinutes
+            .min()
+        let nextCheckpoint = checkpointMinutes.first { $0 > currentMinute && !acknowledgedCheckpoints.contains($0) }
+        return [nextGoal, nextCheckpoint].compactMap { $0 }.min() ?? MatchDayContentPlanner.matchLengthMinutes
     }
 
     /// This fixture's police/rivalry profile — see `MatchProfileEngine`.
@@ -200,6 +221,10 @@ struct MatchDayCutsceneView: View {
         case .liveMatch:
             if let pendingReactionGoal {
                 reactionPromptCard(for: pendingReactionGoal)
+            } else if let pendingCheckpointMinute {
+                stanceCheckInCard(at: pendingCheckpointMinute)
+            } else if currentMatchState.isPlayed && currentStance == nil && currentMinute == 0 {
+                stanceSelectionCard
             } else {
                 liveMatchCard
             }
@@ -360,6 +385,18 @@ struct MatchDayCutsceneView: View {
                             .foregroundStyle(Theme.secondaryText)
                     }
                 }
+
+                if !diaryEntries.isEmpty {
+                    Divider()
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(currentStance.map { "Your \($0.displayName) Diary" } ?? "Your Matchday Diary")
+                            .font(.caption.bold())
+                            .foregroundStyle(Theme.secondaryText)
+                        ForEach(Array(diaryEntries.enumerated()), id: \.offset) { _, entry in
+                            Text(entry).font(.caption).foregroundStyle(Theme.secondaryText)
+                        }
+                    }
+                }
             }
         }
         .task(id: currentMatchState.isPlayed) {
@@ -376,6 +413,59 @@ struct MatchDayCutsceneView: View {
             Text("\(goals)").font(.title.bold())
         }
         .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Match stance
+
+    private var stanceSelectionCard: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "megaphone.fill").font(.system(size: 48)).foregroundStyle(Theme.accent)
+            Text("How Are You Supporting Today?").font(.title2.bold())
+            Text("Pick how you'll spend the next 90 minutes. You can ease off later if it's not going your way.")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Theme.secondaryText)
+        }
+    }
+
+    private func stanceCheckInCard(at minute: Int) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "gauge.medium").font(.system(size: 48)).foregroundStyle(Theme.accent)
+            Text("\(minute)' — Keep It Up?").font(.title2.bold())
+
+            HStack(spacing: 20) {
+                scoreColumn(name: homeClub?.name ?? match.homeClubId, goals: visibleGoalEvents.filter(\.isHomeTeam).count)
+                Text("-").font(.title.bold()).foregroundStyle(Theme.secondaryText)
+                scoreColumn(name: awayClub?.name ?? match.awayClubId, goals: visibleGoalEvents.filter { !$0.isHomeTeam }.count)
+            }
+
+            if let currentStance {
+                Text("You've been \(currentStance.displayName.lowercased()) so far.")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+        }
+    }
+
+    private func resolveCheckpoint(keepGoing: Bool) {
+        guard let minute = pendingCheckpointMinute else { return }
+        acknowledgedCheckpoints.insert(minute)
+        pendingCheckpointMinute = nil
+
+        if keepGoing, let stance = currentStance {
+            var generator = SystemRandomNumberGenerator()
+            let line = MatchStanceConstants.randomLine(for: stance, excluding: lastDiaryLineByStance[stance], using: &generator)
+            lastDiaryLineByStance[stance] = line
+            diaryEntries.append("\(minute)' — \(line)")
+
+            applyHeat(stance.heatPerCheckpoint)
+
+            if minute == MatchDayContentPlanner.matchLengthMinutes, !wasEjected {
+                absorb(characterStore.recordActivity(stance.activityType))
+            }
+        } else {
+            diaryEntries.append("\(minute)' — You ease off and just watch the rest unfold.")
+            currentStance = nil
+        }
     }
 
     private func reactionPromptCard(for goal: GoalEvent) -> some View {
@@ -401,9 +491,20 @@ struct MatchDayCutsceneView: View {
         guard let goal = pendingReactionGoal else { return }
         absorb(characterStore.recordActivity(severity.activityType))
         acknowledgedGoalIDs.insert(goal.id)
-        heat += severity.heat
         pendingReactionGoal = nil
+        applyHeat(severity.heat)
+        if !wasEjected {
+            checkForPendingCheckpoint()
+        }
+    }
 
+    /// Adds `amount` to the running stadium-security heat total (from a
+    /// goal reaction or from keeping up a risky `MatchStance`) and applies
+    /// whatever `SecurityIncidentEngine` says that heat now means —
+    /// shared by both sources so ejection/ban logic only lives in one place.
+    private func applyHeat(_ amount: Int) {
+        guard amount != 0 else { return }
+        heat += amount
         let outcome = SecurityIncidentEngine.outcome(forHeat: heat)
         securityOutcome = outcome
         if case .ejectedWithBan(let days) = outcome {
@@ -415,6 +516,22 @@ struct MatchDayCutsceneView: View {
         case .ejected, .ejectedWithBan:
             jumpToSummary()
         }
+    }
+
+    /// After a goal reaction resolves, checks whether the minute it landed
+    /// on is also an unacknowledged stance checkpoint — since the goal
+    /// prompt takes priority when both coincide, the checkpoint check-in
+    /// only surfaces once the reaction is out of the way. Once the player
+    /// has stopped their stance there's nothing left to check in on, so
+    /// later checkpoints are silently acknowledged instead of prompting
+    /// with no stance to keep up or stop.
+    private func checkForPendingCheckpoint() {
+        guard checkpointMinutes.contains(currentMinute), !acknowledgedCheckpoints.contains(currentMinute) else { return }
+        guard currentStance != nil else {
+            acknowledgedCheckpoints.insert(currentMinute)
+            return
+        }
+        pendingCheckpointMinute = currentMinute
     }
 
     private func jumpToSummary() {
@@ -560,17 +677,46 @@ struct MatchDayCutsceneView: View {
                     }
                 }
             }
+        case .liveMatch where pendingCheckpointMinute != nil:
+            VStack(spacing: 8) {
+                if let currentStance {
+                    Button {
+                        resolveCheckpoint(keepGoing: true)
+                    } label: {
+                        cutsceneButtonLabel("Keep \(currentStance.displayName)")
+                    }
+                    Button {
+                        resolveCheckpoint(keepGoing: false)
+                    } label: {
+                        Text("Stop For Now")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                }
+            }
         case .liveMatch where !currentMatchState.isPlayed:
             Button {
                 characterStore.simulateForward(to: match.date)
             } label: {
                 cutsceneButtonLabel("Fast Forward to Kickoff")
             }
+        case .liveMatch where currentStance == nil && currentMinute == 0 && currentMatchState.isPlayed:
+            VStack(spacing: 8) {
+                ForEach(MatchStance.allCases, id: \.self) { stance in
+                    Button {
+                        currentStance = stance
+                    } label: {
+                        cutsceneButtonLabel(stance.displayName)
+                    }
+                }
+            }
         case .liveMatch where currentMinute < MatchDayContentPlanner.matchLengthMinutes:
             Button {
                 withAnimation { currentMinute = nextStopMinute }
                 if let goal = liveGoalEvents.first(where: { $0.minute == currentMinute && !acknowledgedGoalIDs.contains($0.id) }) {
                     pendingReactionGoal = goal
+                } else {
+                    checkForPendingCheckpoint()
                 }
             } label: {
                 cutsceneButtonLabel(nextStopMinute >= MatchDayContentPlanner.matchLengthMinutes ? "Play to Full Time" : "Continue Watching")

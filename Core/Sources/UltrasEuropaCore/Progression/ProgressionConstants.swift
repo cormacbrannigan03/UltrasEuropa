@@ -45,6 +45,10 @@ public enum ProgressionConstants {
         .proposeClubFriendship: ActivityReward(xp: 15, loyalty: 0, knowledge: 0, influence: 3, notoriety: 0),
         .collaborateWithFriendClub: ActivityReward(xp: 20, loyalty: 2, knowledge: 0, influence: 4, notoriety: 0),
         .attendFriendClubMatch: ActivityReward(xp: 15, loyalty: 1, knowledge: 0, influence: 2, notoriety: 0),
+        .sustainSingNonStop: ActivityReward(xp: 20, loyalty: 3, knowledge: 0, influence: 1, notoriety: 0),
+        .sustainWatchQuietly: ActivityReward(xp: 10, loyalty: 0, knowledge: 4, influence: 0, notoriety: 0),
+        .sustainWindUpRivals: ActivityReward(xp: 18, loyalty: 0, knowledge: 0, influence: 3, notoriety: 12),
+        .sustainFilmForSocials: ActivityReward(xp: 15, loyalty: 0, knowledge: 0, influence: 6, notoriety: 1),
     ]
 
     /// Bond-score bump every crew member gets when the player launches a

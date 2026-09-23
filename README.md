@@ -147,6 +147,9 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, a security search (hide the pyro, then a chance of getting caught) only if pyro was toggled, then (if the season clock hasn't reached the match date yet) a "Fast Forward to Kickoff" prompt before the live-watch beat
 - [ ] Tapping "Fast Forward to Kickoff" actually advances the season clock and reveals the match as played, instead of silently doing nothing; the same goes for "Fast Forward to Next Match" on the Season Calendar
 - [ ] A small X button in the top-right corner of the match-day cutscene closes it at any beat, without needing to reach the end
+- [ ] Right at kickoff, the live-watch beat asks how you're supporting today (Sing Non-Stop/Watch Quietly/Wind Up the Away End/Film for Socials) before showing the scoreboard; "Continue Watching" now stops at 15-minute checkpoints in addition to goals, each appending a line to a visible diary on the live-match card
+- [ ] At a checkpoint, the current scoreline is shown with a choice to keep the stance going or stop; stopping ends check-ins for the rest of that match (later checkpoints pass with no more prompts) and forfeits the full-time sustain bonus, while keeping it up the whole 90 minutes earns it
+- [ ] Keeping "Wind Up the Away End" or "Film for Socials" going for several checkpoints visibly raises heat toward a warning/ejection, same as bad goal reactions — try stacking one with a bad reaction and confirm they combine toward the same ejection/ban outcome
 - [ ] Every match's detail screen and every match list row shows a "Category 1/2/3" label; Category 1/2 fixtures show a confrontation beat right after arrival in the cutscene, Category 3 fixtures skip straight to the security/live-match beats with no confrontation opportunity
 - [ ] In the confrontation beat, "Start Something" is disabled below Lead Ultra rank and enabled at Lead Ultra or above; "Get Involved" is always available but visibly riskier — try it a few times at a Category 1 fixture and confirm police intervention happens noticeably more often than at Category 3
 - [ ] A police intervention cuts straight to a "Pulled Aside By Police" summary (skipping the rest of the beats, including base attendance — `matchesAttended` should NOT increase for that match) and applies a 30-day stadium ban, separate from and longer than a stewards' ejection's 14-day ban
@@ -268,10 +271,11 @@ happens:
   up to 30 days early and went straight into the cutscene without using
   the calendar), it prompts you to fast forward to the match date right
   there — you can't watch a match that hasn't happened.
-- **Once it has**, tapping "Continue Watching" advances the clock to the
-  next goal (or straight to full time if there isn't one), one stop at a
-  time — rather than a real-time animation, because each goal now needs
-  your input before the match can move on (see below).
+- **Once it has**, tapping "Continue Watching" advances the clock to
+  whichever comes first — the next goal, or the next 15-minute stance
+  checkpoint (see "Picking how you support" below) — one stop at a time,
+  rather than a real-time animation, because both goals and checkpoints
+  need your input before the match can move on.
 
 Nothing about the actual result changes based on watching — the final
 score was already fixed the moment the season clock reached that match's
@@ -298,6 +302,46 @@ what time the season clock happens to read. The match-day cutscene also
 gained a small X button (top-right, at every beat) so it can be closed
 without needing to reach the summary — there was previously no way out of
 it at all.
+
+## Picking how you support — the live-watch beat isn't just goal popups
+
+Before, the live-match beat only ever stopped for goals — a quiet 0-0
+could feel like two taps and it's over. Right at kickoff, the player now
+picks a `MatchStance`
+(`Core/Sources/UltrasEuropaCore/MatchDay/MatchStance.swift`) for how
+they're spending the full 90 minutes: Sing Non-Stop, Watch Quietly, Wind
+Up the Away End, or Film for Socials. From then on, "Continue Watching"
+stops at **every 15-minute checkpoint** (15, 30, 45, 60, 75, 90) as well
+as at goals, and each checkpoint that's kept up appends a line to a
+running "diary" shown right on the live-match card — a stance-flavored
+moment pulled from `MatchStanceConstants`' pool of 15 lines per stance
+(60 total), so a full, uninterrupted match builds up six lines of texture
+instead of staying silent between goals.
+
+**You can stop if it's not going well.** Every checkpoint is also a
+check-in: the current scoreline is shown, and the player can either keep
+the stance going or ease off for the rest of the match — e.g. dropping
+"Wind Up the Away End" if the favorite club is getting beaten and it
+doesn't feel worth the trouble any more. Once stopped, there's no going
+back to that stance for the rest of the match — later checkpoints pass by
+silently with no more check-ins. Keeping a stance up for the entire 90
+minutes without easing off earns a one-off reward at full time (its own
+`ActivityType`, e.g. `.sustainSingNonStop`); stopping early forfeits it,
+which is the whole trade-off — commit and it pays off, bail and it's safe
+but nets nothing extra.
+
+The two more demonstrative stances carry real risk, not just flavor:
+Wind Up the Away End adds 8 heat per checkpoint it's kept up, Film for
+Socials adds 2 — the exact same stadium-security "heat" goal reactions
+already add (see below), sharing one running total and one
+`SecurityIncidentEngine` outcome check
+(`MatchDayCutsceneView.applyHeat(_:)`, refactored out of the goal-reaction
+code so both sources funnel through the same ejection/ban logic). Singing
+or watching quietly the whole match adds no heat at all. A sustained
+provocative stance alone tops out at "warned" over a full match, but
+stacked with even one bad goal reaction it can easily tip into an
+ejection or a ban — the two systems compound rather than living side by
+side.
 
 ## Reacting to goals, security searches, and the risk of getting thrown out
 

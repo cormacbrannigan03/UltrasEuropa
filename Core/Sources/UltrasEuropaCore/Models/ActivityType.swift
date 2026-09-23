@@ -55,4 +55,12 @@ public enum ActivityType: String, Codable, CaseIterable, Hashable, Sendable {
     /// group's game, not just your own. Also excluded from the diversity
     /// gate.
     case attendFriendClubMatch
+    /// Recorded once, at full time, for keeping a `MatchStance` up the
+    /// entire live-watch beat without easing off early — see
+    /// `MatchStance.activityType`. Excluded from the diversity gate, same
+    /// reasoning as `socializeWithCrew`.
+    case sustainSingNonStop
+    case sustainWatchQuietly
+    case sustainWindUpRivals
+    case sustainFilmForSocials
 }
