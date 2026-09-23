@@ -47,7 +47,19 @@ struct CrewMemberDetailView: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Interact").font(.headline)
-                    ForEach(CrewInteractionType.allCases, id: \.self) { type in
+
+                    NavigationLink {
+                        CrewChatView(member: member)
+                    } label: {
+                        Text(CrewInteractionType.chat.displayName)
+                            .font(.subheadline.bold())
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12))
+                            .foregroundStyle(Theme.primaryText)
+                    }
+
+                    ForEach(CrewInteractionType.allCases.filter { $0 != .chat }, id: \.self) { type in
                         Button {
                             pendingResult = characterStore.interact(with: member, type: type)
                             showOutcome = pendingResult != nil

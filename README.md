@@ -165,6 +165,8 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Force-quit and relaunch the app — character, stats, rank, inventory, achievements, and the season clock all persist
 - [ ] Dashboard's "Crew Members" link shows 15 members grouped by rank (Capo first); each has a relationship label that starts at "Stranger"
 - [ ] Interacting with a member shows an outcome (which can go either way), moves their relationship level up or down accordingly, and also awards a little XP — force-quit and relaunch to confirm the relationship persists
+- [ ] Tapping "Chat" on a crew member opens a scrolling chat screen (not an alert) with 5 topic chips along the bottom; tapping one adds the player's line and the crew member's reply as chat bubbles, and repeated taps on the same topic mostly avoid repeating the immediately previous reply
+- [ ] Chatting with a Lead Ultra/Capo-tier member below the required rank shows the same flat rejection reply every time instead of one of the 100 generic lines
 - [ ] A Lead Ultra- or Capo-tier crew member shows a "won't really acknowledge you" note and every interaction with them is a flat rejection capped at Stranger, until the player's own rank catches up (Ultra Group for a Lead Ultra-tier member, Lead Ultra for a Capo-tier one)
 - [ ] Dashboard's "Youth Group" link shows "Start your own following" before founding; founding it starts the stage at "Just Founded" with 1 member and shows the main ultras group's (initially indifferent) reaction text
 - [ ] Recruiting fails far more often than it succeeds, and the shown success percentage visibly drops as the member count climbs; the main ultras reaction text escalates in tone at 5, 15, and 30 members
@@ -407,6 +409,24 @@ records a `.socializeWithCrew` activity, so it earns a little XP the same
 way every other activity does — but it's deliberately left out of the
 activity-diversity rank gate, so it's a bonus on top of the existing ladder,
 not a new required step.
+
+### Chat is a real conversation screen, not a single tap
+
+"Chat" is the one interaction that opens somewhere different: instead of
+an instant alert, it pushes into `CrewChatView` — a scrolling chat-bubble
+screen with quick-reply chips along the bottom (Last Match, Next Match,
+How's Life, The Club, Banter) standing in for free-text input. Tapping
+one sends the player's line as a bubble, then the crew member replies
+with one of `CrewChatConstants`'s 100 generic lines (20 per topic,
+picked at random and never repeating the immediately previous line for
+that topic). Under the hood it still runs the exact same
+`CrewInteractionEngine.resolve(interaction: .chat, ...)` roll as before
+(bond score, XP) — a small "Relationship +N" caption appears under the
+reply when it's nonzero — so the underlying mechanics are unchanged, only
+richer to actually read through. A crew member who doesn't acknowledge
+the player yet (see the rank-gating note above) replies with the same
+flat rejection line instead of a generic one, so the chat screen doesn't
+contradict that gate.
 
 ## Founding your own youth group — a slow, hostile rival path
 
