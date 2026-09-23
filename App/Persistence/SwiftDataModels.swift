@@ -119,6 +119,13 @@ final class CharacterEntity {
     @Relationship(deleteRule: .cascade, inverse: \HomeSeatRequestEntity.character)
     var homeSeatRequests: [HomeSeatRequestEntity] = []
 
+    /// One row per match the player has ever gotten involved in a
+    /// pre-match confrontation at — locked in the first time, so it can't
+    /// be re-rolled into a safer outcome. See
+    /// `CharacterStore.attemptUltraViolence`.
+    @Relationship(deleteRule: .cascade, inverse: \UltraViolenceIncidentEntity.character)
+    var ultraViolenceIncidents: [UltraViolenceIncidentEntity] = []
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -311,5 +318,25 @@ final class HomeSeatRequestEntity {
         self.seatRawValue = seatRawValue
         self.granted = granted
         self.dateRequested = dateRequested
+    }
+}
+
+/// The locked-in outcome of one pre-match confrontation attempt — see
+/// `CharacterStore.attemptUltraViolence`. Once this exists for a
+/// `matchId`, the player can't attempt again for that same match.
+@Model
+final class UltraViolenceIncidentEntity {
+    var matchId: String
+    /// Raw value of `UltrasEuropaCore.UltraViolenceRole`.
+    var roleRawValue: String
+    var policeIntervention: Bool
+    var dateAttempted: Date
+    var character: CharacterEntity?
+
+    init(matchId: String, roleRawValue: String, policeIntervention: Bool, dateAttempted: Date = .now) {
+        self.matchId = matchId
+        self.roleRawValue = roleRawValue
+        self.policeIntervention = policeIntervention
+        self.dateAttempted = dateAttempted
     }
 }

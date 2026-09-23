@@ -48,6 +48,14 @@ struct CrewInteractionResult {
     let xpOutcome: ActivityOutcomeSummary?
 }
 
+/// The result of one pre-match confrontation attempt: the resolved
+/// outcome (got away, or a police-issued ban) plus whatever the
+/// accompanying activity produced (XP, a rank-up, unlocks).
+struct UltraViolenceAttemptResult {
+    let outcome: UltraViolenceOutcome
+    let xpOutcome: ActivityOutcomeSummary?
+}
+
 /// The single owner of character state: creation, every progression-earning
 /// action, and the read-only derived values (rank, stats, next-rank
 /// progress, owned items) views bind to. Wraps SwiftData persistence around
@@ -611,6 +619,76 @@ final class CharacterStore {
             activity: .takeOverUltrasGroup, matchId: nil, satInUltrasStand: false, didPyro: false,
             today: today, calendar: .current
         )
+    }
+
+    // MARK: - Ultra violence
+
+    /// This fixture's `MatchCategory` — see `MatchProfileEngine`. Falls
+    /// back to the average tier (3) for either club if it can't be
+    /// resolved, same fallback `favoriteClubXPMultiplier` etc. already use.
+    func matchCategory(for match: Match) -> MatchCategory {
+        let homeTier = content.club(id: match.homeClubId)?.prestigeTier ?? 3
+        let awayTier = content.club(id: match.awayClubId)?.prestigeTier ?? 3
+        return MatchProfileEngine.category(
+            matchId: match.id, homeClubPrestigeTier: homeTier, awayClubPrestigeTier: awayTier
+        )
+    }
+
+    /// Whether the player's rank is high enough to instigate a
+    /// confrontation outright, rather than just piling in on one already
+    /// happening — see `UltraViolenceEngine.minimumRankToInstigate`.
+    var canInstigateUltraViolence: Bool {
+        rank >= UltraViolenceEngine.minimumRankToInstigate
+    }
+
+    /// The locked-in outcome of a past confrontation attempt for this
+    /// match, or `nil` if one hasn't happened yet. Once set, it can't
+    /// change — see `attemptUltraViolence`.
+    func ultraViolenceIncident(forMatchId matchId: String) -> (role: UltraViolenceRole, policeIntervention: Bool)? {
+        guard let entity = character?.ultraViolenceIncidents.first(where: { $0.matchId == matchId }),
+            let role = UltraViolenceRole(rawValue: entity.roleRawValue)
+        else { return nil }
+        return (role, entity.policeIntervention)
+    }
+
+    /// Gets involved in a pre-match confrontation with a rival firm, as
+    /// `role`. Only resolves once per match — reopening the same match
+    /// returns the locked-in result instead of rolling again, same
+    /// anti-exploit reasoning as away tickets and home seat requests.
+    /// Returns `nil` if there's no character, this match has already been
+    /// attempted, or `role` is `.instigator` without
+    /// `canInstigateUltraViolence`.
+    @discardableResult
+    func attemptUltraViolence(role: UltraViolenceRole, for match: Match, today: Date = .now) -> UltraViolenceAttemptResult? {
+        guard let character else { return nil }
+        guard ultraViolenceIncident(forMatchId: match.id) == nil else { return nil }
+        guard role != .instigator || canInstigateUltraViolence else { return nil }
+
+        var generator = SystemRandomNumberGenerator()
+        let outcome = UltraViolenceEngine.resolve(role: role, category: matchCategory(for: match), using: &generator)
+
+        let policeIntervention: Bool
+        if case .policeIntervention(let days) = outcome {
+            policeIntervention = true
+            applyStadiumBan(days: days)
+        } else {
+            policeIntervention = false
+        }
+
+        let incident = UltraViolenceIncidentEntity(
+            matchId: match.id, roleRawValue: role.rawValue, policeIntervention: policeIntervention, dateAttempted: today
+        )
+        incident.character = character
+        modelContext.insert(incident)
+        character.ultraViolenceIncidents.append(incident)
+
+        let activity: ActivityType = role == .instigator ? .startUltraViolence : .joinUltraViolence
+        let xpOutcome = apply(
+            activity: activity, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
+
+        return UltraViolenceAttemptResult(outcome: outcome, xpOutcome: xpOutcome)
     }
 
     // MARK: - Wardrobe

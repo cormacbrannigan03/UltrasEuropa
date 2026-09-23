@@ -49,11 +49,23 @@ private struct MatchRow: View {
     let match: Match
     @Environment(ContentStore.self) private var contentStore
 
+    private var category: MatchCategory {
+        MatchProfileEngine.category(
+            matchId: match.id,
+            homeClubPrestigeTier: contentStore.repository.club(id: match.homeClubId)?.prestigeTier ?? 3,
+            awayClubPrestigeTier: contentStore.repository.club(id: match.awayClubId)?.prestigeTier ?? 3
+        )
+    }
+
     var body: some View {
         HStack {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("\(clubName(match.homeClubId)) vs \(clubName(match.awayClubId))").font(.subheadline.bold())
-                Text(match.competition).font(.caption).foregroundStyle(Theme.secondaryText)
+                HStack(spacing: 6) {
+                    Text(match.competition).font(.caption).foregroundStyle(Theme.secondaryText)
+                    Text("·").font(.caption).foregroundStyle(Theme.secondaryText)
+                    Text(category.displayName).font(.caption).foregroundStyle(Theme.secondaryText)
+                }
             }
             Spacer()
             if match.isPlayed, let h = match.homeScore, let a = match.awayScore {

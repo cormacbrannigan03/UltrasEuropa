@@ -40,6 +40,8 @@ struct MatchDetailView: View {
         return Array(sorted.prefix(2))
     }
 
+    private var matchCategory: MatchCategory { characterStore.matchCategory(for: match) }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -50,6 +52,9 @@ struct MatchDetailView: View {
                     Text(match.competition).foregroundStyle(Theme.secondaryText)
                     Text(match.venue).foregroundStyle(Theme.secondaryText)
                     Text(match.date, style: .date).foregroundStyle(Theme.secondaryText)
+                    Text("\(matchCategory.displayName) — \(matchCategory.policePresenceDescription)")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
                     if match.isPlayed, let h = match.homeScore, let a = match.awayScore {
                         Text("\(h) - \(a)").font(.largeTitle.bold())
                     }

@@ -40,6 +40,8 @@ public enum ProgressionConstants {
         .recruitYouthGroupMember: ActivityReward(xp: 10, loyalty: 0, knowledge: 0, influence: 2, notoriety: 1),
         .mergeYouthGroup: ActivityReward(xp: 150, loyalty: 10, knowledge: 0, influence: 15, notoriety: 0),
         .takeOverUltrasGroup: ActivityReward(xp: 250, loyalty: 0, knowledge: 0, influence: 25, notoriety: 20),
+        .startUltraViolence: ActivityReward(xp: 30, loyalty: 0, knowledge: 0, influence: 5, notoriety: 20),
+        .joinUltraViolence: ActivityReward(xp: 15, loyalty: 0, knowledge: 0, influence: 2, notoriety: 12),
     ]
 
     /// Bond-score bump every crew member gets when the player launches a

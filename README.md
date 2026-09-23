@@ -147,6 +147,10 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, a security search (hide the pyro, then a chance of getting caught) only if pyro was toggled, then (if the season clock hasn't reached the match date yet) a "Fast Forward to Kickoff" prompt before the live-watch beat
 - [ ] Tapping "Fast Forward to Kickoff" actually advances the season clock and reveals the match as played, instead of silently doing nothing; the same goes for "Fast Forward to Next Match" on the Season Calendar
 - [ ] A small X button in the top-right corner of the match-day cutscene closes it at any beat, without needing to reach the end
+- [ ] Every match's detail screen and every match list row shows a "Category 1/2/3" label; Category 1/2 fixtures show a confrontation beat right after arrival in the cutscene, Category 3 fixtures skip straight to the security/live-match beats with no confrontation opportunity
+- [ ] In the confrontation beat, "Start Something" is disabled below Lead Ultra rank and enabled at Lead Ultra or above; "Get Involved" is always available but visibly riskier — try it a few times at a Category 1 fixture and confirm police intervention happens noticeably more often than at Category 3
+- [ ] A police intervention cuts straight to a "Pulled Aside By Police" summary (skipping the rest of the beats, including base attendance — `matchesAttended` should NOT increase for that match) and applies a 30-day stadium ban, separate from and longer than a stewards' ejection's 14-day ban
+- [ ] Reopening a match already attempted for a confrontation shows the locked-in result on the confrontation beat instead of offering to roll again
 - [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; choosing bigger reactions repeatedly eventually triggers a security warning, then an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo/pyro), and eventually an ejection + stadium ban that blocks attending any match until the season clock reaches the ban's end date
 - [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled and it made it through security, then a Full Time summary with total XP
 - [ ] Chants/Gallery tabs are reference-only now (no XP button) — Gallery greys out tifo displays with no upcoming match "Planned", and taps through to that match on ones that are
@@ -308,10 +312,12 @@ coming and manage, not luck:
 
 | Heat | Outcome |
 | --- | --- |
-| < 40 | Nothing |
-| ≥ 40 | Warned — security starts watching you |
-| ≥ 70 | Ejected — the cutscene cuts straight to a "Thrown Out" summary, skipping the chant/tifo/pyro beats entirely |
-| ≥ 100 | Ejected **and banned** — `CharacterStore.applyStadiumBan` sets `CharacterEntity.stadiumBanUntilDate` 14 days out from the season clock, and `MatchDetailView` blocks attendance at *any* match (home, away, or neutral) until the season clock reaches that date |
+| < 30 | Nothing |
+| ≥ 30 | Warned — security starts watching you |
+| ≥ 55 | Ejected — the cutscene cuts straight to a "Thrown Out" summary, skipping the chant/tifo/pyro beats entirely |
+| ≥ 85 | Ejected **and banned** — `CharacterStore.applyStadiumBan` sets `CharacterEntity.stadiumBanUntilDate` 14 days out from the season clock, and `MatchDetailView` blocks attendance at *any* match (home, away, or neutral) until the season clock reaches that date |
+
+(These thresholds were tightened from their original 40/70/100 — see "A difficulty pass" under Progression design below.)
 
 Separately, bringing pyro means passing a security search on the way in —
 before the security beat, if `didPyro` is set, the player picks a
@@ -320,6 +326,54 @@ its own chance of getting through (`SecurityCheckEngine.resolvePyroSearch`).
 Getting caught confiscates the pyro for that match (no pyro beat, and the
 `.doPyroChallenge` reward isn't earned) but doesn't block getting into the
 ground — only a *bad reaction*, not a failed search, gets you ejected.
+
+## Match categories and police presence: a pre-match risk, separate from in-stadium security
+
+Every fixture now carries a `MatchCategory` (Category 1, 2, or 3 — the
+same three-tier scale English football policing actually uses, without
+claiming to be an accurate real-world source), shown on the match detail
+screen and in every match list row.
+`MatchProfileEngine.category(matchId:homeClubPrestigeTier:awayClubPrestigeTier:)`
+(`Core/Sources/UltrasEuropaCore/MatchDay/`) derives it deterministically
+from both clubs' combined `prestigeTier`, bumped by a per-match seeded
+factor so it isn't purely "biggest clubs always Category 1" — a smaller
+local rivalry can occasionally flare up into one too. Category 1 means a
+heavy police presence and rival firms expected; Category 3 is too
+low-key for any of this to come up at all.
+
+For a Category 1 or 2 fixture, the match-day cutscene gets a new beat
+right after arrival — before the security search or kickoff — where a
+rival firm has been spotted. The player picks one of three options:
+
+- **Start Something** — instigating it outright, gated behind
+  `UltraViolenceEngine.minimumRankToInstigate` (Lead Ultra): calling the
+  shots takes standing in the group, not something a new fan can just
+  decide to do. Organized firms plan around the police, so this carries
+  the *lower* of the two risk levels.
+- **Get Involved** — piling in on something already happening, open to
+  any rank, but with no control over it and no planning around the
+  police — so it's *more* likely to end in police intervention than
+  instigating.
+- **Stay Out of It** — the safe default; nothing happens.
+
+`UltraViolenceEngine.interventionChance(role:category:)` combines a base
+chance per role (20% instigator / 40% participant) with a per-category
+bump (up to +25% at Category 1), so the biggest, most heavily-policed
+fixtures are also the riskiest ones to get involved at. Getting away with
+it awards a `.startUltraViolence`/`.joinUltraViolence` activity (XP,
+influence, and a meaningful notoriety bump — bigger for instigating).
+Police intervention instead applies a 30-day stadium ban (longer than a
+stewards' ejection's 14 days — this is a police matter, not just being
+thrown out) and skips straight to the cutscene's "Pulled Aside By Police"
+summary: the player never actually gets into the ground, so no
+attendance credit for that match either. Like away tickets and home
+seats, each match's attempt locks in the first time — no re-rolling a
+police intervention into a clean getaway.
+
+This system is deliberately abstracted — a resolved outcome plus
+consequences (XP, notoriety, a ban), never a blow-by-blow account of
+what happens — same principle as the ejection/security-ban system it
+sits alongside.
 
 ## Chants, tifo, and inventory belong to the player's crew, not a real club
 

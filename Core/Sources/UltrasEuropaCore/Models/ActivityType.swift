@@ -38,4 +38,10 @@ public enum ActivityType: String, Codable, CaseIterable, Hashable, Sendable {
     /// `CharacterStore.mergeYouthGroupWithMainUltras`/`takeOverMainUltrasGroup`.
     case mergeYouthGroup
     case takeOverUltrasGroup
+    /// Getting involved in a pre-match confrontation with a rival firm —
+    /// see `UltraViolenceEngine`. Excluded from the diversity gate, same
+    /// reasoning as `socializeWithCrew`: a risky bonus path, not a
+    /// required part of the core rank ladder.
+    case startUltraViolence
+    case joinUltraViolence
 }

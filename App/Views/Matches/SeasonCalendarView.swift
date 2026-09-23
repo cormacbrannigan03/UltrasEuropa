@@ -115,11 +115,17 @@ private struct CalendarMatchRow: View {
         return contentStore.repository.club(id: opponentId)?.name ?? opponentId
     }
 
+    private var category: MatchCategory { characterStore.matchCategory(for: match) }
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(isHome ? "vs" : "@") \(opponentName)").font(.subheadline.bold())
-                Text(match.date, style: .date).font(.caption).foregroundStyle(Theme.secondaryText)
+                HStack(spacing: 6) {
+                    Text(match.date, style: .date).font(.caption).foregroundStyle(Theme.secondaryText)
+                    Text("·").font(.caption).foregroundStyle(Theme.secondaryText)
+                    Text(category.displayName).font(.caption).foregroundStyle(Theme.secondaryText)
+                }
             }
             Spacer()
             if isToday {

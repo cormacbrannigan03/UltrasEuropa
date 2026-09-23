@@ -26,6 +26,7 @@ struct MatchDayCutsceneView: View {
     private enum Beat: Equatable {
         case travel
         case arrival
+        case confrontation
         case security
         case liveMatch
         case chant
@@ -93,10 +94,30 @@ struct MatchDayCutsceneView: View {
             .min() ?? MatchDayContentPlanner.matchLengthMinutes
     }
 
+    /// This fixture's police/rivalry profile — see `MatchProfileEngine`.
+    /// Category 3 fixtures are too low-key for a confrontation opportunity
+    /// to come up at all.
+    private var matchCategory: MatchCategory {
+        characterStore.matchCategory(for: match)
+    }
+
+    /// The locked-in outcome of a confrontation attempt for this match, if
+    /// one's been made — read straight from the store rather than
+    /// duplicated into local `@State`, same pattern `MatchDetailView` uses
+    /// for away-ticket/home-seat results.
+    private var ultraViolenceIncident: (role: UltraViolenceRole, policeIntervention: Bool)? {
+        characterStore.ultraViolenceIncident(forMatchId: match.id)
+    }
+
+    private var wasPoliceIntervened: Bool {
+        ultraViolenceIncident?.policeIntervention == true
+    }
+
     private var beats: [Beat] {
         var beats: [Beat] = []
         if travelMode != nil { beats.append(.travel) }
         beats.append(.arrival)
+        if matchCategory != .three { beats.append(.confrontation) }
         if didPyro { beats.append(.security) }
         beats.append(.liveMatch)
         beats.append(.chant)
@@ -172,6 +193,8 @@ struct MatchDayCutsceneView: View {
                 title: "You've Arrived",
                 body: "You arrive at \(match.venue), \((homeClub?.name).map { "home of \($0)" } ?? "")."
             )
+        case .confrontation:
+            confrontationCard
         case .security:
             securityCard
         case .liveMatch:
@@ -207,6 +230,47 @@ struct MatchDayCutsceneView: View {
 
             Text(title).font(.title2.bold())
             Text(body).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+        }
+    }
+
+    // MARK: - Confrontation (police presence / ultra violence)
+
+    private var confrontationCard: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "shield.lefthalf.filled")
+                .font(.system(size: 48))
+                .foregroundStyle(.orange)
+            Text("\(matchCategory.displayName) Fixture").font(.title2.bold())
+            Text(matchCategory.policePresenceDescription)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Theme.secondaryText)
+
+            if let ultraViolenceIncident {
+                if ultraViolenceIncident.policeIntervention {
+                    Label("Police Stepped In", systemImage: "exclamationmark.shield.fill")
+                        .font(.headline)
+                        .foregroundStyle(.red)
+                } else {
+                    Label("You Got Away With It", systemImage: "checkmark.shield.fill")
+                        .font(.headline)
+                        .foregroundStyle(Theme.accent)
+                    Text(ultraViolenceIncident.role == .instigator ? "You called it — and got clean away." : "You piled in and slipped away before anyone noticed.")
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+            } else {
+                Text("A rival firm has been spotted nearby. Some of the crew are squaring up to them.")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+        }
+    }
+
+    private func resolveUltraViolence(role: UltraViolenceRole) {
+        guard let result = characterStore.attemptUltraViolence(role: role, for: match) else { return }
+        absorb(result.xpOutcome)
+        if case .policeIntervention = result.outcome {
+            jumpToSummary()
         }
     }
 
@@ -409,7 +473,11 @@ struct MatchDayCutsceneView: View {
 
     private var summaryCard: some View {
         VStack(spacing: 16) {
-            if wasEjected {
+            if wasPoliceIntervened {
+                Image(systemName: "exclamationmark.shield.fill").font(.system(size: 48)).foregroundStyle(.red)
+                Text("Pulled Aside By Police").font(.title.bold())
+                Text(policeInterventionSummaryText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+            } else if wasEjected {
                 Image(systemName: "hand.raised.fill").font(.system(size: 48)).foregroundStyle(.red)
                 Text("Thrown Out").font(.title.bold())
                 Text(ejectionSummaryText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
@@ -419,6 +487,14 @@ struct MatchDayCutsceneView: View {
                 Text(summary.displayText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
             }
         }
+    }
+
+    private var policeInterventionSummaryText: String {
+        [
+            "Police pulled you aside before you even got through the gate — you never made it in to watch this one.",
+            "+\(totalXP) XP before it kicked off",
+            "Banned from attending any match for \(UltraViolenceEngine.policeBanDurationDays) days.",
+        ].joined(separator: "\n")
     }
 
     private var ejectionSummaryText: String {
@@ -437,6 +513,34 @@ struct MatchDayCutsceneView: View {
     @ViewBuilder
     private var actionButton: some View {
         switch currentBeat {
+        case .confrontation where ultraViolenceIncident == nil:
+            VStack(spacing: 8) {
+                Button {
+                    resolveUltraViolence(role: .instigator)
+                } label: {
+                    cutsceneButtonLabel(
+                        characterStore.canInstigateUltraViolence
+                            ? "Start Something"
+                            : "Start Something (Lead Ultra+ only)"
+                    )
+                }
+                .disabled(!characterStore.canInstigateUltraViolence)
+                .opacity(characterStore.canInstigateUltraViolence ? 1 : 0.5)
+
+                Button {
+                    resolveUltraViolence(role: .participant)
+                } label: {
+                    cutsceneButtonLabel("Get Involved")
+                }
+
+                Button {
+                    beatIndex += 1
+                } label: {
+                    Text("Stay Out of It")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+            }
         case .security where !securitySearchResolved:
             Button {
                 var generator = SystemRandomNumberGenerator()
