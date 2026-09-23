@@ -14,8 +14,8 @@ struct RootTabView: View {
             NavigationStack { MatchesHomeView() }
                 .tabItem { Label(localization.string(.tabMatches), systemImage: "sportscourt.fill") }
 
-            NavigationStack { ChantsLibraryView() }
-                .tabItem { Label(localization.string(.tabChants), systemImage: "music.mic") }
+            NavigationStack { LeagueTableView() }
+                .tabItem { Label(localization.string(.tabTable), systemImage: "list.number") }
 
             NavigationStack { TifoGalleryView() }
                 .tabItem { Label(localization.string(.tabGallery), systemImage: "photo.on.rectangle.angled") }

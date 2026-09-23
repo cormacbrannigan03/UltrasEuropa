@@ -153,7 +153,7 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Reopening a match already attempted for a confrontation shows the locked-in result on the confrontation beat instead of offering to roll again
 - [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; choosing bigger reactions repeatedly eventually triggers a security warning, then an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo/pyro), and eventually an ejection + stadium ban that blocks attending any match until the season clock reaches the ban's end date
 - [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled and it made it through security, then a Full Time summary with total XP
-- [ ] Chants/Gallery tabs are reference-only now (no XP button) — Gallery greys out tifo displays with no upcoming match "Planned", and taps through to that match on ones that are
+- [ ] The Gallery tab is reference-only (no XP button) — greys out tifo displays with no upcoming match "Planned", and taps through to that match on ones that are; there's no standalone Chants tab any more
 - [ ] Requesting an away ticket resolves once and locks in — reopening that same match shows the granted or denied result, never a fresh roll
 - [ ] Completing a challenge/task awards XP
 - [ ] Rank only advances once XP **and** the rank's gating requirements (activity variety / achievements — see below) are met — it should NOT be possible to reach Capo quickly by repeating one action
@@ -172,6 +172,9 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Recruiting fails far more often than it succeeds, and the shown success percentage visibly drops as the member count climbs; the main ultras reaction text escalates in tone at 5, 15, and 30 members
 - [ ] At 50 members, the recruit button is replaced by a Merge/Take Over choice, each behind a confirmation dialog; choosing either shows a permanent result card and recruiting stops being available
 - [ ] Clubs tab lists all 20 leagues; drilling into one shows its real clubs; a club's detail screen shows its generated fixtures/results
+- [ ] "Table" tab (replacing the old Chants tab) lists all 20 leagues; drilling into one shows a live standings table (P/W/D/L/GD/Pts) with the favorite club's row highlighted; tapping any row opens that club's detail screen
+- [ ] On any club that isn't the favorite club, "Propose Ultras Friendship" shows an acceptance percentage, and resolves immediately to either an accepted friendship (unlocking Chat/Collaborate) or a locked-in decline (button disappears, can't retry that club)
+- [ ] Once friends with a club, "Chat with the [Club] Ultras" opens a working chat screen; "Collaborate on a Joint Tifo" awards XP; attending any match involving that friend club (home, away, or as a neutral spectator) shows a bonus on top of the normal attendance XP
 - [ ] Matches tab shows only the favorite club's own fixtures/results (browse any other club's schedule from the Clubs tab instead)
 - [ ] Buttons, badges, progress bars, and the tab bar tint match the favorite club's primary color; creating a second save with a different club and switching to it via "Switch Save" changes all of those immediately; button text stays readable even for a club with a very light primary color
 - [ ] Dashboard's toolbar shows a flag emblem (🇬🇧 by default); tapping it opens a dropdown of all 27 languages with a checkmark on the current one; picking another immediately relabels the tab bar and the "Season Calendar"/"Store" Dashboard links in that language; force-quit and relaunch — the chosen language is still selected
@@ -690,28 +693,81 @@ games, without inventing any specifics about a real club's real away days.
 ## The match-day cutscene: chants and tifo happen at the game, not in a menu
 
 Joining a chant or contributing to a tifo used to be a standalone button —
-reachable from the Chants/Gallery tabs at any time, with no connection to
-an actual match. `MatchDayCutsceneView`
-(`App/Views/Matches/MatchDayCutsceneView.swift`) replaces that: once
-attendance is locked in (a home seat picked, an away ticket granted, or the
-neutral toggle confirmed), `MatchDetailView` presents a full-screen sequence
-— a travel beat first for an away day (a bus or train scene based on the
-chosen `TravelMode`), arriving at the ground, joining in the match's chant,
-raising a tifo if one's prepared for this specific fixture, a pyro beat if
-that was toggled, and a closing "Full Time" summary totting up all the XP
-earned along the way. `.participateInChant` and `.contributeToTifo` are
-only ever recorded from inside this flow now.
+reachable from a menu at any time, with no connection to an actual match.
+`MatchDayCutsceneView` (`App/Views/Matches/MatchDayCutsceneView.swift`)
+replaces that: once attendance is locked in (a home seat picked, an away
+ticket granted, or the neutral toggle confirmed), `MatchDetailView`
+presents a full-screen sequence — a travel beat first for an away day (a
+bus or train scene based on the chosen `TravelMode`), arriving at the
+ground, joining in the match's chant, raising a tifo if one's prepared for
+this specific fixture, a pyro beat if that was toggled, and a closing
+"Full Time" summary totting up all the XP earned along the way.
+`.participateInChant` and `.contributeToTifo` are only ever recorded from
+inside this flow now.
 
 Every match gets a chant (`ContentRepository.chantOfTheDay`, a stable
 hash-pick from `chants.json` so the same match always sings the same one),
 but only roughly 1 in 4 get a tifo (`MatchDayContentPlanner.isTifoPrepared`)
 — tifos are an occasional, planned production, not something a crew puts on
-every week the way a chant happens every game. `ChantDetailView` and
-`TifoGalleryView`/`TifoDetailView` are now read-only reference screens: the
-Chants tab is just a lyrics library, and the Gallery marks which displays
-are "Planned" for one of the favorite club's upcoming matches (tapping one
-takes you to that match, where raising it actually happens) versus not
-currently planned for anything upcoming.
+every week the way a chant happens every game. `TifoGalleryView`/
+`TifoDetailView` (the Gallery tab) is a read-only reference screen marking
+which displays are "Planned" for one of the favorite club's upcoming
+matches (tapping one takes you to that match, where raising it actually
+happens) versus not currently planned for anything upcoming. There's no
+standalone chants-library screen any more — see "League Table" below for
+what replaced that tab.
+
+## League Table: replaces the old Chants tab
+
+The tab bar's fourth slot is now "Table" (`LeagueTableView`), not
+Chants — since chants/tifo happen at the match itself (see above), a
+standalone chants-library tab had nothing left to do. Tapping the tab
+lists all 20 real top-flight leagues (same list `ClubDirectoryView`
+shows); tapping one opens `LeagueStandingsView`, a live-computed table —
+position, P/W/D/L, goal difference, and points — for every club in that
+league.
+
+Nothing about the table is stored: `LeagueTableEngine.standings(matches:clubIds:)`
+(`Core/Sources/UltrasEuropaCore/Standings/`) is a pure function that
+recomputes it from that league's already-generated fixtures
+(`SeasonScheduleGenerator`) every time the screen is opened, sorted by the
+standard football order (points, then goal difference, then goals
+scored). The favorite club's row is highlighted in the accent color.
+Tapping any row — not just the favorite club's — opens that club's
+`ClubDetailView`, which is also where the new "browse every club, not
+just your own" affordance below hooks in.
+
+## Ultras friendships with other clubs' groups
+
+From any club's detail screen (reached via the League Table or the Clubs
+tab) other than the favorite club, an "Ultras Friendship" card offers to
+propose that the player's own crew and that club's ultras group become
+friends. Proposing isn't guaranteed to work —
+`ClubFriendshipEngine.chance(playerRank:sameLeague:)`
+(`Core/Sources/UltrasEuropaCore/Friendship/`) starts at a 55% base, adds
+20% for a club in the same league (easier to coordinate away days and
+meetups with), and a further 5% per rank above Regular (more standing
+makes another group take the proposal more seriously). Like away
+tickets, home seats, and confrontations, each club's proposal locks in
+the first time — a decline can't be re-rolled, though there's nothing
+stopping the player from proposing to a different club instead.
+
+Once accepted, three things open up on that club's detail screen:
+
+- **Chat** — `ClubFriendChatView` reuses the exact same bubble-and-chips
+  screen and 100-line generic response pool `CrewChatView` uses for crew
+  members (see "Chat is a real conversation screen" above) — the same
+  generic lines read just as naturally coming from another club's group.
+  Purely social; no XP for chatting.
+- **Collaborate** — `CharacterStore.collaborateWithFriendClub` arranges a
+  joint tifo/chant exchange, a one-tap action awarding its own XP/
+  influence via the `.collaborateWithFriendClub` activity.
+- **Attend each other's games** — every match attended (home, away, or
+  neutral) that involves a friend club on either side now also earns a
+  `.attendFriendClubMatch` bonus, wired into
+  `MatchDayCutsceneView.recordBaseActivities()` alongside the usual
+  attendance recording — showing up for a friendly group's game earns
+  something, not just your own club's.
 
 ## Wardrobe and player-launched clothing ranges
 
@@ -788,7 +844,7 @@ colors — so anywhere in the app that reads
 moment the language changes, with no `@Environment` plumbing needed.
 
 **Honest scope note:** the picker and the full 27-language list work today
-— pick any language and the tab bar (Dashboard/Clubs/Matches/Chants/
+— pick any language and the tab bar (Dashboard/Clubs/Matches/Table/
 Gallery) and the "Season Calendar"/"Store" Dashboard links relabel
 immediately, translated by hand into all 27 languages. The rest of the
 app's text — match descriptions, activity prompts, achievement copy, crew
@@ -798,7 +854,7 @@ all of that accurately into 27 languages is a large task that deserves
 native-speaker review, which this pass didn't have; rather than paper over
 that with machine-translated flavor text, `LocalizedStrings.swift` covers
 only the `L10nKey` cases the interface chrome actually uses today
-(`tabDashboard`, `tabClubs`, `tabMatches`, `tabChants`, `tabGallery`,
+(`tabDashboard`, `tabClubs`, `tabMatches`, `tabTable`, `tabGallery`,
 `seasonCalendar`, `store`, `language`). Extending coverage to more screens
 is just a matter of adding new `L10nKey` cases and translation rows to
 that same table — the infrastructure (the language list, the picker, the

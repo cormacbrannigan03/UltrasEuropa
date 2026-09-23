@@ -126,6 +126,12 @@ final class CharacterEntity {
     @Relationship(deleteRule: .cascade, inverse: \UltraViolenceIncidentEntity.character)
     var ultraViolenceIncidents: [UltraViolenceIncidentEntity] = []
 
+    /// One row per club the player has ever proposed an ultras-group
+    /// friendship with — locked in the first time, so a decline can't be
+    /// re-rolled. See `CharacterStore.proposeClubFriendship`.
+    @Relationship(deleteRule: .cascade, inverse: \ClubFriendshipEntity.character)
+    var clubFriendships: [ClubFriendshipEntity] = []
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -338,5 +344,22 @@ final class UltraViolenceIncidentEntity {
         self.roleRawValue = roleRawValue
         self.policeIntervention = policeIntervention
         self.dateAttempted = dateAttempted
+    }
+}
+
+/// The locked-in outcome of one ultras-group friendship proposal to
+/// another club — see `CharacterStore.proposeClubFriendship`. Once this
+/// exists for a `clubId`, that club can't be proposed to again.
+@Model
+final class ClubFriendshipEntity {
+    var clubId: String
+    var accepted: Bool
+    var dateProposed: Date
+    var character: CharacterEntity?
+
+    init(clubId: String, accepted: Bool, dateProposed: Date = .now) {
+        self.clubId = clubId
+        self.accepted = accepted
+        self.dateProposed = dateProposed
     }
 }

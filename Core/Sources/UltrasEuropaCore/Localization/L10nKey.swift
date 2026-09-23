@@ -8,7 +8,7 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case tabDashboard
     case tabClubs
     case tabMatches
-    case tabChants
+    case tabTable
     case tabGallery
     case seasonCalendar
     case store

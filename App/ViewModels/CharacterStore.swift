@@ -691,6 +691,70 @@ final class CharacterStore {
         return UltraViolenceAttemptResult(outcome: outcome, xpOutcome: xpOutcome)
     }
 
+    // MARK: - Ultras-group friendships (other clubs)
+
+    /// The locked-in outcome of a past friendship proposal to `clubId`, or
+    /// `nil` if none has been made yet. Once set, it can't change — see
+    /// `proposeClubFriendship`.
+    func clubFriendshipAccepted(forClubId clubId: String) -> Bool? {
+        character?.clubFriendships.first { $0.clubId == clubId }?.accepted
+    }
+
+    /// Every club the player's own ultras group has an accepted
+    /// friendship with.
+    var friendClubIds: Set<String> {
+        Set((character?.clubFriendships ?? []).filter(\.accepted).map(\.clubId))
+    }
+
+    func isFriendClub(_ clubId: String) -> Bool {
+        friendClubIds.contains(clubId)
+    }
+
+    /// The chance (0...1) of `club`'s ultras group accepting a friendship
+    /// proposal right now.
+    func clubFriendshipChance(with club: Club) -> Double {
+        ClubFriendshipEngine.chance(playerRank: rank, sameLeague: club.leagueId == favoriteClub?.leagueId)
+    }
+
+    /// Proposes an ultras-group friendship with `club` on behalf of the
+    /// player's own crew. Only resolves once per club — reopening returns
+    /// the locked-in result instead of rolling again. Returns `nil` if
+    /// there's no character, no favorite club yet, `club` is the favorite
+    /// club itself, or a proposal has already been made to this club.
+    @discardableResult
+    func proposeClubFriendship(with club: Club, today: Date = .now) -> Bool? {
+        guard let character, let favoriteClub, favoriteClub.id != club.id else { return nil }
+        guard clubFriendshipAccepted(forClubId: club.id) == nil else { return nil }
+
+        var generator = SystemRandomNumberGenerator()
+        let accepted = ClubFriendshipEngine.resolve(
+            playerRank: rank, sameLeague: club.leagueId == favoriteClub.leagueId, using: &generator
+        )
+
+        let friendship = ClubFriendshipEntity(clubId: club.id, accepted: accepted, dateProposed: today)
+        friendship.character = character
+        modelContext.insert(friendship)
+        character.clubFriendships.append(friendship)
+
+        apply(
+            activity: .proposeClubFriendship, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
+
+        return accepted
+    }
+
+    /// Arranges a joint activity (a shared tifo, a chant exchange) with a
+    /// friend club's ultras group. Returns `nil` unless `isFriendClub`.
+    @discardableResult
+    func collaborateWithFriendClub(_ club: Club, today: Date = .now) -> ActivityOutcomeSummary? {
+        guard isFriendClub(club.id) else { return nil }
+        return apply(
+            activity: .collaborateWithFriendClub, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
+    }
+
     // MARK: - Wardrobe
 
     func equippedItemId(for slot: ClothingSlot) -> String? {

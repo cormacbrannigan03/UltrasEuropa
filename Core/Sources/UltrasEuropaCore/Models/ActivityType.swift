@@ -44,4 +44,15 @@ public enum ActivityType: String, Codable, CaseIterable, Hashable, Sendable {
     /// required part of the core rank ladder.
     case startUltraViolence
     case joinUltraViolence
+    /// Proposing, and later collaborating with, another club's ultras
+    /// group once a friendship is accepted — see `ClubFriendshipEngine`
+    /// and `CharacterStore.proposeClubFriendship`/`collaborateWithFriendClub`.
+    /// Excluded from the diversity gate, same reasoning as `socializeWithCrew`.
+    case proposeClubFriendship
+    case collaborateWithFriendClub
+    /// Recorded alongside `attendMatch` whenever the match being attended
+    /// involves a friend club (either side) — showing up for a friendly
+    /// group's game, not just your own. Also excluded from the diversity
+    /// gate.
+    case attendFriendClubMatch
 }

@@ -625,6 +625,9 @@ struct MatchDayCutsceneView: View {
         if effectiveHasPyro {
             absorb(characterStore.recordActivity(.doPyroChallenge))
         }
+        if characterStore.isFriendClub(match.homeClubId) || characterStore.isFriendClub(match.awayClubId) {
+            absorb(characterStore.recordActivity(.attendFriendClubMatch))
+        }
     }
 
     private func absorb(_ outcome: ActivityOutcomeSummary?) {
