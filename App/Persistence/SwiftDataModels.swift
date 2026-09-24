@@ -82,6 +82,15 @@ final class CharacterEntity {
     /// the player chooses to merge with or take over the main ultras
     /// group once the youth group is large enough to rival it.
     var youthGroupOutcomeRaw: String = "none"
+    /// Raw value of `UltrasEuropaCore.SeatCategory` — which part of the
+    /// ground the youth group bases itself in. Settable any time from the
+    /// Youth Group screen; defaults to Behind the Goal.
+    var youthGroupSectionRaw: String = "behindTheGoal"
+    /// True while a young supporter is waiting on an answer to their
+    /// unprompted request to join the youth group — see
+    /// `CharacterStore.resolveYouthGroupJoinRequest`. Only one at a time;
+    /// appears at random as the group grows, rolled in `simulateDays`.
+    var youthGroupHasPendingJoinRequest: Bool = false
 
     @Relationship(deleteRule: .cascade, inverse: \OwnedItemEntity.character)
     var ownedItems: [OwnedItemEntity] = []

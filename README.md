@@ -147,15 +147,17 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, a security search (hide the pyro, then a chance of getting caught) only if pyro was toggled, then (if the season clock hasn't reached the match date yet) a "Fast Forward to Kickoff" prompt before the live-watch beat
 - [ ] Tapping "Fast Forward to Kickoff" actually advances the season clock and reveals the match as played, instead of silently doing nothing; the same goes for "Fast Forward to Next Match" on the Season Calendar
 - [ ] A small X button in the top-right corner of the match-day cutscene closes it at any beat, without needing to reach the end
-- [ ] Right at kickoff, the live-watch beat asks how you're supporting today (Sing Non-Stop/Watch Quietly/Wind Up the Away End/Film for Socials) before showing the scoreboard; "Continue Watching" now stops at 15-minute checkpoints in addition to goals, each appending a line to a visible diary on the live-match card
+- [ ] Right at kickoff, the live-watch beat asks how you're supporting today (Sing Non-Stop/Watch Quietly/Wind Up the Away End/Film for Socials) before showing the scoreboard; "Continue Watching" now stops at a handful of checkpoints (random-feeling per match, not a fixed 15-minute grid, but always including 90') in addition to goals, each appending a line to a visible diary on the live-match card
 - [ ] At a checkpoint, the current scoreline is shown with a choice to keep the stance going or stop; stopping ends check-ins for the rest of that match (later checkpoints pass with no more prompts) and forfeits the full-time sustain bonus, while keeping it up the whole 90 minutes earns it
 - [ ] Keeping "Wind Up the Away End" or "Film for Socials" going for several checkpoints visibly raises heat toward a warning/ejection, same as bad goal reactions — try stacking one with a bad reaction and confirm they combine toward the same ejection/ban outcome
 - [ ] Every match's detail screen and every match list row shows a "Category 1/2/3" label; Category 1/2 fixtures show a confrontation beat right after arrival in the cutscene, Category 3 fixtures skip straight to the security/live-match beats with no confrontation opportunity
 - [ ] In the confrontation beat, "Start Something" is disabled below Lead Ultra rank and enabled at Lead Ultra or above; "Get Involved" is always available but visibly riskier — try it a few times at a Category 1 fixture and confirm police intervention happens noticeably more often than at Category 3
 - [ ] A police intervention cuts straight to a "Pulled Aside By Police" summary (skipping the rest of the beats, including base attendance — `matchesAttended` should NOT increase for that match) and applies a 30-day stadium ban, separate from and longer than a stewards' ejection's 14-day ban
 - [ ] Reopening a match already attempted for a confrontation shows the locked-in result on the confrontation beat instead of offering to roll again
-- [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; choosing bigger reactions repeatedly eventually triggers a security warning, then an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo/pyro), and eventually an ejection + stadium ban that blocks attending any match until the season clock reaches the ban's end date
-- [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, a pyro beat only if pyro was toggled and it made it through security, then a Full Time summary with total XP and a Match Stats card (possession/shots/shots on target/corners, as comparison bars)
+- [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; reacting to your OWN favorite club's goal never raises heat, no matter how big the reaction; reacting to the OTHER side's goal does, and choosing bigger reactions repeatedly eventually triggers a security warning, then an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo and any pyro moment), and eventually an ejection + stadium ban that blocks attending any match until the season clock reaches the ban's end date
+- [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, then a Full Time summary: an XP breakdown chart first, "Continue" reveals a Loyalty/Knowledge/Influence/Notoriety stat breakdown, then a Match Stats card (possession/shots/shots on target/corners, as comparison bars)
+- [ ] With "Do Pyro" on, a segmented picker appears for "At Kickoff" vs. "After a Goal"; at that chosen moment during the live-watch beat, a "Light the Pyro?" prompt appears with Light It Now/Not Yet — confirming it (not just carrying it through security) is what earns the pyro XP; if "After a Goal" was picked but the match finishes goalless, the prompt still appears once at full time instead of never firing
+- [ ] A match spent barely engaging (every reaction Mild, no supporting stance sustained, pyro brought but never lit) shows a red "Involvement" bar taking XP away on the full-time chart; a normal, engaged match never shows this
 - [ ] The live-watch feed shows goal scorer names (generic fictional names, e.g. "J. Marsh"), not just "Goal!"; some matches also show yellow/red card entries mixed into the same chronological feed
 - [ ] A card during the live-watch beat pauses it for the same Mild/Moderate/Strong/Extreme reaction choice as a goal, and reacting to it can raise heat toward a warning/ejection the same way a goal reaction does
 - [ ] Any already-played match's detail screen (`MatchDetailView`) shows a Match Stats card and a "Match Events" list of goal scorers and cards, even for matches you didn't personally attend
@@ -177,6 +179,8 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Dashboard's "Youth Group" link shows "Start your own following" before founding; founding it starts the stage at "Just Founded" with 1 member and shows the main ultras group's (initially indifferent) reaction text
 - [ ] Recruiting fails far more often than it succeeds, and the shown success percentage visibly drops as the member count climbs; the main ultras reaction text escalates in tone at 5, 15, and 30 members
 - [ ] At 50 members, the recruit button is replaced by a Merge/Take Over choice, each behind a confirmation dialog; choosing either shows a permanent result card and recruiting stops being available
+- [ ] The Youth Group screen shows a "Where You Sit" segmented picker (Main Stand/Family Section/Behind the Goal/Ultras Section); changing it always succeeds and persists across force-quit/relaunch
+- [ ] Advance the season clock (Dashboard's +1 Day/+1 Week) repeatedly with a founded, grown youth group — a "Someone Wants In" card should eventually appear; accepting adds a member and XP, declining just dismisses it; only ever one shows at a time
 - [ ] Clubs tab lists all 20 leagues; drilling into one shows its real clubs; a club's detail screen shows its generated fixtures/results
 - [ ] "Table" tab (replacing the old Chants tab) lists all 20 leagues; drilling into one shows a live standings table (P/W/D/L/GD/Pts) with the favorite club's row highlighted; tapping any row opens that club's detail screen
 - [ ] On any club that isn't the favorite club, "Propose Ultras Friendship" shows an acceptance percentage, and resolves immediately to either an accepted friendship (unlocking Chat/Collaborate) or a locked-in decline (button disappears, can't retry that club)
@@ -314,12 +318,21 @@ picks a `MatchStance`
 (`Core/Sources/UltrasEuropaCore/MatchDay/MatchStance.swift`) for how
 they're spending the full 90 minutes: Sing Non-Stop, Watch Quietly, Wind
 Up the Away End, or Film for Socials. From then on, "Continue Watching"
-stops at **every 15-minute checkpoint** (15, 30, 45, 60, 75, 90) as well
-as at goals, and each checkpoint that's kept up appends a line to a
-running "diary" shown right on the live-match card — a stance-flavored
-moment pulled from `MatchStanceConstants`' pool of 15 lines per stance
-(60 total), so a full, uninterrupted match builds up six lines of texture
-instead of staying silent between goals.
+stops at a handful of checkpoints as well as at goals, and each checkpoint
+that's kept up appends a line to a running "diary" shown right on the
+live-match card — a stance-flavored moment pulled from
+`MatchStanceConstants`' pool of 15 lines per stance (60 total), so a full,
+uninterrupted match builds up several lines of texture instead of staying
+silent between goals.
+
+**Fixed bug: checkpoints landed on the same 15/30/45/60/75/90 grid every
+single match**, which made them feel mechanical once you'd played a few
+games — you always knew exactly when the next check-in was coming.
+`MatchDayContentPlanner.stanceCheckpointMinutes(matchId:)` now draws 5
+random-feeling (but deterministic — same match, same minutes, every time)
+minutes from across the match, always still including minute 90 so the
+"sustained the whole match" reward stays well-defined, instead of the
+fixed stride grid.
 
 **You can stop if it's not going well.** Every checkpoint is also a
 check-in: the current scoreline is shown, and the player can either keep
@@ -356,17 +369,26 @@ in `ProgressionConstants.activityRewards` — bigger reactions earn more XP
 and notoriety, exactly the trade-off a real ultra faces: staying quiet is
 safe but forgettable, going off is what actually builds a reputation.
 
-That reward isn't free. Every reaction (beyond the safest, Mild) adds
-"heat" for the rest of that match — `SecurityIncidentEngine` compares
-accumulated heat against three thresholds and is deliberately deterministic
-rather than a hidden dice roll, so the risk is something the player can see
-coming and manage, not luck:
+That reward isn't free — *unless it's for your own side*. **Fixed
+imbalance: nearly every strong reaction was getting the player thrown
+out**, because most reactions during a match are to your own favorite
+club scoring, and celebrating hard was carrying the same heat as
+provoking a rival end. Reacting to your own side's goal or card now draws
+**no security attention at all** (`MatchDayCutsceneView.resolveReaction`/
+`resolveCardReaction` check `isGoalForFavoriteClub`/`isCardOnFavoriteClub`
+before calling `applyHeat`) — celebrate as wildly as you like when your
+club scores. Heat is still very real for reactions to the *other* side's
+moments: every one of those (beyond the safest, Mild) adds "heat" for the
+rest of that match — `SecurityIncidentEngine` compares accumulated heat
+against three thresholds and is deliberately deterministic rather than a
+hidden dice roll, so the risk is something the player can see coming and
+manage, not luck:
 
 | Heat | Outcome |
 | --- | --- |
 | < 30 | Nothing |
 | ≥ 30 | Warned — security starts watching you |
-| ≥ 55 | Ejected — the cutscene cuts straight to a "Thrown Out" summary, skipping the chant/tifo/pyro beats entirely |
+| ≥ 55 | Ejected — the cutscene cuts straight to a "Thrown Out" summary, skipping the chant/tifo beats and any pyro moment entirely |
 | ≥ 85 | Ejected **and banned** — `CharacterStore.applyStadiumBan` sets `CharacterEntity.stadiumBanUntilDate` 14 days out from the season clock, and `MatchDetailView` blocks attendance at *any* match (home, away, or neutral) until the season clock reaches that date |
 
 (These thresholds were tightened from their original 40/70/100 — see "A difficulty pass" under Progression design below.)
@@ -375,9 +397,28 @@ Separately, bringing pyro means passing a security search on the way in —
 before the security beat, if `didPyro` is set, the player picks a
 `PyroHidingSpot` (jacket lining, scarf, taped to a leg, a sock), each with
 its own chance of getting through (`SecurityCheckEngine.resolvePyroSearch`).
-Getting caught confiscates the pyro for that match (no pyro beat, and the
-`.doPyroChallenge` reward isn't earned) but doesn't block getting into the
-ground — only a *bad reaction*, not a failed search, gets you ejected.
+Getting caught confiscates the pyro for that match (no lighting-it moment,
+and the `.doPyroChallenge` reward isn't earned) but doesn't block getting
+into the ground — only a *bad reaction*, not a failed search, gets you
+ejected.
+
+## Choosing when to light your pyro, and confirming it live
+
+Pyro used to just happen — a fixed scene late in the cutscene, with no
+player input beyond bringing it and getting it past security. Now, on the
+match screen, once "Do Pyro" is on, the player also picks a `PyroMoment`
+(`Core/Sources/UltrasEuropaCore/MatchDay/PyroMoment.swift`): **At
+Kickoff** or **After a Goal**. That choice travels into the cutscene, and
+when the moment actually arrives — right as the live-watch beat starts,
+or the instant a goal's reaction is resolved — a "Light the Pyro?" prompt
+appears with a real Light It Now / Not Yet choice
+(`MatchDayCutsceneView.pendingPyroPrompt`/`resolvePyroPrompt`). Only one
+opportunity ever comes up per match; if "After a Goal" was picked but the
+match finishes goalless, the opportunity is still offered once, at full
+time, rather than just quietly vanishing
+(`checkForPendingCheckpoint`'s fallback check). `.doPyroChallenge` — and
+its XP/notoriety — is now earned only when the player actually confirms
+lighting it, not automatically for having brought it through security.
 
 ## Match stats, goal scorer names, and reactable cards
 
@@ -549,6 +590,51 @@ flavor text.
   reward reflecting how big a moment it is, and `YouthGroupOutcome` (Core)
   persists which ending was chosen so the screen shows a permanent result
   card afterward instead of the recruiting flow.
+- **Where You Sit** — a "Where You Sit" picker on the Youth Group screen
+  (reusing `SeatCategory`, the same four sections as the home stadium map)
+  lets the player choose which part of the ground their group bases
+  itself in, purely a preference (`CharacterStore.setYouthGroupSection`,
+  always succeeds — no chance involved).
+- **Unprompted join requests** — recruiting gets harder as the group
+  grows, but a bigger, more visible group also starts drawing people to
+  *it*: `YouthGroupEngine.joinRequestChance` rises with member count
+  (capped at 25%, the opposite trend from `recruitChance`), rolled once
+  per simulated day (`CharacterStore.simulateDays` →
+  `rollForYouthGroupJoinRequest`) once the group has grown past its
+  founding member. A hit surfaces a "Someone Wants In" card the player can
+  accept (a free member, no recruit roll, same reward as a successful
+  recruit) or decline — only ever one pending request at a time.
+
+## Post-match XP chart, stat breakdown, and a penalty for doing nothing
+
+The full-time summary used to be a single "+XP" line. It's now a two-step
+reveal, and a match spent barely engaging can now cost you, not just fail
+to reward you:
+
+- **The XP chart** — `MatchDayCutsceneView.absorb(_:source:)` now tags
+  every activity recorded during the cutscene with an `XPSource`
+  (Attendance, Reactions, Supporting Style, Pyro, Chant & Tifo,
+  Confrontation, Involvement) as it happens, and the full-time summary's
+  first screen is a horizontal `Charts` bar chart (`xpBreakdownChart`)
+  showing exactly where that match's XP came from — positive bars in the
+  club accent color, any penalty in red.
+- **Tap Continue for the stat breakdown** — `ActivityOutcomeSummary` (App
+  layer) now carries each activity's own `loyaltyDelta`/`knowledgeDelta`/
+  `influenceDelta`/`notorietyDelta` (computed from the stats before/after
+  it in `CharacterStore.apply`), tallied across the whole match. Tapping
+  "Continue" past the XP chart reveals `statDeltaBreakdown`: how much
+  Loyalty, Knowledge, Influence, and Notoriety that match earned, before
+  the final "Done" dismisses the cutscene.
+- **The crew notices if you did nothing.** `MatchDayCutsceneView.wasLowInvolvement`
+  is true only when *all three* hold: every reaction given was Mild,
+  no `MatchStance` was sustained (never picked one, or eased off early),
+  and pyro (if brought) was never lit. Meeting all three — a genuinely
+  quiet match — costs a flat 15 XP via
+  `CharacterStore.applyLowInvolvementPenalty` (never below 0 total XP; no
+  diminishing returns or achievement checks, unlike a normal
+  `ActivityType`), shown as a red "Involvement" bar on the chart. This
+  never fires on a match that ends in an ejection or police
+  intervention — those already have their own consequences.
 
 ## Progression design
 

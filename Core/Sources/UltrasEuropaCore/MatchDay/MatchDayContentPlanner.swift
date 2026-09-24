@@ -93,6 +93,20 @@ public enum MatchDayContentPlanner {
         }
     }
 
+    /// A deterministic, random-feeling set of mid-match stance check-in
+    /// minutes for `matchId` — stable per match, but not on a predictable
+    /// fixed grid, so check-ins don't always land on the same beats every
+    /// match. Always includes the final minute (full time) so the "sustained
+    /// the whole match" stance reward stays well-defined; `count` more
+    /// minutes are drawn from the rest of the match at random.
+    public static func stanceCheckpointMinutes(matchId: String, count: Int = 5) -> [Int] {
+        let candidateMinutes = Array(1..<matchLengthMinutes)
+        let picked = shuffledOrder(candidateMinutes, seed: "\(matchId)-stance-checkpoints")
+            .prefix(count)
+            .sorted()
+        return picked + [matchLengthMinutes]
+    }
+
     /// A deterministic Fisher-Yates shuffle of `array`, seeded off `seed` —
     /// not cryptographic, just stable across launches for the same seed.
     private static func shuffledOrder<T>(_ array: [T], seed: String) -> [T] {

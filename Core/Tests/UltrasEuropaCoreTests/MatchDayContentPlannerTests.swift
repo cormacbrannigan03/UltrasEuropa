@@ -166,4 +166,54 @@ final class MatchDayContentPlannerTests: XCTestCase {
         XCTAssertGreaterThan(allCards.count, 0)
         XCTAssertLessThan(redCount, allCards.count, "Reds should be rare relative to yellows")
     }
+
+    // MARK: - Stance checkpoint minutes
+
+    func testStanceCheckpointMinutesAlwaysIncludeFullTime() {
+        for id in (0..<50).map({ "match-\($0)" }) {
+            let minutes = MatchDayContentPlanner.stanceCheckpointMinutes(matchId: id)
+            XCTAssertEqual(minutes.last, MatchDayContentPlanner.matchLengthMinutes)
+        }
+    }
+
+    func testStanceCheckpointMinutesAreDistinctAndSorted() {
+        let minutes = MatchDayContentPlanner.stanceCheckpointMinutes(matchId: "m1")
+        XCTAssertEqual(Set(minutes).count, minutes.count)
+        XCTAssertEqual(minutes, minutes.sorted())
+    }
+
+    func testStanceCheckpointMinutesAreWithinRange() {
+        let minutes = MatchDayContentPlanner.stanceCheckpointMinutes(matchId: "m1")
+        for minute in minutes {
+            XCTAssertTrue((1...MatchDayContentPlanner.matchLengthMinutes).contains(minute))
+        }
+    }
+
+    func testStanceCheckpointMinutesCountRespectsParameter() {
+        let minutes = MatchDayContentPlanner.stanceCheckpointMinutes(matchId: "m1", count: 3)
+        XCTAssertEqual(minutes.count, 4) // 3 random + full time
+    }
+
+    func testStanceCheckpointMinutesAreDeterministic() {
+        let first = MatchDayContentPlanner.stanceCheckpointMinutes(matchId: "premier-league-arsenal-chelsea")
+        let second = MatchDayContentPlanner.stanceCheckpointMinutes(matchId: "premier-league-arsenal-chelsea")
+        XCTAssertEqual(first, second)
+    }
+
+    func testStanceCheckpointMinutesDifferByMatch() {
+        let a = MatchDayContentPlanner.stanceCheckpointMinutes(matchId: "match-a")
+        let b = MatchDayContentPlanner.stanceCheckpointMinutes(matchId: "match-b")
+        XCTAssertNotEqual(a, b)
+    }
+
+    func testStanceCheckpointMinutesAreNotAlwaysTheFixedFifteenMinuteGrid() {
+        // The whole point of randomizing them: at least some matches should
+        // land on minutes other than the old fixed 15/30/45/60/75 grid.
+        let fixedGrid = Set([15, 30, 45, 60, 75])
+        let ids = (0..<30).map { "match-\($0)" }
+        let anyDifferent = ids.contains { id in
+            Set(MatchDayContentPlanner.stanceCheckpointMinutes(matchId: id).dropLast()) != fixedGrid
+        }
+        XCTAssertTrue(anyDifferent)
+    }
 }

@@ -44,4 +44,20 @@ public enum YouthGroupEngine {
     ) -> Bool {
         Double.random(in: 0..<1, using: &generator) < recruitChance(currentMembers: currentMembers)
     }
+
+    /// Chance that, on any given day of simulated time passing, a young
+    /// supporter shows up wanting to join on their own — no recruiting
+    /// effort needed. Unlike `recruitChance` (which gets *harder* as the
+    /// group grows), this gets *more* likely — a bigger, more visible group
+    /// draws more people to it. Capped well below certainty so it stays an
+    /// occasional surprise, not a reliable growth engine on its own.
+    public static func joinRequestChance(currentMembers: Int) -> Double {
+        min(0.25, 0.05 + Double(currentMembers) * 0.003)
+    }
+
+    public static func resolveJoinRequestAppears<G: RandomNumberGenerator>(
+        currentMembers: Int, using generator: inout G
+    ) -> Bool {
+        Double.random(in: 0..<1, using: &generator) < joinRequestChance(currentMembers: currentMembers)
+    }
 }

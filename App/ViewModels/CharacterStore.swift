@@ -18,6 +18,14 @@ struct ActivityOutcomeSummary: Equatable {
     /// Set when this activity's loyalty gain crossed the threshold for a
     /// standing season ticket in the favorite club's ultras section.
     let seasonTicketAnnouncement: String?
+    /// This single activity's contribution to each stat — lets a caller
+    /// (e.g. `MatchDayCutsceneView`'s post-match stat breakdown) tally up
+    /// exactly how much Loyalty/Knowledge/Influence/Notoriety came from a
+    /// whole sequence of activities, not just the combined XP.
+    let loyaltyDelta: Int
+    let knowledgeDelta: Int
+    let influenceDelta: Int
+    let notorietyDelta: Int
 
     var didRankUp: Bool { newRank > previousRank }
 
@@ -29,6 +37,10 @@ struct ActivityOutcomeSummary: Equatable {
             && lhs.newlyUnlockedItems.map(\.id) == rhs.newlyUnlockedItems.map(\.id)
             && lhs.membershipAnnouncement == rhs.membershipAnnouncement
             && lhs.seasonTicketAnnouncement == rhs.seasonTicketAnnouncement
+            && lhs.loyaltyDelta == rhs.loyaltyDelta
+            && lhs.knowledgeDelta == rhs.knowledgeDelta
+            && lhs.influenceDelta == rhs.influenceDelta
+            && lhs.notorietyDelta == rhs.notorietyDelta
     }
 }
 
@@ -329,7 +341,30 @@ final class CharacterStore {
         guard let character, days > 0 else { return }
         character.simulatedDate = calendar.date(byAdding: .day, value: days, to: character.simulatedDate)
             ?? character.simulatedDate
+        rollForYouthGroupJoinRequest(overDays: days, character: character)
         try? modelContext.save()
+    }
+
+    /// Rolls once per simulated day for an unprompted youth-group join
+    /// request to appear (see `YouthGroupEngine.joinRequestChance`),
+    /// stopping at the first hit — only ever one pending request at a time.
+    /// Only possible once the group has grown past its founding member
+    /// ("if the group grows"), and never while a merge/takeover outcome has
+    /// already resolved the youth-group story.
+    private func rollForYouthGroupJoinRequest(overDays days: Int, character: CharacterEntity) {
+        guard character.youthGroupFounded,
+              character.youthGroupOutcomeRaw == YouthGroupOutcome.none.rawValue,
+              !character.youthGroupHasPendingJoinRequest,
+              YouthGroupEngine.stage(forMemberCount: character.youthGroupMemberCount, founded: true) != .founded
+        else { return }
+
+        var generator = SystemRandomNumberGenerator()
+        for _ in 0..<days {
+            if YouthGroupEngine.resolveJoinRequestAppears(currentMembers: character.youthGroupMemberCount, using: &generator) {
+                character.youthGroupHasPendingJoinRequest = true
+                break
+            }
+        }
     }
 
     /// Jumps the season clock straight to `targetDate` — used by the
@@ -384,6 +419,22 @@ final class CharacterStore {
     /// Applies a stadium ban starting from the current season clock —
     /// called by `MatchDayCutsceneView` when accumulated reaction "heat"
     /// crosses `SecurityIncidentEngine.banThreshold`.
+    /// Applied once, if at all, at the end of a match where the player
+    /// barely engaged — every reaction was Mild, no supporting stance was
+    /// kept up, and pyro (if brought) never got lit; see
+    /// `MatchDayCutsceneView.wasLowInvolvement`. A quiet penalty rather than
+    /// a routed `ActivityType`: no diminishing returns, no achievement
+    /// checks, just a flat XP deduction (never below 0) representing the
+    /// crew noticing. Returns the amount actually deducted.
+    @discardableResult
+    func applyLowInvolvementPenalty(amount: Int = 15) -> Int {
+        guard let character, amount > 0 else { return 0 }
+        let applied = min(amount, character.totalXP)
+        character.totalXP -= applied
+        try? modelContext.save()
+        return applied
+    }
+
     func applyStadiumBan(days: Int, calendar: Calendar = .current) {
         guard let character else { return }
         character.stadiumBanUntilDate = calendar.date(byAdding: .day, value: days, to: simulatedDate)
@@ -557,6 +608,44 @@ final class CharacterStore {
     /// merge-or-takeover choice, and that choice hasn't been made yet.
     var youthGroupReadyForTakeoverChoice: Bool {
         youthGroupFounded && youthGroupOutcome == .none && youthGroupMemberCount >= YouthGroupEngine.takeoverThreshold
+    }
+    /// Which part of the ground the youth group bases itself in — see
+    /// `setYouthGroupSection`.
+    var youthGroupSection: SeatCategory {
+        character.flatMap { SeatCategory(rawValue: $0.youthGroupSectionRaw) } ?? .behindTheGoal
+    }
+    /// Whether a young supporter is currently waiting on an answer to their
+    /// unprompted request to join — see `resolveYouthGroupJoinRequest`.
+    var youthGroupHasPendingJoinRequest: Bool {
+        character?.youthGroupHasPendingJoinRequest ?? false
+    }
+
+    /// Changes which part of the ground the youth group bases itself in.
+    /// A player preference, not a chance — always succeeds.
+    func setYouthGroupSection(_ section: SeatCategory) {
+        guard let character else { return }
+        character.youthGroupSectionRaw = section.rawValue
+        try? modelContext.save()
+    }
+
+    /// Answers the pending unprompted join request — accepting adds a
+    /// member for free (no `recruitChance` roll, since this member came to
+    /// the group rather than needing to be talked into it) and awards the
+    /// same reward as a successful recruit; declining just clears the
+    /// request. Does nothing if there's no pending request.
+    @discardableResult
+    func resolveYouthGroupJoinRequest(accept: Bool, today: Date = .now) -> ActivityOutcomeSummary? {
+        guard let character, character.youthGroupHasPendingJoinRequest else { return nil }
+        character.youthGroupHasPendingJoinRequest = false
+        guard accept else {
+            try? modelContext.save()
+            return nil
+        }
+        character.youthGroupMemberCount += 1
+        return apply(
+            activity: .recruitYouthGroupMember, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
     }
 
     /// Founds the player's own breakaway youth group, starting at 1 member
@@ -970,7 +1059,11 @@ final class CharacterStore {
             newlyUnlockedAchievements: newlyUnlockedAchievements,
             newlyUnlockedItems: newlyUnlockedItems,
             membershipAnnouncement: membershipAnnouncement,
-            seasonTicketAnnouncement: seasonTicketAnnouncement
+            seasonTicketAnnouncement: seasonTicketAnnouncement,
+            loyaltyDelta: outcome.updatedStats.loyalty - statsBefore.loyalty,
+            knowledgeDelta: outcome.updatedStats.knowledge - statsBefore.knowledge,
+            influenceDelta: outcome.updatedStats.influence - statsBefore.influence,
+            notorietyDelta: outcome.updatedStats.notoriety - statsBefore.notoriety
         )
         lastOutcome = summary
         return summary

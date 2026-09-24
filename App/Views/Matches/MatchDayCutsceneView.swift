@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 import UltrasEuropaCore
 
@@ -18,6 +19,10 @@ struct MatchDayCutsceneView: View {
     let travelMode: TravelMode?
     let satInUltrasStand: Bool
     let didPyro: Bool
+    /// When the player plans to light their pyro, chosen up front on the
+    /// match screen — only meaningful when `didPyro` is true. See
+    /// `pendingPyroPrompt`.
+    let pyroMoment: PyroMoment
 
     @Environment(CharacterStore.self) private var characterStore
     @Environment(ContentStore.self) private var contentStore
@@ -31,7 +36,6 @@ struct MatchDayCutsceneView: View {
         case liveMatch
         case chant
         case tifo
-        case pyro
         case summary
     }
 
@@ -48,8 +52,17 @@ struct MatchDayCutsceneView: View {
     @State private var pendingReactionGoal: GoalEvent?
     @State private var acknowledgedCardIDs: Set<String> = []
     @State private var pendingReactionCard: CardEvent?
+    @State private var reactionSeverities: [ReactionSeverity] = []
     @State private var heat = 0
     @State private var securityOutcome: SecurityOutcome = .noAction
+
+    /// Non-nil while the "light it now?" prompt for the player's chosen
+    /// `pyroMoment` is being shown. `didOfferPyroPrompt` guards against
+    /// offering more than once per match, and `didLightPyro` records
+    /// whether the one opportunity was taken.
+    @State private var pendingPyroPrompt = false
+    @State private var didOfferPyroPrompt = false
+    @State private var didLightPyro = false
 
     /// The supporting style the player is currently keeping up, or `nil`
     /// before it's first chosen (right at kickoff) or after choosing to
@@ -73,6 +86,33 @@ struct MatchDayCutsceneView: View {
     @State private var items: [InventoryItem] = []
     @State private var membershipAnnouncement: String?
     @State private var seasonTicketAnnouncement: String?
+
+    /// XP earned (or lost) this match, broken down by where it came from —
+    /// shown as a chart on the full-time summary. See `absorb(_:source:)`.
+    @State private var xpBySource: [XPSource: Int] = [:]
+    @State private var loyaltyDelta = 0
+    @State private var knowledgeDelta = 0
+    @State private var influenceDelta = 0
+    @State private var notorietyDelta = 0
+    /// Whether the post-Continue stat breakdown (Loyalty/Knowledge/
+    /// Influence/Notoriety) is showing yet, on the full-time summary — the
+    /// XP chart shows first, and this flips true once the player taps
+    /// through it.
+    @State private var showStatBreakdown = false
+    /// Guards the one-time low-involvement check against `summaryCard`
+    /// being re-evaluated on every render.
+    @State private var didApplyMatchWrapUp = false
+
+    /// Where a chunk of match-day XP came from, for the full-time XP chart.
+    private enum XPSource: String, CaseIterable, Hashable {
+        case attendance = "Attendance"
+        case reactions = "Reactions"
+        case singing = "Supporting Style"
+        case pyro = "Pyro"
+        case chantAndTifo = "Chant & Tifo"
+        case confrontation = "Confrontation"
+        case involvement = "Involvement"
+    }
 
     private var chant: Chant? { contentStore.repository.chantOfTheDay(matchId: match.id) }
     private var tifo: TifoPhoto? { contentStore.repository.preparedTifo(matchId: match.id) }
@@ -121,11 +161,12 @@ struct MatchDayCutsceneView: View {
         return MatchStatsEngine.generate(matchId: match.id, homeGoals: home, awayGoals: away)
     }
 
-    /// Fixed 15-minute stops (15, 30, ... full time) where the live-watch
-    /// beat pauses for a stance check-in regardless of whether a goal
-    /// happens to land there too — see `MatchStance`.
+    /// Deterministic, random-feeling stops (always including full time)
+    /// where the live-watch beat pauses for a stance check-in regardless of
+    /// whether a goal happens to land there too — see `MatchStance` and
+    /// `MatchDayContentPlanner.stanceCheckpointMinutes`.
     private var checkpointMinutes: [Int] {
-        Array(stride(from: 15, through: MatchDayContentPlanner.matchLengthMinutes, by: 15))
+        MatchDayContentPlanner.stanceCheckpointMinutes(matchId: match.id)
     }
 
     /// The minute of the next goal that hasn't had its reaction resolved,
@@ -172,7 +213,6 @@ struct MatchDayCutsceneView: View {
         beats.append(.liveMatch)
         beats.append(.chant)
         if tifo != nil { beats.append(.tifo) }
-        if effectiveHasPyro { beats.append(.pyro) }
         beats.append(.summary)
         return beats
     }
@@ -252,6 +292,8 @@ struct MatchDayCutsceneView: View {
                 reactionPromptCard(for: pendingReactionGoal)
             } else if let pendingReactionCard {
                 reactionPromptCard(for: pendingReactionCard)
+            } else if pendingPyroPrompt {
+                pyroPromptCard
             } else if let pendingCheckpointMinute {
                 stanceCheckInCard(at: pendingCheckpointMinute)
             } else if currentMatchState.isPlayed && currentStance == nil && currentMinute == 0 {
@@ -263,12 +305,6 @@ struct MatchDayCutsceneView: View {
             chantCard
         case .tifo:
             tifoCard
-        case .pyro:
-            sceneCard(
-                symbolName: "flame.fill",
-                title: "Pyro",
-                body: "Smoke fills the stand as flares go up around you."
-            )
         case .summary:
             summaryCard
         }
@@ -324,7 +360,7 @@ struct MatchDayCutsceneView: View {
 
     private func resolveUltraViolence(role: UltraViolenceRole) {
         guard let result = characterStore.attemptUltraViolence(role: role, for: match) else { return }
-        absorb(result.xpOutcome)
+        absorb(result.xpOutcome, source: .confrontation)
         if case .policeIntervention = result.outcome {
             jumpToSummary()
         }
@@ -409,6 +445,12 @@ struct MatchDayCutsceneView: View {
                         .foregroundStyle(.orange)
                 }
 
+                if didLightPyro {
+                    Label("Pyro lit", systemImage: "flame.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(visibleFeedEntries) { entry in
                         feedEntryRow(entry)
@@ -433,6 +475,9 @@ struct MatchDayCutsceneView: View {
             didRecordBaseActivities = true
             rankBefore = characterStore.rank
             recordBaseActivities()
+            if pyroMoment == .kickoff {
+                offerPyroPromptIfNeeded()
+            }
         }
     }
 
@@ -524,7 +569,7 @@ struct MatchDayCutsceneView: View {
             applyHeat(stance.heatPerCheckpoint)
 
             if minute == MatchDayContentPlanner.matchLengthMinutes, !wasEjected {
-                absorb(characterStore.recordActivity(stance.activityType))
+                absorb(characterStore.recordActivity(stance.activityType), source: .singing)
             }
         } else {
             diaryEntries.append("\(minute)' — You ease off and just watch the rest unfold.")
@@ -575,21 +620,77 @@ struct MatchDayCutsceneView: View {
 
     private func resolveReaction(_ severity: ReactionSeverity) {
         guard let goal = pendingReactionGoal else { return }
-        absorb(characterStore.recordActivity(severity.activityType))
+        absorb(characterStore.recordActivity(severity.activityType), source: .reactions)
+        reactionSeverities.append(severity)
         acknowledgedGoalIDs.insert(goal.id)
         pendingReactionGoal = nil
-        applyHeat(severity.heat)
+        // Celebrating your own side's goal draws no security attention —
+        // only reactions to the away team's/rival's moments carry heat.
+        if !isGoalForFavoriteClub(goal) {
+            applyHeat(severity.heat)
+        }
+        guard !wasEjected else { return }
+        if pyroMoment == .afterGoal, offerPyroPromptIfNeeded() {
+            return
+        }
+        advanceWithinLiveMatch()
+    }
+
+    private func resolveCardReaction(_ severity: ReactionSeverity) {
+        guard let card = pendingReactionCard else { return }
+        absorb(characterStore.recordActivity(severity.activityType), source: .reactions)
+        reactionSeverities.append(severity)
+        acknowledgedCardIDs.insert(card.id)
+        pendingReactionCard = nil
+        // Same exemption as goals — reacting to your own side's moment
+        // (even a card against your own player) draws no heat.
+        if !isCardOnFavoriteClub(card) {
+            applyHeat(severity.heat)
+        }
         if !wasEjected {
             advanceWithinLiveMatch()
         }
     }
 
-    private func resolveCardReaction(_ severity: ReactionSeverity) {
-        guard let card = pendingReactionCard else { return }
-        absorb(characterStore.recordActivity(severity.activityType))
-        acknowledgedCardIDs.insert(card.id)
-        pendingReactionCard = nil
-        applyHeat(severity.heat)
+    // MARK: - Pyro moment
+
+    private var pyroPromptCard: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "flame.fill").font(.system(size: 48)).foregroundStyle(.orange)
+            Text("Light the Pyro?").font(.title2.bold())
+            Text(pyroPromptBodyText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+        }
+    }
+
+    private var pyroPromptBodyText: String {
+        guard currentMinute < MatchDayContentPlanner.matchLengthMinutes else {
+            return "You never got your planned moment — light it now before the final whistle, or leave it unused?"
+        }
+        switch pyroMoment {
+        case .kickoff: return "Right at kickoff, like you planned — light it now?"
+        case .afterGoal: return "The goal's in — light it now like you planned?"
+        }
+    }
+
+    /// Sets `pendingPyroPrompt` if this is the first (and only) opportunity
+    /// to light the pyro under the player's chosen `pyroMoment`, and
+    /// returns whether it did — lets a caller skip its usual "advance"
+    /// logic in favor of showing this prompt instead.
+    @discardableResult
+    private func offerPyroPromptIfNeeded() -> Bool {
+        guard effectiveHasPyro, !didOfferPyroPrompt, !pendingPyroPrompt else { return false }
+        pendingPyroPrompt = true
+        return true
+    }
+
+    private func resolvePyroPrompt(lightIt: Bool) {
+        guard pendingPyroPrompt else { return }
+        pendingPyroPrompt = false
+        didOfferPyroPrompt = true
+        if lightIt {
+            didLightPyro = true
+            absorb(characterStore.recordActivity(.doPyroChallenge), source: .pyro)
+        }
         if !wasEjected {
             advanceWithinLiveMatch()
         }
@@ -635,6 +736,12 @@ struct MatchDayCutsceneView: View {
     /// later checkpoints are silently acknowledged instead of prompting
     /// with no stance to keep up or stop.
     private func checkForPendingCheckpoint() {
+        // Last-chance fallback: if the player planned to light pyro after a
+        // goal that never came (e.g. a scoreless match), offer it once at
+        // full time instead of the opportunity just quietly disappearing.
+        if currentMinute == MatchDayContentPlanner.matchLengthMinutes, offerPyroPromptIfNeeded() {
+            return
+        }
         guard checkpointMinutes.contains(currentMinute), !acknowledgedCheckpoints.contains(currentMinute) else { return }
         guard currentStance != nil else {
             acknowledgedCheckpoints.insert(currentMinute)
@@ -711,6 +818,11 @@ struct MatchDayCutsceneView: View {
                 Image(systemName: "sportscourt.fill").font(.system(size: 48)).foregroundStyle(Theme.accent)
                 Text("Full Time").font(.title.bold())
                 Text(summary.displayText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+                if !showStatBreakdown {
+                    xpBreakdownChart
+                } else {
+                    statDeltaBreakdown
+                }
                 if let matchStats {
                     MatchStatsCard(
                         stats: matchStats,
@@ -719,6 +831,91 @@ struct MatchDayCutsceneView: View {
                     )
                 }
             }
+        }
+        .task {
+            guard !didApplyMatchWrapUp, !wasPoliceIntervened, !wasEjected else { return }
+            didApplyMatchWrapUp = true
+            guard wasLowInvolvement else { return }
+            let penalty = characterStore.applyLowInvolvementPenalty()
+            guard penalty > 0 else { return }
+            totalXP -= penalty
+            xpBySource[.involvement, default: 0] -= penalty
+        }
+    }
+
+    /// True when the player barely engaged this match: every reaction they
+    /// gave was Mild, they never kept a supporting style going, and — if
+    /// they brought pyro — they never lit it. All three at once is a
+    /// deliberately high bar, so this stays a rare, noticeable penalty
+    /// rather than a constant nag. Applied once, at full time, by
+    /// `summaryCard`'s `.task`.
+    private var wasLowInvolvement: Bool {
+        guard !reactionSeverities.isEmpty else { return false }
+        let allMild = reactionSeverities.allSatisfy { $0 == .mild }
+        let neverSustainedStance = currentStance == nil
+        let skippedPyroIfBrought = effectiveHasPyro ? !didLightPyro : true
+        return allMild && neverSustainedStance && skippedPyroIfBrought
+    }
+
+    /// One row of the XP breakdown chart — wraps a source+amount pair as
+    /// `Identifiable` so `ForEach`/`Chart` don't need a tuple key path.
+    private struct XPChartEntry: Identifiable {
+        let source: XPSource
+        let amount: Int
+        var id: XPSource { source }
+    }
+
+    /// A horizontal bar chart of this match's XP, grouped by where it came
+    /// from — shown first on the full-time summary, before the player taps
+    /// through to the stat breakdown.
+    private var xpBreakdownChart: some View {
+        let entries = XPSource.allCases.compactMap { source -> XPChartEntry? in
+            let value = xpBySource[source] ?? 0
+            return value == 0 ? nil : XPChartEntry(source: source, amount: value)
+        }
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("XP Breakdown").font(.caption.bold()).foregroundStyle(Theme.secondaryText)
+            if entries.isEmpty {
+                Text("No XP earned this match.").font(.caption).foregroundStyle(Theme.secondaryText)
+            } else {
+                Chart {
+                    ForEach(entries) { entry in
+                        BarMark(
+                            x: .value("XP", entry.amount),
+                            y: .value("Source", entry.source.rawValue)
+                        )
+                        .foregroundStyle(entry.amount >= 0 ? Theme.accent : Color.red)
+                    }
+                }
+                .frame(height: CGFloat(entries.count) * 36 + 20)
+            }
+        }
+        .padding(16)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// The Loyalty/Knowledge/Influence/Notoriety this match earned (or, for
+    /// Notoriety on a quiet match, didn't) — shown after the player taps
+    /// Continue past the XP chart.
+    private var statDeltaBreakdown: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Stats This Match").font(.caption.bold()).foregroundStyle(Theme.secondaryText)
+            statDeltaRow(label: "Loyalty", delta: loyaltyDelta)
+            statDeltaRow(label: "Knowledge", delta: knowledgeDelta)
+            statDeltaRow(label: "Influence", delta: influenceDelta)
+            statDeltaRow(label: "Notoriety", delta: notorietyDelta)
+        }
+        .padding(16)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func statDeltaRow(label: String, delta: Int) -> some View {
+        HStack {
+            Text(label).font(.subheadline).foregroundStyle(Theme.secondaryText)
+            Spacer()
+            Text(delta >= 0 ? "+\(delta)" : "\(delta)")
+                .font(.subheadline.bold())
+                .foregroundStyle(delta >= 0 ? Theme.accent : Color.red)
         }
     }
 
@@ -803,6 +1000,19 @@ struct MatchDayCutsceneView: View {
                     }
                 }
             }
+        case .liveMatch where pendingPyroPrompt:
+            VStack(spacing: 8) {
+                Button {
+                    resolvePyroPrompt(lightIt: true)
+                } label: {
+                    cutsceneButtonLabel("Light It Now")
+                }
+                Button {
+                    resolvePyroPrompt(lightIt: false)
+                } label: {
+                    Text("Not Yet").font(.subheadline).foregroundStyle(Theme.secondaryText)
+                }
+            }
         case .liveMatch where pendingCheckpointMinute != nil:
             VStack(spacing: 8) {
                 if let currentStance {
@@ -849,17 +1059,29 @@ struct MatchDayCutsceneView: View {
             }
         case .chant where !didJoinChant:
             Button {
-                absorb(characterStore.recordActivity(.participateInChant))
+                absorb(characterStore.recordActivity(.participateInChant), source: .chantAndTifo)
                 didJoinChant = true
             } label: {
                 cutsceneButtonLabel("Join the Chant")
             }
         case .tifo where !didContributeTifo:
             Button {
-                absorb(characterStore.recordActivity(.contributeToTifo))
+                absorb(characterStore.recordActivity(.contributeToTifo), source: .chantAndTifo)
                 didContributeTifo = true
             } label: {
                 cutsceneButtonLabel("Help Raise the Tifo")
+            }
+        case .summary where wasPoliceIntervened || wasEjected:
+            Button {
+                dismiss()
+            } label: {
+                cutsceneButtonLabel("Done")
+            }
+        case .summary where !showStatBreakdown:
+            Button {
+                showStatBreakdown = true
+            } label: {
+                cutsceneButtonLabel("Continue")
             }
         case .summary:
             Button {
@@ -890,21 +1112,30 @@ struct MatchDayCutsceneView: View {
     private func recordBaseActivities() {
         absorb(characterStore.recordActivity(
             .attendMatch, matchId: match.id, satInUltrasStand: satInUltrasStand, didPyro: effectiveHasPyro
-        ))
+        ), source: .attendance)
         if satInUltrasStand {
-            absorb(characterStore.recordActivity(.sitInUltrasStand))
+            absorb(characterStore.recordActivity(.sitInUltrasStand), source: .attendance)
         }
-        if effectiveHasPyro {
-            absorb(characterStore.recordActivity(.doPyroChallenge))
-        }
+        // .doPyroChallenge is no longer automatic here — it's only earned
+        // when the player actually confirms lighting the pyro at their
+        // chosen moment, see `resolvePyroPrompt`.
         if characterStore.isFriendClub(match.homeClubId) || characterStore.isFriendClub(match.awayClubId) {
-            absorb(characterStore.recordActivity(.attendFriendClubMatch))
+            absorb(characterStore.recordActivity(.attendFriendClubMatch), source: .attendance)
         }
     }
 
-    private func absorb(_ outcome: ActivityOutcomeSummary?) {
+    /// Tallies one activity's outcome into the running totals shown on the
+    /// full-time summary — `source` buckets its XP for the post-match chart
+    /// (see `XPSource`), and its per-stat deltas feed the Loyalty/Knowledge/
+    /// Influence/Notoriety breakdown shown after the player taps Continue.
+    private func absorb(_ outcome: ActivityOutcomeSummary?, source: XPSource) {
         guard let outcome else { return }
         totalXP += outcome.xpAwarded
+        xpBySource[source, default: 0] += outcome.xpAwarded
+        loyaltyDelta += outcome.loyaltyDelta
+        knowledgeDelta += outcome.knowledgeDelta
+        influenceDelta += outcome.influenceDelta
+        notorietyDelta += outcome.notorietyDelta
         achievements += outcome.newlyUnlockedAchievements
         items += outcome.newlyUnlockedItems
         membershipAnnouncement = outcome.membershipAnnouncement ?? membershipAnnouncement

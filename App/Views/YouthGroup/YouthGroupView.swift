@@ -28,6 +28,10 @@ struct YouthGroupView: View {
                     outcomeCard
                 } else {
                     statusCard
+                    sectionCard
+                    if characterStore.youthGroupHasPendingJoinRequest {
+                        joinRequestCard
+                    }
                     mainUltrasReactionCard
                     if characterStore.youthGroupReadyForTakeoverChoice {
                         takeoverChoiceCard
@@ -117,6 +121,62 @@ struct YouthGroupView: View {
             Text("\(characterStore.youthGroupMemberCount)/\(YouthGroupEngine.takeoverThreshold) members to rival the main ultras group outright")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
+        }
+        .padding(16)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var sectionBinding: Binding<SeatCategory> {
+        Binding(
+            get: { characterStore.youthGroupSection },
+            set: { characterStore.setYouthGroupSection($0) }
+        )
+    }
+
+    private var sectionCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Where You Sit").font(.headline)
+            Text("Pick which part of the ground your group bases itself in.")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+            Picker("Section", selection: sectionBinding) {
+                ForEach(SeatCategory.allCases, id: \.self) { section in
+                    Text(section.displayName).tag(section)
+                }
+            }
+            .pickerStyle(.segmented)
+        }
+        .padding(16)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var joinRequestCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Someone Wants In", systemImage: "person.crop.circle.badge.questionmark")
+                .font(.headline)
+                .foregroundStyle(Theme.accent)
+            Text("Word about your group has spread — a young supporter wants to join, no convincing needed.")
+                .font(.subheadline)
+                .foregroundStyle(Theme.secondaryText)
+            HStack(spacing: 12) {
+                Button {
+                    characterStore.resolveYouthGroupJoinRequest(accept: true)
+                } label: {
+                    Text("Let Them In")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(Theme.accentForeground)
+                }
+                Button {
+                    characterStore.resolveYouthGroupJoinRequest(accept: false)
+                } label: {
+                    Text("Turn Them Away")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+            }
         }
         .padding(16)
         .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))

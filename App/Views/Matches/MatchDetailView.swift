@@ -18,6 +18,7 @@ struct MatchDetailView: View {
     @State private var travelMode: TravelMode = .bus
     @State private var satInUltrasStand = false
     @State private var didPyro = false
+    @State private var pyroMoment: PyroMoment = .kickoff
     @State private var showCutscene = false
     @State private var showStadiumMap = false
 
@@ -118,7 +119,8 @@ struct MatchDetailView: View {
                 awayClub: awayClub,
                 travelMode: context == .favoriteAway ? travelMode : nil,
                 satInUltrasStand: satInUltrasStand,
-                didPyro: didPyro
+                didPyro: didPyro,
+                pyroMoment: pyroMoment
             )
         }
     }
@@ -195,6 +197,7 @@ struct MatchDetailView: View {
 
                 if grantedSeat == .ultrasSection {
                     Toggle("Do Pyro", isOn: $didPyro)
+                    pyroMomentPicker
                 }
 
                 Button {
@@ -289,6 +292,7 @@ struct MatchDetailView: View {
             travelModePicker
 
             Toggle("Do Pyro", isOn: $didPyro)
+            pyroMomentPicker
 
             Button {
                 characterStore.attemptAwayTicket(for: match, travelMode: travelMode)
@@ -309,6 +313,7 @@ struct MatchDetailView: View {
             travelModePicker
 
             Toggle("Do Pyro", isOn: $didPyro)
+            pyroMomentPicker
 
             Button {
                 satInUltrasStand = true
@@ -333,6 +338,22 @@ struct MatchDetailView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// Shown right under any "Do Pyro" toggle, once it's on — lets the
+    /// player decide up front which moment they'll light it at, confirmed
+    /// live when that moment actually comes around (see
+    /// `MatchDayCutsceneView`).
+    @ViewBuilder
+    private var pyroMomentPicker: some View {
+        if didPyro {
+            Picker("When", selection: $pyroMoment) {
+                ForEach(PyroMoment.allCases, id: \.self) { moment in
+                    Text(moment.displayName).tag(moment)
+                }
+            }
+            .pickerStyle(.segmented)
+        }
     }
 
     private var travelModePicker: some View {
@@ -360,6 +381,7 @@ struct MatchDetailView: View {
             Text("Attend This Match").font(.headline)
             Toggle("Sit in the Ultras Stand", isOn: $satInUltrasStand)
             Toggle("Do Pyro", isOn: $didPyro)
+            pyroMomentPicker
             Button {
                 showCutscene = true
             } label: {
