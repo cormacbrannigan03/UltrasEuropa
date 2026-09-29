@@ -57,9 +57,9 @@ final class UltraViolenceEngineTests: XCTestCase {
     }
 
     func testPoliceInterventionUsesThePoliceBanDuration() {
-        // Force a near-certain intervention (Category 1, participant) and
-        // confirm the ban length matches the documented constant across a
-        // handful of seeds.
+        // Category 1 + participant is this engine's riskiest combination —
+        // run enough seeds to catch a few interventions and confirm the ban
+        // length matches the documented constant whenever one occurs.
         for seed in 0..<20 {
             var generator = SeededGenerator(seed: UInt64(seed))
             if case .policeIntervention(let days) = UltraViolenceEngine.resolve(

@@ -462,9 +462,81 @@ final class CharacterStore {
 
     var awayTicketChance: Double {
         if character?.purchasedUnlimitedAwayPoints == true { return 1.0 }
-        return ProgressionConstants.awayTicketChance(
+        let base = ProgressionConstants.awayTicketChance(
             awayLoyaltyPoints: awayLoyaltyPoints, prestigeTier: favoriteClub?.prestigeTier ?? 3
         )
+        return TicketDemandEngine.adjustedChance(baseChance: base, multiplier: ticketDemandMultiplier)
+    }
+
+    /// How many points `clubId` earned from one played `match` — 3 for a
+    /// win, 1 for a draw, 0 for a loss or a fixture that isn't theirs.
+    private func pointsEarned(by clubId: String, in match: Match) -> Int {
+        guard match.isPlayed, let homeScore = match.homeScore, let awayScore = match.awayScore else { return 0 }
+        if match.homeClubId == clubId {
+            if homeScore > awayScore { return 3 }
+            return homeScore == awayScore ? 1 : 0
+        } else if match.awayClubId == clubId {
+            if awayScore > homeScore { return 3 }
+            return awayScore == homeScore ? 1 : 0
+        }
+        return 0
+    }
+
+    /// The favorite club's points-per-game over its last
+    /// `TicketDemandEngine.formMatchWindow` played fixtures — falls back
+    /// to league-average form when there's no history yet (start of a
+    /// save, or no favorite club), so demand starts neutral rather than
+    /// skewed.
+    private var favoriteClubRecentPointsPerGame: Double {
+        guard let favoriteClub else { return TicketDemandEngine.neutralPointsPerGame }
+        let recent = matchesForClub(favoriteClub.id)
+            .filter(\.isPlayed)
+            .sorted { $0.date > $1.date }
+            .prefix(TicketDemandEngine.formMatchWindow)
+        guard !recent.isEmpty else { return TicketDemandEngine.neutralPointsPerGame }
+        let total = recent.reduce(0) { $0 + pointsEarned(by: favoriteClub.id, in: $1) }
+        return Double(total) / Double(recent.count)
+    }
+
+    /// The favorite club's current league position (1-based) and the
+    /// league's size, or `nil` if there's no favorite club or its league
+    /// can't be resolved.
+    private var favoriteClubLeaguePosition: (position: Int, leagueSize: Int)? {
+        guard let favoriteClub else { return nil }
+        let clubIds = content.clubsInLeague(favoriteClub.leagueId).map(\.id)
+        guard !clubIds.isEmpty else { return nil }
+        let matches = content.matchesInLeague(favoriteClub.leagueId, asOf: simulatedDate)
+        let standings = LeagueTableEngine.standings(matches: matches, clubIds: clubIds)
+        guard let index = standings.firstIndex(where: { $0.clubId == favoriteClub.id }) else { return nil }
+        return (index + 1, standings.count)
+    }
+
+    /// How much the favorite club's current form and league standing are
+    /// raising or lowering ticket/seat demand right now — 1.0 means no
+    /// change. Applied on top of the fixed prestige/loyalty-based base
+    /// chances everywhere a ticket or seat is requested. See
+    /// `TicketDemandEngine`.
+    var ticketDemandMultiplier: Double {
+        guard let position = favoriteClubLeaguePosition else { return 1.0 }
+        return TicketDemandEngine.combinedMultiplier(
+            recentPointsPerGame: favoriteClubRecentPointsPerGame,
+            position: position.position, leagueSize: position.leagueSize
+        )
+    }
+
+    /// A short, human-readable note on why ticket/seat demand is currently
+    /// higher or lower than baseline — shown next to the chance so the
+    /// swing doesn't feel unexplained. `nil` when demand is close enough
+    /// to neutral not to be worth mentioning.
+    var ticketDemandDescription: String? {
+        guard let clubName = favoriteClub?.name else { return nil }
+        let multiplier = ticketDemandMultiplier
+        if multiplier <= 0.92 {
+            return "Demand is up — \(clubName) are flying right now, so tickets are more contested than usual."
+        } else if multiplier >= 1.08 {
+            return "Demand is down — \(clubName) have been out of form, easing up the usual competition for tickets."
+        }
+        return nil
     }
 
     /// The locked-in outcome of a past away-ticket request for `matchId`,
@@ -496,6 +568,7 @@ final class CharacterStore {
             let outcome = AwayTicketAllocationEngine.resolve(
                 currentAwayLoyaltyPoints: character.awayLoyaltyPoints,
                 prestigeTier: favoriteClub?.prestigeTier ?? 3,
+                demandMultiplier: ticketDemandMultiplier,
                 using: &generator
             )
 
@@ -547,7 +620,8 @@ final class CharacterStore {
     /// shown on the stadium map before the player commits to a section.
     func homeSeatChance(for seat: SeatCategory) -> Double {
         HomeSeatRequestEngine.chance(
-            for: seat, prestigeTier: favoriteClub?.prestigeTier ?? 3, hasUltrasSeasonTicket: hasUltrasSeasonTicket
+            for: seat, prestigeTier: favoriteClub?.prestigeTier ?? 3, hasUltrasSeasonTicket: hasUltrasSeasonTicket,
+            demandMultiplier: ticketDemandMultiplier
         )
     }
 
@@ -573,7 +647,8 @@ final class CharacterStore {
             var generator = SystemRandomNumberGenerator()
             granted = HomeSeatRequestEngine.resolve(
                 seat: seat, prestigeTier: favoriteClub?.prestigeTier ?? 3,
-                hasUltrasSeasonTicket: hasUltrasSeasonTicket, using: &generator
+                hasUltrasSeasonTicket: hasUltrasSeasonTicket, demandMultiplier: ticketDemandMultiplier,
+                using: &generator
             )
         }
 

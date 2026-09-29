@@ -216,4 +216,38 @@ final class MatchDayContentPlannerTests: XCTestCase {
         }
         XCTAssertTrue(anyDifferent)
     }
+
+    // MARK: - Attendance figures
+
+    func testAttendanceFigureIsDeterministic() {
+        let first = MatchDayContentPlanner.attendanceFigure(matchId: "premier-league-arsenal-chelsea", homeClubPrestigeTier: 4)
+        let second = MatchDayContentPlanner.attendanceFigure(matchId: "premier-league-arsenal-chelsea", homeClubPrestigeTier: 4)
+        XCTAssertEqual(first, second)
+    }
+
+    func testAttendanceFigureScalesWithPrestigeTier() {
+        let ids = (0..<40).map { "match-\($0)" }
+        func averageAttendance(tier: Int) -> Double {
+            let total = ids.reduce(0) { $0 + MatchDayContentPlanner.attendanceFigure(matchId: $1, homeClubPrestigeTier: tier) }
+            return Double(total) / Double(ids.count)
+        }
+        XCTAssertLessThan(averageAttendance(tier: 1), averageAttendance(tier: 5))
+    }
+
+    func testAttendanceFigureStaysWithinCapacityBounds() {
+        for tier in 1...5 {
+            let capacity = MatchDayContentPlanner.estimatedCapacityByPrestigeTier[tier]!
+            for id in (0..<20).map({ "match-\($0)" }) {
+                let attendance = MatchDayContentPlanner.attendanceFigure(matchId: id, homeClubPrestigeTier: tier)
+                XCTAssertGreaterThanOrEqual(attendance, Int(Double(capacity) * 0.70))
+                XCTAssertLessThanOrEqual(attendance, capacity)
+            }
+        }
+    }
+
+    func testAttendanceFigureFallsBackToTierThreeForUnknownTier() {
+        let unknown = MatchDayContentPlanner.attendanceFigure(matchId: "m1", homeClubPrestigeTier: 99)
+        let tierThree = MatchDayContentPlanner.attendanceFigure(matchId: "m1", homeClubPrestigeTier: 3)
+        XCTAssertEqual(unknown, tierThree)
+    }
 }

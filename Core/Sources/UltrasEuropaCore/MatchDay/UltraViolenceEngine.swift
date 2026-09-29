@@ -41,16 +41,16 @@ public enum UltraViolenceEngine {
     /// Base chance (0...1) of police intervention for `role`, before the
     /// fixture's category is factored in.
     private static let baseInterventionChance: [UltraViolenceRole: Double] = [
-        .instigator: 0.20,
-        .participant: 0.40,
+        .instigator: 0.12,
+        .participant: 0.25,
     ]
 
     /// How much heavier policing at a bigger fixture raises that base
     /// chance — added on top, not multiplied, so it stays meaningful even
     /// for the already-higher participant base.
     private static let categoryInterventionBump: [MatchCategory: Double] = [
-        .one: 0.25,
-        .two: 0.10,
+        .one: 0.15,
+        .two: 0.06,
         .three: 0.0,
     ]
 

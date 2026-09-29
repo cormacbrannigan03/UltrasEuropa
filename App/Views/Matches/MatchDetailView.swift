@@ -58,6 +58,18 @@ struct MatchDetailView: View {
         return MatchDayContentPlanner.cardEvents(matchId: match.id)
     }
 
+    /// A plausible (not real-recorded) crowd figure for an already-played
+    /// fixture — see `MatchDayContentPlanner.attendanceFigure`.
+    private var attendanceFigure: Int? {
+        guard match.isPlayed, let homeClub else { return nil }
+        return MatchDayContentPlanner.attendanceFigure(matchId: match.id, homeClubPrestigeTier: homeClub.prestigeTier)
+    }
+
+    private var attendanceFigureText: String {
+        guard let attendanceFigure else { return "" }
+        return attendanceFigure.formatted(.number.grouping(.automatic))
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -73,6 +85,11 @@ struct MatchDetailView: View {
                         .foregroundStyle(Theme.secondaryText)
                     if match.isPlayed, let h = match.homeScore, let a = match.awayScore {
                         Text("\(h) - \(a)").font(.largeTitle.bold())
+                    }
+                    if attendanceFigure != nil {
+                        Label("\(attendanceFigureText) attendance", systemImage: "person.3.fill")
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -222,6 +239,12 @@ struct MatchDetailView: View {
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
 
+                if let demandNote = characterStore.ticketDemandDescription {
+                    Text(demandNote)
+                        .font(.caption)
+                        .foregroundStyle(Theme.accent)
+                }
+
                 Button {
                     showStadiumMap = true
                 } label: {
@@ -287,6 +310,11 @@ struct MatchDetailView: View {
                 .tint(Theme.accent)
                 Text("\(characterStore.awayLoyaltyPoints)/\(characterStore.awayTicketGuaranteedThreshold) away loyalty")
                     .font(.caption).foregroundStyle(Theme.secondaryText)
+                if let demandNote = characterStore.ticketDemandDescription {
+                    Text(demandNote)
+                        .font(.caption)
+                        .foregroundStyle(Theme.accent)
+                }
             }
 
             travelModePicker

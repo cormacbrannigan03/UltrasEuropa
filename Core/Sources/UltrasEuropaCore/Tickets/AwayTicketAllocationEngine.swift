@@ -15,14 +15,19 @@ public struct AwayTicketOutcome: Sendable {
 /// bad luck isn't a dead end. Pure and testable via an injected
 /// `RandomNumberGenerator`, same pattern as `CrewInteractionEngine`.
 public enum AwayTicketAllocationEngine {
+    /// `demandMultiplier` (default 1.0, no change) layers the favorite
+    /// club's current form/league standing on top of the loyalty-driven
+    /// base chance — see `TicketDemandEngine`.
     public static func resolve<G: RandomNumberGenerator>(
         currentAwayLoyaltyPoints: Int,
         prestigeTier: Int,
+        demandMultiplier: Double = 1.0,
         using generator: inout G
     ) -> AwayTicketOutcome {
-        let chance = ProgressionConstants.awayTicketChance(
+        let baseChance = ProgressionConstants.awayTicketChance(
             awayLoyaltyPoints: currentAwayLoyaltyPoints, prestigeTier: prestigeTier
         )
+        let chance = TicketDemandEngine.adjustedChance(baseChance: baseChance, multiplier: demandMultiplier)
         let gotTicket = Double.random(in: 0..<1, using: &generator) < chance
         let delta = gotTicket
             ? ProgressionConstants.awayTicketSuccessLoyaltyGain

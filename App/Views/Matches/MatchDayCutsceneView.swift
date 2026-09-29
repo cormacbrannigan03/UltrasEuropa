@@ -1,4 +1,3 @@
-import Charts
 import SwiftUI
 import UltrasEuropaCore
 
@@ -94,11 +93,6 @@ struct MatchDayCutsceneView: View {
     @State private var knowledgeDelta = 0
     @State private var influenceDelta = 0
     @State private var notorietyDelta = 0
-    /// Whether the post-Continue stat breakdown (Loyalty/Knowledge/
-    /// Influence/Notoriety) is showing yet, on the full-time summary — the
-    /// XP chart shows first, and this flips true once the player taps
-    /// through it.
-    @State private var showStatBreakdown = false
     /// Guards the one-time low-involvement check against `summaryCard`
     /// being re-evaluated on every render.
     @State private var didApplyMatchWrapUp = false
@@ -167,22 +161,6 @@ struct MatchDayCutsceneView: View {
     /// `MatchDayContentPlanner.stanceCheckpointMinutes`.
     private var checkpointMinutes: [Int] {
         MatchDayContentPlanner.stanceCheckpointMinutes(matchId: match.id)
-    }
-
-    /// The minute of the next goal that hasn't had its reaction resolved,
-    /// or the next stance checkpoint, whichever comes first — or full time
-    /// if neither remain. Where "Continue Watching" jumps to.
-    private var nextStopMinute: Int {
-        let nextGoal = liveGoalEvents
-            .filter { !acknowledgedGoalIDs.contains($0.id) }
-            .map(\.minute)
-            .min()
-        let nextCard = liveCardEvents
-            .filter { !acknowledgedCardIDs.contains($0.id) }
-            .map(\.minute)
-            .min()
-        let nextCheckpoint = checkpointMinutes.first { $0 > currentMinute && !acknowledgedCheckpoints.contains($0) }
-        return [nextGoal, nextCard, nextCheckpoint].compactMap { $0 }.min() ?? MatchDayContentPlanner.matchLengthMinutes
     }
 
     /// This fixture's police/rivalry profile — see `MatchProfileEngine`.
@@ -479,6 +457,24 @@ struct MatchDayCutsceneView: View {
                 offerPyroPromptIfNeeded()
             }
         }
+        .onReceive(Timer.publish(every: 0.4, on: .main, in: .common).autoconnect()) { _ in
+            advanceClockTick()
+        }
+    }
+
+    /// Ticks the live-match clock forward by a minute, run continuously by
+    /// `liveMatchCard`'s timer rather than jumping straight to the next
+    /// goal/card/checkpoint — this view is swapped out for a prompt card
+    /// whenever one comes up, which naturally pauses the ticking, and swapped
+    /// back in (resuming it) once that prompt resolves.
+    private func advanceClockTick() {
+        guard currentMatchState.isPlayed, currentMinute < MatchDayContentPlanner.matchLengthMinutes else { return }
+        currentMinute += 1
+        if let goal = liveGoalEvents.first(where: { $0.minute == currentMinute && !acknowledgedGoalIDs.contains($0.id) }) {
+            pendingReactionGoal = goal
+        } else {
+            advanceWithinLiveMatch()
+        }
     }
 
     private func scoreColumn(name: String, goals: Int) -> some View {
@@ -715,7 +711,8 @@ struct MatchDayCutsceneView: View {
     private func applyHeat(_ amount: Int) {
         guard amount != 0 else { return }
         heat += amount
-        let outcome = SecurityIncidentEngine.outcome(forHeat: heat)
+        var generator = SystemRandomNumberGenerator()
+        let outcome = SecurityIncidentEngine.resolve(forHeat: heat, using: &generator)
         securityOutcome = outcome
         if case .ejectedWithBan(let days) = outcome {
             characterStore.applyStadiumBan(days: days)
@@ -818,11 +815,8 @@ struct MatchDayCutsceneView: View {
                 Image(systemName: "sportscourt.fill").font(.system(size: 48)).foregroundStyle(Theme.accent)
                 Text("Full Time").font(.title.bold())
                 Text(summary.displayText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
-                if !showStatBreakdown {
-                    xpBreakdownChart
-                } else {
-                    statDeltaBreakdown
-                }
+                xpBreakdownCard
+                statDeltaBreakdown
                 if let matchStats {
                     MatchStatsCard(
                         stats: matchStats,
@@ -857,37 +851,34 @@ struct MatchDayCutsceneView: View {
         return allMild && neverSustainedStance && skippedPyroIfBrought
     }
 
-    /// One row of the XP breakdown chart — wraps a source+amount pair as
-    /// `Identifiable` so `ForEach`/`Chart` don't need a tuple key path.
+    /// One row of the XP breakdown — wraps a source+amount pair as
+    /// `Identifiable` so `ForEach` doesn't need a tuple key path.
     private struct XPChartEntry: Identifiable {
         let source: XPSource
         let amount: Int
         var id: XPSource { source }
     }
 
-    /// A horizontal bar chart of this match's XP, grouped by where it came
-    /// from — shown first on the full-time summary, before the player taps
-    /// through to the stat breakdown.
-    private var xpBreakdownChart: some View {
+    /// A bar breakdown of this match's XP, grouped by where it came from —
+    /// hand-rolled (rather than Swift Charts) to match `MatchStatsCard`'s
+    /// existing custom-bar style and avoid pulling in a heavier framework
+    /// for a single-series breakdown.
+    private var xpBreakdownCard: some View {
         let entries = XPSource.allCases.compactMap { source -> XPChartEntry? in
             let value = xpBySource[source] ?? 0
             return value == 0 ? nil : XPChartEntry(source: source, amount: value)
         }
+        let maxMagnitude = entries.map { abs($0.amount) }.max() ?? 0
         return VStack(alignment: .leading, spacing: 8) {
             Text("XP Breakdown").font(.caption.bold()).foregroundStyle(Theme.secondaryText)
             if entries.isEmpty {
                 Text("No XP earned this match.").font(.caption).foregroundStyle(Theme.secondaryText)
             } else {
-                Chart {
+                VStack(spacing: 10) {
                     ForEach(entries) { entry in
-                        BarMark(
-                            x: .value("XP", entry.amount),
-                            y: .value("Source", entry.source.rawValue)
-                        )
-                        .foregroundStyle(entry.amount >= 0 ? Theme.accent : Color.red)
+                        XPBarRow(label: entry.source.rawValue, amount: entry.amount, maxMagnitude: maxMagnitude)
                     }
                 }
-                .frame(height: CGFloat(entries.count) * 36 + 20)
             }
         }
         .padding(16)
@@ -895,8 +886,8 @@ struct MatchDayCutsceneView: View {
     }
 
     /// The Loyalty/Knowledge/Influence/Notoriety this match earned (or, for
-    /// Notoriety on a quiet match, didn't) — shown after the player taps
-    /// Continue past the XP chart.
+    /// Notoriety on a quiet match, didn't) — shown alongside the XP
+    /// breakdown on the full-time summary.
     private var statDeltaBreakdown: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Stats This Match").font(.caption.bold()).foregroundStyle(Theme.secondaryText)
@@ -916,6 +907,38 @@ struct MatchDayCutsceneView: View {
             Text(delta >= 0 ? "+\(delta)" : "\(delta)")
                 .font(.subheadline.bold())
                 .foregroundStyle(delta >= 0 ? Theme.accent : Color.red)
+        }
+    }
+
+    /// One proportional bar in `xpBreakdownCard`, sized relative to
+    /// `maxMagnitude` (the largest absolute XP value across all sources) so
+    /// every row's bar is comparable at a glance.
+    private struct XPBarRow: View {
+        let label: String
+        let amount: Int
+        let maxMagnitude: Int
+
+        private var barFraction: CGFloat {
+            guard maxMagnitude > 0 else { return 0 }
+            return CGFloat(abs(amount)) / CGFloat(maxMagnitude)
+        }
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(label).font(.caption).foregroundStyle(Theme.secondaryText)
+                    Spacer()
+                    Text(amount >= 0 ? "+\(amount)" : "\(amount)")
+                        .font(.caption.bold())
+                        .foregroundStyle(amount >= 0 ? Theme.accent : Color.red)
+                }
+                GeometryReader { geometry in
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(amount >= 0 ? Theme.accent : Color.red)
+                        .frame(width: geometry.size.width * barFraction, height: 8)
+                }
+                .frame(height: 8)
+            }
         }
     }
 
@@ -1047,16 +1070,9 @@ struct MatchDayCutsceneView: View {
                 }
             }
         case .liveMatch where currentMinute < MatchDayContentPlanner.matchLengthMinutes:
-            Button {
-                withAnimation { currentMinute = nextStopMinute }
-                if let goal = liveGoalEvents.first(where: { $0.minute == currentMinute && !acknowledgedGoalIDs.contains($0.id) }) {
-                    pendingReactionGoal = goal
-                } else {
-                    advanceWithinLiveMatch()
-                }
-            } label: {
-                cutsceneButtonLabel(nextStopMinute >= MatchDayContentPlanner.matchLengthMinutes ? "Play to Full Time" : "Continue Watching")
-            }
+            // The clock is ticking on its own (see `advanceClockTick`) — no
+            // button needed while play is underway.
+            EmptyView()
         case .chant where !didJoinChant:
             Button {
                 absorb(characterStore.recordActivity(.participateInChant), source: .chantAndTifo)
@@ -1070,18 +1086,6 @@ struct MatchDayCutsceneView: View {
                 didContributeTifo = true
             } label: {
                 cutsceneButtonLabel("Help Raise the Tifo")
-            }
-        case .summary where wasPoliceIntervened || wasEjected:
-            Button {
-                dismiss()
-            } label: {
-                cutsceneButtonLabel("Done")
-            }
-        case .summary where !showStatBreakdown:
-            Button {
-                showStatBreakdown = true
-            } label: {
-                cutsceneButtonLabel("Continue")
             }
         case .summary:
             Button {

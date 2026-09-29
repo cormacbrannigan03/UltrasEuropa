@@ -38,6 +38,34 @@ public enum MatchDayContentPlanner {
         return Int(hash % UInt64(catalogCount))
     }
 
+    /// A rough estimated home-stadium capacity by `Club.prestigeTier` —
+    /// not a real per-club figure (this app doesn't source actual stadium
+    /// capacities for all 316 clubs), just a plausible scale so a bigger,
+    /// more prestigious club's attendances look meaningfully bigger than a
+    /// small one's. Falls back to the tier-3 figure for an out-of-range
+    /// tier.
+    public static let estimatedCapacityByPrestigeTier: [Int: Int] = [
+        1: 12_000,
+        2: 22_000,
+        3: 38_000,
+        4: 55_000,
+        5: 75_000,
+    ]
+
+    /// A deterministic, plausible attendance figure for `matchId`'s home
+    /// fixture — a seeded percentage (70-99%) of the home club's
+    /// estimated capacity for its prestige tier. Never a real recorded
+    /// figure, just enough texture that a played match's detail screen
+    /// doesn't feel like it happened in an empty ground. Stable across
+    /// launches for the same match, like every other match-day detail
+    /// here.
+    public static func attendanceFigure(matchId: String, homeClubPrestigeTier: Int) -> Int {
+        let capacity = estimatedCapacityByPrestigeTier[homeClubPrestigeTier] ?? estimatedCapacityByPrestigeTier[3]!
+        let hash = SeasonScheduleGenerator.hashSeed("\(matchId)-attendance")
+        let fillPercent = 70 + Int(hash % 30) // 70...99
+        return capacity * fillPercent / 100
+    }
+
     /// The regular length of a match, for pacing a live watch.
     public static let matchLengthMinutes = 90
 

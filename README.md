@@ -147,22 +147,24 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Confirming attendance (home seat, granted away ticket, or the neutral toggle) launches the full-screen match-day cutscene instead of an instant alert — arrival, a security search (hide the pyro, then a chance of getting caught) only if pyro was toggled, then (if the season clock hasn't reached the match date yet) a "Fast Forward to Kickoff" prompt before the live-watch beat
 - [ ] Tapping "Fast Forward to Kickoff" actually advances the season clock and reveals the match as played, instead of silently doing nothing; the same goes for "Fast Forward to Next Match" on the Season Calendar
 - [ ] A small X button in the top-right corner of the match-day cutscene closes it at any beat, without needing to reach the end
-- [ ] Right at kickoff, the live-watch beat asks how you're supporting today (Sing Non-Stop/Watch Quietly/Wind Up the Away End/Film for Socials) before showing the scoreboard; "Continue Watching" now stops at a handful of checkpoints (random-feeling per match, not a fixed 15-minute grid, but always including 90') in addition to goals, each appending a line to a visible diary on the live-match card
+- [ ] Right at kickoff, the live-watch beat asks how you're supporting today (Sing Non-Stop/Watch Quietly/Wind Up the Away End/Film for Socials) before showing the scoreboard; once chosen, the minute clock ticks up on its own continuously (no button to tap) and pauses automatically at a handful of checkpoints (random-feeling per match, not a fixed 15-minute grid, but always including 90') as well as at goals and cards, each checkpoint appending a line to a visible diary on the live-match card
 - [ ] At a checkpoint, the current scoreline is shown with a choice to keep the stance going or stop; stopping ends check-ins for the rest of that match (later checkpoints pass with no more prompts) and forfeits the full-time sustain bonus, while keeping it up the whole 90 minutes earns it
-- [ ] Keeping "Wind Up the Away End" or "Film for Socials" going for several checkpoints visibly raises heat toward a warning/ejection, same as bad goal reactions — try stacking one with a bad reaction and confirm they combine toward the same ejection/ban outcome
+- [ ] Keeping "Wind Up the Away End" or "Film for Socials" going for several checkpoints visibly raises heat toward a warning and a rising chance of ejection, same as bad goal reactions — try stacking one with a bad reaction and confirm they combine toward the same ejection/ban risk
 - [ ] Every match's detail screen and every match list row shows a "Category 1/2/3" label; Category 1/2 fixtures show a confrontation beat right after arrival in the cutscene, Category 3 fixtures skip straight to the security/live-match beats with no confrontation opportunity
 - [ ] In the confrontation beat, "Start Something" is disabled below Lead Ultra rank and enabled at Lead Ultra or above; "Get Involved" is always available but visibly riskier — try it a few times at a Category 1 fixture and confirm police intervention happens noticeably more often than at Category 3
 - [ ] A police intervention cuts straight to a "Pulled Aside By Police" summary (skipping the rest of the beats, including base attendance — `matchesAttended` should NOT increase for that match) and applies a 30-day stadium ban, separate from and longer than a stewards' ejection's 14-day ban
 - [ ] Reopening a match already attempted for a confrontation shows the locked-in result on the confrontation beat instead of offering to roll again
-- [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; reacting to your OWN favorite club's goal never raises heat, no matter how big the reaction; reacting to the OTHER side's goal does, and choosing bigger reactions repeatedly eventually triggers a security warning, then an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo and any pyro moment), and eventually an ejection + stadium ban that blocks attending any match until the season clock reaches the ban's end date
-- [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, then a Full Time summary: an XP breakdown chart first, "Continue" reveals a Loyalty/Knowledge/Influence/Notoriety stat breakdown, then a Match Stats card (possession/shots/shots on target/corners, as comparison bars)
+- [ ] Each goal during the live-watch beat stops for a Mild/Moderate/Strong/Extreme reaction choice; reacting to your OWN favorite club's goal never raises heat, no matter how big the reaction; reacting to the OTHER side's goal does, and choosing bigger reactions repeatedly raises a security warning, then a real (but not guaranteed) chance of an ejection that cuts straight to a "Thrown Out" summary (skipping chant/tifo and any pyro moment) — a single Extreme reaction should NOT eject you 100% of the time across several attempts, but it should happen often; at very high heat there's also a chance the ejection escalates into a stadium ban that blocks attending any match until the ban's end date
+- [ ] After the live-watch beat resolves normally (no ejection), the cutscene continues to a chant to join in, a tifo beat only on matches marked "Planned" in the Gallery, then a Full Time summary showing an XP breakdown, a Loyalty/Knowledge/Influence/Notoriety stat breakdown, and a Match Stats card (possession/shots/shots on target/corners, as comparison bars) all together, with a single "Done" button — the screen should render smoothly and never freeze or become unresponsive
 - [ ] With "Do Pyro" on, a segmented picker appears for "At Kickoff" vs. "After a Goal"; at that chosen moment during the live-watch beat, a "Light the Pyro?" prompt appears with Light It Now/Not Yet — confirming it (not just carrying it through security) is what earns the pyro XP; if "After a Goal" was picked but the match finishes goalless, the prompt still appears once at full time instead of never firing
-- [ ] A match spent barely engaging (every reaction Mild, no supporting stance sustained, pyro brought but never lit) shows a red "Involvement" bar taking XP away on the full-time chart; a normal, engaged match never shows this
+- [ ] A match spent barely engaging (every reaction Mild, no supporting stance sustained, pyro brought but never lit) shows a red "Involvement" bar taking XP away on the full-time XP breakdown; a normal, engaged match never shows this
 - [ ] The live-watch feed shows goal scorer names (generic fictional names, e.g. "J. Marsh"), not just "Goal!"; some matches also show yellow/red card entries mixed into the same chronological feed
 - [ ] A card during the live-watch beat pauses it for the same Mild/Moderate/Strong/Extreme reaction choice as a goal, and reacting to it can raise heat toward a warning/ejection the same way a goal reaction does
 - [ ] Any already-played match's detail screen (`MatchDetailView`) shows a Match Stats card and a "Match Events" list of goal scorers and cards, even for matches you didn't personally attend
 - [ ] The Gallery tab is reference-only (no XP button) — greys out tifo displays with no upcoming match "Planned", and taps through to that match on ones that are; there's no standalone Chants tab any more
 - [ ] Requesting an away ticket resolves once and locks in — reopening that same match shows the granted or denied result, never a fresh roll
+- [ ] Any already-played match's detail screen shows a "… attendance" figure with a crowd icon; it stays the same every time you reopen that match, and a bigger/more prestigious home club shows a noticeably higher figure than a small one
+- [ ] The home stadium map and the away-ticket section each show a short note about current ticket demand; winning a run of matches and/or climbing the league table should visibly tighten the shown chances, while a bad run and/or a low league position should loosen them
 - [ ] Completing a challenge/task awards XP
 - [ ] Rank only advances once XP **and** the rank's gating requirements (activity variety / achievements — see below) are met — it should NOT be possible to reach Capo quickly by repeating one action
 - [ ] A couple of matches' worth of activities no longer blows past the Young Ultra threshold on their own — progress should feel noticeably slower than before this pass
@@ -279,11 +281,20 @@ happens:
   up to 30 days early and went straight into the cutscene without using
   the calendar), it prompts you to fast forward to the match date right
   there — you can't watch a match that hasn't happened.
-- **Once it has**, tapping "Continue Watching" advances the clock to
-  whichever comes first — the next goal, or the next 15-minute stance
-  checkpoint (see "Picking how you support" below) — one stop at a time,
-  rather than a real-time animation, because both goals and checkpoints
-  need your input before the match can move on.
+- **Once it has**, the minute clock ticks up on its own, one minute every
+  0.4 seconds (`MatchDayCutsceneView.advanceClockTick`, driven by a
+  `Timer.publish` attached to the live-match card), continuously counting
+  up toward full time rather than jumping straight from stop to stop.
+  Whenever the ticking minute lands on a goal, a card, or a stance
+  checkpoint (see "Picking how you support" below), the clock pauses on
+  its own and swaps in that prompt card — resolving it (or reacting to the
+  goal/card) resumes the ticking right where it left off.
+
+**Fixed bug: the clock used to jump in fixed chunks** — a "Continue
+Watching" button that skipped straight to whatever came next, so a quiet
+spell between events felt instant rather than lived-in. It's now a
+continuously-running clock instead, closer to actually watching a match
+unfold minute by minute.
 
 Nothing about the actual result changes based on watching — the final
 score was already fixed the moment the season clock reached that match's
@@ -380,19 +391,39 @@ provoking a rival end. Reacting to your own side's goal or card now draws
 before calling `applyHeat`) — celebrate as wildly as you like when your
 club scores. Heat is still very real for reactions to the *other* side's
 moments: every one of those (beyond the safest, Mild) adds "heat" for the
-rest of that match — `SecurityIncidentEngine` compares accumulated heat
-against three thresholds and is deliberately deterministic rather than a
-hidden dice roll, so the risk is something the player can see coming and
-manage, not luck:
+rest of that match — heat crossing a threshold is a real *chance* of the
+matching outcome, not a guarantee:
 
 | Heat | Outcome |
 | --- | --- |
 | < 30 | Nothing |
 | ≥ 30 | Warned — security starts watching you |
-| ≥ 55 | Ejected — the cutscene cuts straight to a "Thrown Out" summary, skipping the chant/tifo beats and any pyro moment entirely |
-| ≥ 85 | Ejected **and banned** — `CharacterStore.applyStadiumBan` sets `CharacterEntity.stadiumBanUntilDate` 14 days out from the season clock, and `MatchDetailView` blocks attendance at *any* match (home, away, or neutral) until the season clock reaches that date |
+| ≥ 55 | A real, rising chance of being ejected — the cutscene cuts straight to a "Thrown Out" summary, skipping the chant/tifo beats and any pyro moment entirely |
+| ≥ 85 | If ejected, a real, rising chance that it's also a ban — `CharacterStore.applyStadiumBan` sets `CharacterEntity.stadiumBanUntilDate` 14 days out from the season clock, and `MatchDetailView` blocks attendance at *any* match (home, away, or neutral) until the season clock reaches that date |
 
-(These thresholds were tightened from their original 40/70/100 — see "A difficulty pass" under Progression design below.)
+**Fixed bug: crossing the ejection threshold meant ejection 100% of the
+time.** `SecurityIncidentEngine.outcome(forHeat:)` was a pure threshold
+comparison with no randomness at all, and a single Extreme reaction's heat
+(55) landed exactly on the ejection threshold — so even one strong
+reaction to a rival's moment guaranteed getting thrown out, every time.
+`SecurityIncidentEngine` now also exposes `ejectionChance(forHeat:)`,
+`banChance(forHeat:)`, and a probabilistic `resolve(forHeat:using:)` —
+each rises the further past its threshold the heat has climbed, but neither
+ever reaches certainty (capped at 85%/90%). `MatchDayCutsceneView.applyHeat(_:)`
+now calls `resolve(forHeat:using:)` (with a real `SystemRandomNumberGenerator`)
+instead of the old deterministic `outcome(forHeat:)`, which is kept around
+unchanged as a "how much trouble could this heat cause" reference point and
+to keep its existing exact-value tests passing. (These thresholds were
+tightened from their original 40/70/100 — see "A difficulty pass" under
+Progression design below.)
+
+**Fixed bug: pre-match violence "seems to lead to arrest" almost every
+time.** `UltraViolenceEngine`'s intervention chances were high enough
+(up to 65% for a rank-file participant at the biggest fixtures) that a
+few attempts felt like a guaranteed bust. Both the base chances
+(instigator 20%→12%, participant 40%→25%) and the per-category bump
+(Category 1: 25%→15%, Category 2: 10%→6%) were tuned down so getting away
+with it is a genuinely live possibility rather than a rare fluke.
 
 Separately, bringing pyro means passing a security search on the way in —
 before the security beat, if `didPyro` is set, the player picks a
@@ -628,24 +659,35 @@ flavor text.
 
 ## Post-match XP chart, stat breakdown, and a penalty for doing nothing
 
-The full-time summary used to be a single "+XP" line. It's now a two-step
-reveal, and a match spent barely engaging can now cost you, not just fail
-to reward you:
+The full-time summary used to be a single "+XP" line. It now shows exactly
+where that XP came from and what it did to your stats, and a match spent
+barely engaging can now cost you, not just fail to reward you:
 
-- **The XP chart** — `MatchDayCutsceneView.absorb(_:source:)` now tags
+- **The XP breakdown** — `MatchDayCutsceneView.absorb(_:source:)` tags
   every activity recorded during the cutscene with an `XPSource`
   (Attendance, Reactions, Supporting Style, Pyro, Chant & Tifo,
-  Confrontation, Involvement) as it happens, and the full-time summary's
-  first screen is a horizontal `Charts` bar chart (`xpBreakdownChart`)
-  showing exactly where that match's XP came from — positive bars in the
-  club accent color, any penalty in red.
-- **Tap Continue for the stat breakdown** — `ActivityOutcomeSummary` (App
-  layer) now carries each activity's own `loyaltyDelta`/`knowledgeDelta`/
+  Confrontation, Involvement) as it happens, and the full-time summary
+  shows `xpBreakdownCard`: a hand-rolled proportional bar per source
+  (`XPBarRow`, styled like `MatchStatsCard`'s existing bars) — positive
+  bars in the club accent color, any penalty in red.
+- **The stat breakdown shows alongside it.** `ActivityOutcomeSummary` (App
+  layer) carries each activity's own `loyaltyDelta`/`knowledgeDelta`/
   `influenceDelta`/`notorietyDelta` (computed from the stats before/after
-  it in `CharacterStore.apply`), tallied across the whole match. Tapping
-  "Continue" past the XP chart reveals `statDeltaBreakdown`: how much
-  Loyalty, Knowledge, Influence, and Notoriety that match earned, before
-  the final "Done" dismisses the cutscene.
+  it in `CharacterStore.apply`), tallied across the whole match and shown
+  as `statDeltaBreakdown` right underneath the XP breakdown — how much
+  Loyalty, Knowledge, Influence, and Notoriety that match earned — before
+  a single "Done" dismisses the cutscene.
+
+**Fixed bug: the Full Time screen could freeze.** The XP breakdown
+originally used Swift Charts (`Chart`/`BarMark`), the newest and most
+complex UI piece on that screen, gated behind a "Continue" tap that
+mounted/unmounted it — and it's the one screen users reported the app
+becoming unresponsive on. It's been replaced with the same hand-rolled
+`GeometryReader`-based bar approach `MatchStatsCard` already used safely
+elsewhere in the app, `import Charts` has been removed from the file
+entirely, and the "Continue" gate is gone — both breakdowns just show
+together, immediately.
+
 - **The crew notices if you did nothing.** `MatchDayCutsceneView.wasLowInvolvement`
   is true only when *all three* hold: every reaction given was Mild,
   no `MatchStance` was sustained (never picked one, or eased off early),
@@ -653,7 +695,7 @@ to reward you:
   quiet match — costs a flat 15 XP via
   `CharacterStore.applyLowInvolvementPenalty` (never below 0 total XP; no
   diminishing returns or achievement checks, unlike a normal
-  `ActivityType`), shown as a red "Involvement" bar on the chart. This
+  `ActivityType`), shown as a red "Involvement" bar on the breakdown. This
   never fires on a match that ends in an ejection or police
   intervention — those already have their own consequences.
 
@@ -861,6 +903,41 @@ rolling again on a later visit. Without this, reopening a match after a
 denial and tapping "Request" again would let you re-roll a bad outcome for
 free, defeating the whole point of it being a chance rather than a
 guarantee.
+
+## Attendance figures, and ticket demand that moves with form and league standing
+
+Two related additions make tickets (and match pages generally) feel like
+they're responding to how the season is actually going, not a fixed
+percentage all year:
+
+- **Attendance figures for played fixtures.** `MatchDayContentPlanner.attendanceFigure(matchId:homeClubPrestigeTier:)`
+  (`Core/Sources/UltrasEuropaCore/MatchDay/MatchDayContentPlanner.swift`)
+  derives a deterministic (same match, same number, every time) crowd
+  figure from the home club's `estimatedCapacityByPrestigeTier`, shown as a
+  `Label("… attendance", systemImage: "person.3.fill")` on `MatchDetailView`
+  for any match that's already been played — a tier-5 giant's ground reads
+  in the tens of thousands, a tier-1 club's in the low thousands, and it
+  never exceeds that tier's estimated capacity.
+- **Ticket demand now fluctuates with form and league position**, not just
+  the fixed prestige-tier/loyalty chances already in place.
+  `TicketDemandEngine` (`Core/Sources/UltrasEuropaCore/Tickets/TicketDemandEngine.swift`)
+  computes two multipliers from the favorite club's own recent results —
+  `formMultiplier` (their points-per-game over the last
+  `TicketDemandEngine.formMatchWindow` games; a hot streak *raises* demand
+  and makes tickets harder to get, a cold one *lowers* it) and
+  `standingMultiplier` (higher up the table = harder; lower down = easier)
+  — averaged into one `combinedMultiplier`, clamped to a ±20% band so it
+  nudges the existing chances rather than overwhelming them.
+  `AwayTicketAllocationEngine.resolve` and `HomeSeatRequestEngine.chance`/
+  `resolve` each take this as an optional `demandMultiplier` parameter
+  (defaulting to 1.0, so every existing call site and test is unaffected
+  unless it opts in), and `CharacterStore` computes and passes the real
+  multiplier via `ticketDemandMultiplier`/`favoriteClubRecentPointsPerGame`/
+  `favoriteClubLeaguePosition`. `MatchDetailView` surfaces a short
+  `characterStore.ticketDemandDescription` note (e.g. "tickets are in high
+  demand right now") alongside both the home stadium map and the away
+  ticket request section, so the fluctuation isn't just a silent number
+  change.
 
 ## Tickets go on sale a month out, not the moment a fixture exists
 

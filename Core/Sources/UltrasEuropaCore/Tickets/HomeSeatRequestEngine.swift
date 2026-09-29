@@ -37,17 +37,26 @@ public enum HomeSeatRequestEngine {
     /// The chance of a request for `seat` succeeding for a fan of a club
     /// at `prestigeTier`. A season-ticket holder requesting the Ultras
     /// Section is always guaranteed a spot instead of rolling.
-    public static func chance(for seat: SeatCategory, prestigeTier: Int, hasUltrasSeasonTicket: Bool) -> Double {
+    /// `demandMultiplier` (default 1.0, no change) layers the favorite
+    /// club's current form/league standing on top — see
+    /// `TicketDemandEngine`.
+    public static func chance(
+        for seat: SeatCategory, prestigeTier: Int, hasUltrasSeasonTicket: Bool, demandMultiplier: Double = 1.0
+    ) -> Double {
         if seat == .ultrasSection && hasUltrasSeasonTicket { return 1.0 }
         let base = baseChance[seat] ?? 0.75
         let multiplier = prestigeDifficultyMultiplier[prestigeTier] ?? 1.0
-        return min(1.0, max(0.05, base * multiplier))
+        return TicketDemandEngine.adjustedChance(baseChance: base * multiplier, multiplier: demandMultiplier)
     }
 
     public static func resolve<G: RandomNumberGenerator>(
-        seat: SeatCategory, prestigeTier: Int, hasUltrasSeasonTicket: Bool, using generator: inout G
+        seat: SeatCategory, prestigeTier: Int, hasUltrasSeasonTicket: Bool, demandMultiplier: Double = 1.0,
+        using generator: inout G
     ) -> Bool {
         Double.random(in: 0..<1, using: &generator)
-            < chance(for: seat, prestigeTier: prestigeTier, hasUltrasSeasonTicket: hasUltrasSeasonTicket)
+            < chance(
+                for: seat, prestigeTier: prestigeTier, hasUltrasSeasonTicket: hasUltrasSeasonTicket,
+                demandMultiplier: demandMultiplier
+            )
     }
 }
