@@ -53,6 +53,12 @@ struct ClubDetailView: View {
                         awayTicketThreshold: characterStore.awayTicketGuaranteedThreshold,
                         awayTicketChance: characterStore.awayTicketChance
                     )
+
+                    NavigationLink {
+                        ClubFriendChatView(club: club)
+                    } label: {
+                        ClubLinkRow(title: "Chat with the \(club.ultrasGroupName)", systemImage: "bubble.left.and.bubble.right.fill")
+                    }
                 }
 
                 NavigationLink {

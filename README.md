@@ -174,9 +174,10 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Dashboard's "Crew Members" link shows 15 members grouped by rank (Capo first); each has a relationship label that starts at "Stranger"
 - [ ] Interacting with a member shows an outcome (which can go either way), moves their relationship level up or down accordingly, and also awards a little XP — force-quit and relaunch to confirm the relationship persists
 - [ ] Tapping "Chat" on a crew member opens a scrolling chat screen (not an alert) with 5 topic chips along the bottom; tapping one adds the player's line and the crew member's reply as chat bubbles, and repeated taps on the same topic mostly avoid repeating the immediately previous reply
+- [ ] Your OWN favorite club's detail screen (Clubs tab → your club) shows a "Chat with the [Club] Ultras" link that opens the same chat-bubble screen used for friend clubs — no friendship or proposal needed since it's your own group
 - [ ] Chatting with a Lead Ultra/Capo-tier member below the required rank shows the same flat rejection reply every time instead of one of the 100 generic lines
 - [ ] A Lead Ultra- or Capo-tier crew member shows a "won't really acknowledge you" note and every interaction with them is a flat rejection capped at Stranger, until the player's own rank catches up (Ultra Group for a Lead Ultra-tier member, Lead Ultra for a Capo-tier one)
-- [ ] Dashboard's "Youth Group" link shows "Start your own following" before founding; founding it starts the stage at "Just Founded" with 1 member and shows the main ultras group's (initially indifferent) reaction text
+- [ ] Dashboard's "Youth Group" link shows "Start your own following" before founding, with a Group Name text field; founding it (leave the name blank to confirm the "Your Own Crew" fallback) starts the stage at "Just Founded" with 1 member, shows the main ultras group's (initially indifferent) reaction text, and the chosen name appears as the screen's title and at the top of the status card; force-quit and relaunch — the name persists
 - [ ] Recruiting fails far more often than it succeeds, and the shown success percentage visibly drops as the member count climbs; the main ultras reaction text escalates in tone at 5, 15, and 30 members
 - [ ] At 50 members, the recruit button is replaced by a Merge/Take Over choice, each behind a confirmation dialog; choosing either shows a permanent result card and recruiting stops being available
 - [ ] The Youth Group screen shows a "Where You Sit" segmented picker (Main Stand/Family Section/Behind the Goal/Ultras Section); changing it always succeeds and persists across force-quit/relaunch
@@ -560,6 +561,20 @@ the player yet (see the rank-gating note above) replies with the same
 flat rejection line instead of a generic one, so the chat screen doesn't
 contradict that gate.
 
+### Fixed: no way to chat with your own club's supporters
+
+`ClubFriendChatView` (the same chat-bubble screen used for a friend
+club's ultras group) already existed, but `ClubDetailView` only ever
+offered it when `canProposeFriendship` was true — which explicitly
+excludes the favorite club (`!isFavoriteClub`). The result: a player
+could chat with 15 named crew members individually, and with *other*
+clubs' ultras groups once friended, but never with their own club's
+supporters as a group at all. The favorite club's detail screen now
+always shows a "Chat with the [Club] Ultras" link (no friendship
+gate needed — it's already your own group), reusing `ClubFriendChatView`
+unchanged since it never referenced friendship internally in the first
+place.
+
 ## Founding your own youth group — a slow, hostile rival path
 
 Alongside the favorite club's existing ultras group, the Dashboard's
@@ -567,9 +582,15 @@ Alongside the favorite club's existing ultras group, the Dashboard's
 breakaway group of their own — a genuine alternative power base, not just
 flavor text.
 
-- **Founding** (`CharacterStore.foundYouthGroup`) is a one-time action that
-  starts the group at 1 member (the player). From there,
-  **`YouthGroupStage`** tracks its size against fixed thresholds — Just
+- **Founding** (`CharacterStore.foundYouthGroup(name:)`) is a one-time
+  action that starts the group at 1 member (the player). **Fixed:** the
+  founding card now has a Group Name text field — the player names their
+  own group (e.g. "The Young Guns") instead of it being an unlabeled
+  generic "Youth Group" forever; a blank name falls back to "Your Own
+  Crew" rather than leaving the group nameless. The chosen name becomes
+  the screen's navigation title and is shown at the top of the status
+  card once founded. From there, **`YouthGroupStage`** tracks its size
+  against fixed thresholds — Just
   Founded (1) → Small Following (5) → Growing Crew (15) → Established
   Rival (30) → Empire Built (50) — each with its own
   `mainUltrasReaction` text shown right on the screen, escalating from

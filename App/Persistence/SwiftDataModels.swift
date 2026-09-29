@@ -75,6 +75,9 @@ final class CharacterEntity {
     /// Whether the player has founded their own breakaway youth group —
     /// see `CharacterStore.foundYouthGroup`/`YouthGroupEngine`.
     var youthGroupFounded: Bool = false
+    /// The name the player gave their youth group when founding it — see
+    /// `CharacterStore.foundYouthGroup(name:)`. Empty until founded.
+    var youthGroupName: String = ""
     /// How many members the youth group has recruited (including the
     /// player, counted from founding). Drives `YouthGroupStage`.
     var youthGroupMemberCount: Int = 0

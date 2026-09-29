@@ -15,6 +15,7 @@ struct YouthGroupView: View {
     @State private var showRecruitResult = false
     @State private var showMergeConfirmation = false
     @State private var showTakeoverConfirmation = false
+    @State private var newGroupName = ""
 
     private var stage: YouthGroupStage { characterStore.youthGroupStage }
     private var outcome: YouthGroupOutcome { characterStore.youthGroupOutcome }
@@ -43,7 +44,7 @@ struct YouthGroupView: View {
             .padding()
         }
         .background(Theme.background)
-        .navigationTitle("Youth Group")
+        .navigationTitle(characterStore.youthGroupFounded ? characterStore.youthGroupName : "Youth Group")
         .navigationBarTitleDisplayMode(.inline)
         .alert(
             lastRecruitSucceeded == true ? "They're In!" : "No Luck",
@@ -88,8 +89,15 @@ struct YouthGroupView: View {
             .font(.subheadline)
             .foregroundStyle(Theme.secondaryText)
 
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Group Name").font(.caption.bold()).foregroundStyle(Theme.secondaryText)
+                TextField("e.g. The Young Guns", text: $newGroupName)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+            }
+
             Button {
-                characterStore.foundYouthGroup()
+                characterStore.foundYouthGroup(name: newGroupName)
             } label: {
                 Text("Found Your Own Group")
                     .font(.headline)
@@ -105,6 +113,7 @@ struct YouthGroupView: View {
 
     private var statusCard: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Text(characterStore.youthGroupName).font(.title3.bold()).foregroundStyle(Theme.primaryText)
             HStack {
                 Text("Stage").font(.headline)
                 Spacer()

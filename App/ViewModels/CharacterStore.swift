@@ -594,6 +594,9 @@ final class CharacterStore {
     /// eventually a rival to, the favorite club's main ultras group. See
     /// `YouthGroupEngine`.
     var youthGroupFounded: Bool { character?.youthGroupFounded ?? false }
+    /// The name the player chose when founding the group — see
+    /// `foundYouthGroup(name:)`. Empty until founded.
+    var youthGroupName: String { character?.youthGroupName ?? "" }
     var youthGroupMemberCount: Int { character?.youthGroupMemberCount ?? 0 }
     var youthGroupStage: YouthGroupStage {
         YouthGroupEngine.stage(forMemberCount: youthGroupMemberCount, founded: youthGroupFounded)
@@ -648,11 +651,15 @@ final class CharacterStore {
         )
     }
 
-    /// Founds the player's own breakaway youth group, starting at 1 member
-    /// (the player themselves). One-time — does nothing if already founded.
+    /// Founds the player's own breakaway youth group under `name`, starting
+    /// at 1 member (the player themselves). One-time — does nothing if
+    /// already founded. A blank/whitespace-only name falls back to a
+    /// generic default rather than leaving the group nameless.
     @discardableResult
-    func foundYouthGroup(today: Date = .now) -> ActivityOutcomeSummary? {
+    func foundYouthGroup(name: String, today: Date = .now) -> ActivityOutcomeSummary? {
         guard let character, !character.youthGroupFounded else { return nil }
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        character.youthGroupName = trimmedName.isEmpty ? "Your Own Crew" : trimmedName
         character.youthGroupFounded = true
         character.youthGroupMemberCount = 1
         return apply(

@@ -1,11 +1,14 @@
 import SwiftUI
 import UltrasEuropaCore
 
-/// A chat screen with a friend club's ultras group — the same
-/// bubble-and-chips pattern as `CrewChatView`, reusing the same 100
-/// generic `ChatTopic` replies (they read just as naturally coming from
-/// another club's group as from an individual crew member). Purely
-/// social: XP for the friendship comes from
+/// A chat screen with a club's ultras group — the same bubble-and-chips
+/// pattern as `CrewChatView`, reusing the same 100 generic `ChatTopic`
+/// replies (they read just as naturally coming from a club's group as
+/// from an individual crew member). Used both for a friend club's group
+/// (from `ClubDetailView.friendshipSection`) and, unconditionally, for the
+/// player's own favorite club's group (`ClubDetailView`'s
+/// `isFavoriteClub` section) — either way it's purely social: XP for a
+/// friend-club friendship comes from
 /// `CharacterStore.collaborateWithFriendClub`, a separate explicit
 /// action, not from chatting itself.
 struct ClubFriendChatView: View {
