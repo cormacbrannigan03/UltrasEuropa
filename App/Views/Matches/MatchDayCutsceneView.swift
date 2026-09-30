@@ -38,6 +38,25 @@ struct MatchDayCutsceneView: View {
         case summary
     }
 
+    /// How fast the live-match clock's real-time ticking runs — a pacing
+    /// preference the player can change mid-match, not a change to how the
+    /// match itself plays out. Scales the tick interval directly rather
+    /// than how many minutes advance per tick, so the clock still counts
+    /// up one minute at a time either way.
+    private enum MatchSpeed: Double, CaseIterable {
+        case normal = 1.0
+        case fast = 1.5
+        case veryFast = 2.0
+
+        var displayName: String {
+            switch self {
+            case .normal: return "×1"
+            case .fast: return "×1.5"
+            case .veryFast: return "×2"
+            }
+        }
+    }
+
     @State private var beatIndex = 0
     @State private var didJoinChant = false
     @State private var didContributeTifo = false
@@ -47,6 +66,10 @@ struct MatchDayCutsceneView: View {
     @State private var pyroConfiscated = false
 
     @State private var currentMinute = 0
+    /// How fast the live-match clock ticks in real time — see
+    /// `MatchSpeed` and `matchSpeedPicker`. Purely a pacing preference;
+    /// doesn't change anything about what happens during the match.
+    @State private var matchSpeed: MatchSpeed = .normal
     @State private var acknowledgedGoalIDs: Set<String> = []
     @State private var pendingReactionGoal: GoalEvent?
     @State private var acknowledgedCardIDs: Set<String> = []
@@ -397,52 +420,64 @@ struct MatchDayCutsceneView: View {
     /// `liveGoalEvents` in turn, ending at the same fixed final score
     /// `SeasonScheduleGenerator` already generated for this match.
     private var liveMatchCard: some View {
-        VStack(spacing: 16) {
-            if !currentMatchState.isPlayed {
-                Image(systemName: "hourglass")
-                    .font(.system(size: 48))
-                    .foregroundStyle(Theme.secondaryText)
-                Text("Kickoff Hasn't Happened Yet").font(.title2.bold())
-                Text("It's still \(characterStore.simulatedDate.formatted(date: .abbreviated, time: .omitted)) — fast forward to \(match.date.formatted(date: .abbreviated, time: .omitted)) to watch this one live.")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(Theme.secondaryText)
-            } else {
-                Text("\(currentMinute)'")
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .foregroundStyle(Theme.accent)
+        ScrollView {
+            VStack(spacing: 16) {
+                if !currentMatchState.isPlayed {
+                    Image(systemName: "hourglass")
+                        .font(.system(size: 48))
+                        .foregroundStyle(Theme.secondaryText)
+                    Text("Kickoff Hasn't Happened Yet").font(.title2.bold())
+                    Text("It's still \(characterStore.simulatedDate.formatted(date: .abbreviated, time: .omitted)) — fast forward to \(match.date.formatted(date: .abbreviated, time: .omitted)) to watch this one live.")
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Theme.secondaryText)
+                } else {
+                    Text(match.competition)
+                        .font(.caption.bold())
+                        .textCase(.uppercase)
+                        .foregroundStyle(Theme.secondaryText)
 
-                HStack(spacing: 20) {
-                    scoreColumn(name: homeClub?.name ?? match.homeClubId, goals: visibleGoalEvents.filter(\.isHomeTeam).count)
-                    Text("-").font(.title.bold()).foregroundStyle(Theme.secondaryText)
-                    scoreColumn(name: awayClub?.name ?? match.awayClubId, goals: visibleGoalEvents.filter { !$0.isHomeTeam }.count)
-                }
+                    LiveMatchPitchView(
+                        homeColorHex: homeClub?.primaryColorHex ?? Theme.crewPrimaryHex,
+                        awayColorHex: awayClub?.primaryColorHex ?? Theme.crewSecondaryHex
+                    )
 
-                if securityOutcome == .warned {
-                    Label("Security is watching you closely", systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
+                    Text("\(currentMinute)'")
+                        .font(.system(size: 40, weight: .bold, design: .rounded))
+                        .foregroundStyle(Theme.accent)
 
-                if didLightPyro {
-                    Label("Pyro lit", systemImage: "flame.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(visibleFeedEntries) { entry in
-                        feedEntryRow(entry)
+                    HStack(spacing: 20) {
+                        scoreColumn(name: homeClub?.name ?? match.homeClubId, goals: visibleGoalEvents.filter(\.isHomeTeam).count)
+                        Text("-").font(.title.bold()).foregroundStyle(Theme.secondaryText)
+                        scoreColumn(name: awayClub?.name ?? match.awayClubId, goals: visibleGoalEvents.filter { !$0.isHomeTeam }.count)
                     }
-                }
 
-                if !diaryEntries.isEmpty {
-                    Divider()
+                    if securityOutcome == .warned {
+                        Label("Security is watching you closely", systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+
+                    if didLightPyro {
+                        Label("Pyro lit", systemImage: "flame.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(currentStance.map { "Your \($0.displayName) Diary" } ?? "Your Matchday Diary")
-                            .font(.caption.bold())
-                            .foregroundStyle(Theme.secondaryText)
-                        ForEach(Array(diaryEntries.enumerated()), id: \.offset) { _, entry in
-                            Text(entry).font(.caption).foregroundStyle(Theme.secondaryText)
+                        ForEach(visibleFeedEntries) { entry in
+                            feedEntryRow(entry)
+                        }
+                    }
+
+                    if !diaryEntries.isEmpty {
+                        Divider()
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(currentStance.map { "Your \($0.displayName) Diary" } ?? "Your Matchday Diary")
+                                .font(.caption.bold())
+                                .foregroundStyle(Theme.secondaryText)
+                            ForEach(Array(diaryEntries.enumerated()), id: \.offset) { _, entry in
+                                Text(entry).font(.caption).foregroundStyle(Theme.secondaryText)
+                            }
                         }
                     }
                 }
@@ -457,7 +492,7 @@ struct MatchDayCutsceneView: View {
                 offerPyroPromptIfNeeded()
             }
         }
-        .onReceive(Timer.publish(every: 0.4, on: .main, in: .common).autoconnect()) { _ in
+        .onReceive(Timer.publish(every: 0.4 / matchSpeed.rawValue, on: .main, in: .common).autoconnect()) { _ in
             advanceClockTick()
         }
     }
@@ -802,27 +837,29 @@ struct MatchDayCutsceneView: View {
     // MARK: - Summary
 
     private var summaryCard: some View {
-        VStack(spacing: 16) {
-            if wasPoliceIntervened {
-                Image(systemName: "exclamationmark.shield.fill").font(.system(size: 48)).foregroundStyle(.red)
-                Text("Pulled Aside By Police").font(.title.bold())
-                Text(policeInterventionSummaryText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
-            } else if wasEjected {
-                Image(systemName: "hand.raised.fill").font(.system(size: 48)).foregroundStyle(.red)
-                Text("Thrown Out").font(.title.bold())
-                Text(ejectionSummaryText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
-            } else {
-                Image(systemName: "sportscourt.fill").font(.system(size: 48)).foregroundStyle(Theme.accent)
-                Text("Full Time").font(.title.bold())
-                Text(summary.displayText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
-                xpBreakdownCard
-                statDeltaBreakdown
-                if let matchStats {
-                    MatchStatsCard(
-                        stats: matchStats,
-                        homeName: homeClub?.name ?? match.homeClubId,
-                        awayName: awayClub?.name ?? match.awayClubId
-                    )
+        ScrollView {
+            VStack(spacing: 16) {
+                if wasPoliceIntervened {
+                    Image(systemName: "exclamationmark.shield.fill").font(.system(size: 48)).foregroundStyle(.red)
+                    Text("Pulled Aside By Police").font(.title.bold())
+                    Text(policeInterventionSummaryText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+                } else if wasEjected {
+                    Image(systemName: "hand.raised.fill").font(.system(size: 48)).foregroundStyle(.red)
+                    Text("Thrown Out").font(.title.bold())
+                    Text(ejectionSummaryText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+                } else {
+                    Image(systemName: "sportscourt.fill").font(.system(size: 48)).foregroundStyle(Theme.accent)
+                    Text("Full Time").font(.title.bold())
+                    Text(summary.displayText).multilineTextAlignment(.center).foregroundStyle(Theme.secondaryText)
+                    xpBreakdownCard
+                    statDeltaBreakdown
+                    if let matchStats {
+                        MatchStatsCard(
+                            stats: matchStats,
+                            homeName: homeClub?.name ?? match.homeClubId,
+                            awayName: awayClub?.name ?? match.awayClubId
+                        )
+                    }
                 }
             }
         }
@@ -1071,8 +1108,8 @@ struct MatchDayCutsceneView: View {
             }
         case .liveMatch where currentMinute < MatchDayContentPlanner.matchLengthMinutes:
             // The clock is ticking on its own (see `advanceClockTick`) — no
-            // button needed while play is underway.
-            EmptyView()
+            // button needed while play is underway, just a speed control.
+            matchSpeedPicker
         case .chant where !didJoinChant:
             Button {
                 absorb(characterStore.recordActivity(.participateInChant), source: .chantAndTifo)
@@ -1111,6 +1148,29 @@ struct MatchDayCutsceneView: View {
             .foregroundStyle(Theme.accentForeground)
     }
 
+    /// Lets the player speed up (or return to normal) the live-match
+    /// clock's real-time ticking — shown in place of an action button
+    /// while play is underway, since there's nothing to tap otherwise.
+    private var matchSpeedPicker: some View {
+        HStack(spacing: 8) {
+            ForEach(MatchSpeed.allCases, id: \.self) { speed in
+                Button {
+                    matchSpeed = speed
+                } label: {
+                    Text(speed.displayName)
+                        .font(.subheadline.bold())
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            matchSpeed == speed ? Theme.accent : Theme.cardBackground,
+                            in: RoundedRectangle(cornerRadius: 10)
+                        )
+                        .foregroundStyle(matchSpeed == speed ? Theme.accentForeground : Theme.primaryText)
+                }
+            }
+        }
+    }
+
     // MARK: - Recording
 
     private func recordBaseActivities() {
@@ -1144,5 +1204,46 @@ struct MatchDayCutsceneView: View {
         items += outcome.newlyUnlockedItems
         membershipAnnouncement = outcome.membershipAnnouncement ?? membershipAnnouncement
         seasonTicketAnnouncement = outcome.seasonTicketAnnouncement ?? seasonTicketAnnouncement
+    }
+
+    /// A stylized, static pitch shown above the scoreline while the match
+    /// is live — there's no real player positions to render, so this is
+    /// purely atmospheric texture (like a broadcast's establishing shot)
+    /// rather than a literal live view, tinted in each club's own colors
+    /// at its own end of the pitch.
+    private struct LiveMatchPitchView: View {
+        let homeColorHex: String
+        let awayColorHex: String
+
+        var body: some View {
+            GeometryReader { geometry in
+                let width = geometry.size.width
+                let height = geometry.size.height
+                ZStack {
+                    LinearGradient(
+                        colors: [Color(hex: homeColorHex).opacity(0.55), Color(hex: awayColorHex).opacity(0.55)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    Color.black.opacity(0.25)
+
+                    Rectangle()
+                        .strokeBorder(Color.white.opacity(0.6), lineWidth: 1.5)
+                        .padding(10)
+
+                    Path { path in
+                        path.move(to: CGPoint(x: width / 2, y: 10))
+                        path.addLine(to: CGPoint(x: width / 2, y: height - 10))
+                    }
+                    .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
+
+                    Circle()
+                        .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
+                        .frame(width: height * 0.55, height: height * 0.55)
+                }
+            }
+            .frame(height: 90)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
     }
 }

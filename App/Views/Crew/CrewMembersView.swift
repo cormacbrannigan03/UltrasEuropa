@@ -18,7 +18,9 @@ struct CrewMembersView: View {
                 if !members.isEmpty {
                     Section(rank.displayName) {
                         ForEach(members) { member in
-                            NavigationLink(value: member) {
+                            NavigationLink {
+                                CrewMemberDetailView(member: member)
+                            } label: {
                                 CrewMemberRow(member: member, bondScore: characterStore.bondScore(forMember: member.id))
                             }
                         }
@@ -30,9 +32,6 @@ struct CrewMembersView: View {
         .scrollContentBackground(.hidden)
         .background(Theme.background)
         .navigationTitle("Crew Members")
-        .navigationDestination(for: CrewMember.self) { member in
-            CrewMemberDetailView(member: member)
-        }
     }
 }
 
