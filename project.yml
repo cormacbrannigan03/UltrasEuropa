@@ -21,6 +21,14 @@ targets:
     settings:
       base:
         SWIFT_VERSION: "5.9"
+        # Force Xcode to use the real App/Info.plist (with its launch
+        # screen and orientation keys) rather than auto-generating one
+        # from build settings and silently dropping everything that isn't
+        # mirrored as an INFOPLIST_KEY_* setting — a generated Info.plist
+        # missing UILaunchScreen is what makes iOS letterbox the app at
+        # old-iPhone dimensions on a real device.
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: App/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.cormacbrannigan03.UltrasEuropa
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
