@@ -877,7 +877,44 @@ struct MatchDayCutsceneView: View {
                         )
                     }
                 }
+
+                // The Done (and, on a clean match, "Watch Ad to Double XP")
+                // button lives inside the scrollable content itself rather
+                // than as a separate fixed action button below it — a
+                // fixed button outside this ScrollView was getting pushed
+                // off-screen by the ScrollView's own layout instead of
+                // actually being constrained to scroll within the
+                // remaining space, so it was unreachable on a tall summary.
+                // Living inside the scroll content guarantees it's always
+                // reachable by scrolling, full stop.
+                if !wasPoliceIntervened, !wasEjected, !didDoubleXP, !characterStore.hasRemovedAds, totalXP > 0 {
+                    Button {
+                        rewardedAdCoordinator.show { [totalXP] in
+                            let bonus = characterStore.grantBonusXP(totalXP)
+                            guard bonus > 0 else { return }
+                            self.totalXP += bonus
+                            xpBySource[.adBonus, default: 0] += bonus
+                            didDoubleXP = true
+                        }
+                    } label: {
+                        Text("Watch Ad to Double XP (+\(totalXP))")
+                            .font(.subheadline.bold())
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12))
+                            .foregroundStyle(Theme.primaryText)
+                    }
+                    .disabled(!rewardedAdCoordinator.isReady)
+                    .opacity(rewardedAdCoordinator.isReady ? 1 : 0.5)
+                }
+
+                Button {
+                    dismiss()
+                } label: {
+                    cutsceneButtonLabel("Done")
+                }
             }
+            .padding(.bottom, 8)
         }
         .task {
             guard !didApplyMatchWrapUp, !wasPoliceIntervened, !wasEjected else { return }
@@ -1152,33 +1189,10 @@ struct MatchDayCutsceneView: View {
                 cutsceneButtonLabel("Help Raise the Tifo")
             }
         case .summary:
-            VStack(spacing: 8) {
-                if !wasPoliceIntervened, !wasEjected, !didDoubleXP, !characterStore.hasRemovedAds, totalXP > 0 {
-                    Button {
-                        rewardedAdCoordinator.show { [totalXP] in
-                            let bonus = characterStore.grantBonusXP(totalXP)
-                            guard bonus > 0 else { return }
-                            self.totalXP += bonus
-                            xpBySource[.adBonus, default: 0] += bonus
-                            didDoubleXP = true
-                        }
-                    } label: {
-                        Text("Watch Ad to Double XP (+\(totalXP))")
-                            .font(.subheadline.bold())
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12))
-                            .foregroundStyle(Theme.primaryText)
-                    }
-                    .disabled(!rewardedAdCoordinator.isReady)
-                    .opacity(rewardedAdCoordinator.isReady ? 1 : 0.5)
-                }
-                Button {
-                    dismiss()
-                } label: {
-                    cutsceneButtonLabel("Done")
-                }
-            }
+            // The Done/"Watch Ad to Double XP" buttons live inside
+            // summaryCard's own scrollable content now (see there for why)
+            // — nothing to show in the fixed action-button slot.
+            EmptyView()
         default:
             Button {
                 beatIndex += 1
