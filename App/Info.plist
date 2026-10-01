@@ -21,15 +21,13 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<!--
-	Google's own published SAMPLE AdMob App ID — safe to ship during
-	development since it only ever serves Google's test ads, but it MUST
-	be replaced with this app's real AdMob App ID (from the AdMob
-	console, once an account/app exists there) before any build meant to
-	earn real ad revenue. See AdsManager.swift for the matching ad unit
-	IDs, which need the same real-vs-test swap.
+	This app's real AdMob App ID (created 1 Oct 2026) — see
+	AdsManager.swift for the matching real ad unit IDs. Revert to
+	Google's sample ID (ca-app-pub-3940256099942544~1458002511) only if
+	testing requires forcing test ads again.
 	-->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-9676786622570370~8925541395</string>
 	<key>GADIsAdManagerApp</key>
 	<false/>
 	<!--

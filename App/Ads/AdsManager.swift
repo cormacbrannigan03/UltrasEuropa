@@ -8,25 +8,24 @@ import UserMessagingPlatform
 /// the ad unit IDs every ad surface (`BannerAdView`,
 /// `InterstitialAdCoordinator`, `RewardedAdCoordinator`) reads from.
 enum AdsManager {
-    /// Flip to `false` once this app has its own AdMob account/app and
-    /// real ad unit IDs below have been filled in — until then, every ad
-    /// surface uses Google's own published test IDs, which only ever
-    /// serve clearly-labeled test ads and are always safe to ship during
-    /// development (unlike accidentally requesting real ads against a
-    /// non-existent or unapproved AdMob app, which can get an account
-    /// flagged). Google's docs: https://developers.google.com/admob/ios/test-ads
-    private static let isUsingTestAdUnits = true
+    /// Flip back to `true` (and the AdMob App ID in Info.plist back to
+    /// Google's sample one) if real ads ever need to come down for
+    /// testing — this app's own AdMob app/ad units now exist (created
+    /// 1 Oct 2026, app ID ca-app-pub-9676786622570370~8925541395), so
+    /// real ads are live. Google's docs on test ads either way:
+    /// https://developers.google.com/admob/ios/test-ads
+    private static let isUsingTestAdUnits = false
 
     enum AdUnitID {
         static let banner = isUsingTestAdUnits
             ? "ca-app-pub-3940256099942544/2934735716"
-            : "REPLACE_WITH_REAL_BANNER_AD_UNIT_ID"
+            : "ca-app-pub-9676786622570370/5409053938"
         static let interstitial = isUsingTestAdUnits
             ? "ca-app-pub-3940256099942544/4411468910"
-            : "REPLACE_WITH_REAL_INTERSTITIAL_AD_UNIT_ID"
+            : "ca-app-pub-9676786622570370/4986296389"
         static let rewarded = isUsingTestAdUnits
             ? "ca-app-pub-3940256099942544/1712485313"
-            : "REPLACE_WITH_REAL_REWARDED_AD_UNIT_ID"
+            : "ca-app-pub-9676786622570370/5669831820"
     }
 
     /// Call once at app launch (see `UltrasEuropaApp`). Requests an
