@@ -205,10 +205,14 @@ unlaunchable for every player who already has it installed.
 - [ ] Chatting with a Lead Ultra/Capo-tier member below the required rank shows the same flat rejection reply every time instead of one of the 100 generic lines
 - [ ] A Lead Ultra- or Capo-tier crew member shows a "won't really acknowledge you" note and every interaction with them is a flat rejection capped at Stranger, until the player's own rank catches up (Ultra Group for a Lead Ultra-tier member, Lead Ultra for a Capo-tier one)
 - [ ] Dashboard's "Youth Group" link shows "Start your own following" before founding, with a Group Name text field; founding it (leave the name blank to confirm the "Your Own Crew" fallback) starts the stage at "Just Founded" with 1 member, shows the main ultras group's (initially indifferent) reaction text, and the chosen name appears as the screen's title and at the top of the status card; force-quit and relaunch — the name persists
+- [ ] Before interacting with anyone in the Crew tab, the Youth Group screen's Recruit card says there's no one to ask yet instead of showing a dead-end button; after chatting with/interacting with a crew member, "Try to Recruit Someone" opens a picker listing them by name, and picking one rolls success against that specific person (the alert names them either way)
 - [ ] Recruiting fails far more often than it succeeds, and the shown success percentage visibly drops as the member count climbs; the main ultras reaction text escalates in tone at 5, 15, and 30 members
 - [ ] At 50 members, the recruit button is replaced by a Merge/Take Over choice, each behind a confirmation dialog; choosing either shows a permanent result card and recruiting stops being available
 - [ ] The Youth Group screen shows a "Where You Sit" segmented picker (Main Stand/Family Section/Behind the Goal/Ultras Section); changing it always succeeds and persists across force-quit/relaunch
 - [ ] Advance the season clock (Dashboard's +1 Day/+1 Week) repeatedly with a founded, grown youth group — a "Someone Wants In" card should eventually appear; accepting adds a member and XP, declining just dismisses it; only ever one shows at a time
+- [ ] Tapping the "N members" line on the Youth Group screen opens a Members screen listing you, every named recruit, and a rolled-up count of anyone who joined unprompted
+- [ ] The Youth Group screen has a "Group Chat" link; posting a topic (Away Day Plan/Meetup Time/Tifo Idea/Transport/Pyro Plan) shows a reply attributed to a random recruited member's name, or "The Group" if none are recruited yet
+- [ ] If your crew's ultras group has an accepted friendship with another club (via that club's detail screen), the Youth Group screen shows an "Ultras Friendships" card listing it — it disappears if you have no friendships yet
 - [ ] Clubs tab lists all 20 leagues; drilling into one shows its real clubs; a club's detail screen shows its generated fixtures/results
 - [ ] "Table" tab (replacing the old Chants tab) lists all 20 leagues; drilling into one shows a live standings table (P/W/D/L/GD/Pts) with the favorite club's row highlighted; tapping any row opens that club's detail screen
 - [ ] On any club that isn't the favorite club, "Propose Ultras Friendship" shows an acceptance percentage, and resolves immediately to either an accepted friendship (unlocking Chat/Collaborate) or a locked-in decline (button disappears, can't retry that club)
@@ -608,11 +612,12 @@ not a new required step.
 "Chat" is the one interaction that opens somewhere different: instead of
 an instant alert, it pushes into `CrewChatView` — a scrolling chat-bubble
 screen with quick-reply chips along the bottom (Last Match, Next Match,
-How's Life, The Club, Banter) standing in for free-text input. Tapping
-one sends the player's line as a bubble, then the crew member replies
-with one of `CrewChatConstants`'s 100 generic lines (20 per topic,
-picked at random and never repeating the immediately previous line for
-that topic). Under the hood it still runs the exact same
+How's Life, The Club, Banter, Transfer Talk, Our Rivals, The Old Days)
+standing in for free-text input. Tapping one sends the player's line as a
+bubble, then the crew member replies with one of `CrewChatConstants`'s 160
+generic lines (20 per topic, picked at random and never repeating the
+immediately previous line for that topic). Under the hood it still runs
+the exact same
 `CrewInteractionEngine.resolve(interaction: .chat, ...)` roll as before
 (bond score, XP) — a small "Relationship +N" caption appears under the
 reply when it's nonzero — so the underlying mechanics are unchanged, only
@@ -685,6 +690,35 @@ flavor text.
   founding member. A hit surfaces a "Someone Wants In" card the player can
   accept (a free member, no recruit roll, same reward as a successful
   recruit) or decline — only ever one pending request at a time.
+- **Fixed: recruiting used to add an anonymous number, not a person.**
+  "Try to Recruit Someone" now opens a picker of actual crew members the
+  player has already interacted with (`CharacterStore
+  .youthGroupRecruitableCrewMembers` — anyone with an existing
+  `crewRelationships` entry, minus whoever's already in the group); picking
+  one rolls the same `recruitChance` as before, but now against that
+  specific person (`recruitToYouthGroup(memberId:)`), and on success their
+  real name joins `CharacterEntity.youthGroupMemberIds`. If the player
+  hasn't interacted with anyone yet, the card says so instead of showing a
+  dead-end button. An unprompted join request still adds an anonymous,
+  unnamed member (`youthGroupAnonymousMemberCount`) since there's no one
+  specific behind it.
+- **The member count is now tappable** — it opens `YouthGroupMembersView`,
+  which actually lists who's in the group: the player, every named recruit,
+  and a single rolled-up "+N more who joined on their own" row for the
+  anonymous ones.
+- **Group Chat** (`YouthGroupChatView`, linked from the status card) is a
+  second chat-bubble screen alongside the per-member `CrewChatView`, themed
+  specifically around planning for upcoming games — Away Day Plan, Meetup
+  Time, Tifo Idea, Transport, Pyro Plan (`YouthGroupChatTopic`, Core). Each
+  reply is attributed to a random recruited member if the group has any, or
+  to "The Group" generically if it doesn't yet; posting awards a small
+  `.planWithYouthGroup` XP activity. Message history isn't persisted, same
+  as `CrewChatView`.
+- **Ultras friendships now show here too** — any club your own crew's
+  ultras group has an accepted friendship with (`CharacterStore
+  .friendClubIds`, from `ClubDetailView`'s friendship proposal) is listed
+  on a "Ultras Friendships" card on the Youth Group screen, since it's part
+  of the same "who's backing you up" picture as the youth group itself.
 
 ## Post-match XP chart, stat breakdown, and a penalty for doing nothing
 

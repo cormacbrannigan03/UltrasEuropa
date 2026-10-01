@@ -33,6 +33,10 @@ public enum ActivityType: String, Codable, CaseIterable, Hashable, Sendable {
     /// required part of the core rank ladder.
     case foundYouthGroup
     case recruitYouthGroupMember
+    /// Posting a planning message in the youth group's group chat — see
+    /// `YouthGroupChatTopic`. Excluded from the diversity gate, same
+    /// reasoning as `socializeWithCrew`.
+    case planWithYouthGroup
     /// The two mutually-exclusive endings once the youth group grows large
     /// enough to rival the main ultras group — see
     /// `CharacterStore.mergeYouthGroupWithMainUltras`/`takeOverMainUltrasGroup`.

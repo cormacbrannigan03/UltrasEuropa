@@ -82,9 +82,17 @@ final class CharacterEntity {
     /// The name the player gave their youth group when founding it — see
     /// `CharacterStore.foundYouthGroup(name:)`. Empty until founded.
     var youthGroupName: String = ""
-    /// How many members the youth group has recruited (including the
-    /// player, counted from founding). Drives `YouthGroupStage`.
-    var youthGroupMemberCount: Int = 0
+    /// IDs (from the bundled `CrewMember` catalog) of crew members the
+    /// player has specifically recruited into the youth group — see
+    /// `CharacterStore.recruitToYouthGroup(memberId:)`. Only members the
+    /// player has already interacted with (and so has a relationship with)
+    /// can be picked.
+    var youthGroupMemberIds: [String] = []
+    /// How many additional, unnamed members joined on their own via an
+    /// unprompted join request (see `resolveYouthGroupJoinRequest`) rather
+    /// than being specifically recruited — there's no crew member behind
+    /// these, just a count.
+    var youthGroupAnonymousMemberCount: Int = 0
     /// Raw value of `UltrasEuropaCore.YouthGroupOutcome` — `"none"` until
     /// the player chooses to merge with or take over the main ultras
     /// group once the youth group is large enough to rival it.

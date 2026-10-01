@@ -352,19 +352,27 @@ final class CharacterStore {
     /// ("if the group grows"), and never while a merge/takeover outcome has
     /// already resolved the youth-group story.
     private func rollForYouthGroupJoinRequest(overDays days: Int, character: CharacterEntity) {
+        let memberCount = Self.totalYouthGroupMembers(for: character)
         guard character.youthGroupFounded,
               character.youthGroupOutcomeRaw == YouthGroupOutcome.none.rawValue,
               !character.youthGroupHasPendingJoinRequest,
-              YouthGroupEngine.stage(forMemberCount: character.youthGroupMemberCount, founded: true) != .founded
+              YouthGroupEngine.stage(forMemberCount: memberCount, founded: true) != .founded
         else { return }
 
         var generator = SystemRandomNumberGenerator()
         for _ in 0..<days {
-            if YouthGroupEngine.resolveJoinRequestAppears(currentMembers: character.youthGroupMemberCount, using: &generator) {
+            if YouthGroupEngine.resolveJoinRequestAppears(currentMembers: memberCount, using: &generator) {
                 character.youthGroupHasPendingJoinRequest = true
                 break
             }
         }
+    }
+
+    /// The youth group's total headcount: the player themselves, plus
+    /// every specifically-recruited member, plus every unnamed member who
+    /// joined on their own via an unprompted request.
+    private static func totalYouthGroupMembers(for character: CharacterEntity) -> Int {
+        1 + character.youthGroupMemberIds.count + character.youthGroupAnonymousMemberCount
     }
 
     /// Jumps the season clock straight to `targetDate` — used by the
@@ -686,7 +694,28 @@ final class CharacterStore {
     /// The name the player chose when founding the group — see
     /// `foundYouthGroup(name:)`. Empty until founded.
     var youthGroupName: String { character?.youthGroupName ?? "" }
-    var youthGroupMemberCount: Int { character?.youthGroupMemberCount ?? 0 }
+    /// IDs of crew members specifically recruited into the youth group —
+    /// see `recruitToYouthGroup(memberId:)`.
+    var youthGroupMemberIds: [String] { character?.youthGroupMemberIds ?? [] }
+    /// The actual `CrewMember`s recruited into the youth group, resolved
+    /// against the bundled catalog, for display on the members screen.
+    var youthGroupNamedMembers: [CrewMember] {
+        youthGroupMemberIds.compactMap { content.crewMember(id: $0) }
+    }
+    /// How many unnamed members joined on their own (see
+    /// `resolveYouthGroupJoinRequest`) rather than being recruited.
+    var youthGroupAnonymousMemberCount: Int { character?.youthGroupAnonymousMemberCount ?? 0 }
+    /// Every crew member the player has interacted with (so has an
+    /// existing relationship with) and could plausibly ask to join —
+    /// already-recruited members are excluded. Backs the recruit picker on
+    /// the Youth Group screen: there's no abstract "chance of a stranger
+    /// joining" any more, you're asking someone you actually know.
+    var youthGroupRecruitableCrewMembers: [CrewMember] {
+        let alreadyIn = Set(youthGroupMemberIds)
+        let interactedWith = Set((character?.crewRelationships ?? []).map(\.memberId))
+        return content.crewMembers.filter { interactedWith.contains($0.id) && !alreadyIn.contains($0.id) }
+    }
+    var youthGroupMemberCount: Int { 1 + youthGroupMemberIds.count + youthGroupAnonymousMemberCount }
     var youthGroupStage: YouthGroupStage {
         YouthGroupEngine.stage(forMemberCount: youthGroupMemberCount, founded: youthGroupFounded)
     }
@@ -733,7 +762,7 @@ final class CharacterStore {
             try? modelContext.save()
             return nil
         }
-        character.youthGroupMemberCount += 1
+        character.youthGroupAnonymousMemberCount += 1
         return apply(
             activity: .recruitYouthGroupMember, matchId: nil, satInUltrasStand: false, didPyro: false,
             today: today, calendar: .current
@@ -750,34 +779,52 @@ final class CharacterStore {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         character.youthGroupName = trimmedName.isEmpty ? "Your Own Crew" : trimmedName
         character.youthGroupFounded = true
-        character.youthGroupMemberCount = 1
+        character.youthGroupMemberIds = []
+        character.youthGroupAnonymousMemberCount = 0
         return apply(
             activity: .foundYouthGroup, matchId: nil, satInUltrasStand: false, didPyro: false,
             today: today, calendar: .current
         )
     }
 
-    /// Attempts to recruit one more member — deliberately a long shot that
-    /// gets harder the bigger the group already is (see
-    /// `YouthGroupEngine.recruitChance`). Returns whether it succeeded, or
-    /// `nil` if there's no character, the group isn't founded yet, or a
-    /// merge/takeover outcome has already been chosen.
+    /// Attempts to talk a specific crew member — one the player has already
+    /// interacted with, from `youthGroupRecruitableCrewMembers` — into
+    /// joining the youth group. Deliberately a long shot that gets harder
+    /// the bigger the group already is (see `YouthGroupEngine.recruitChance`).
+    /// Returns whether it succeeded, or `nil` if there's no character, the
+    /// group isn't founded yet, a merge/takeover outcome has already been
+    /// chosen, or `memberId` isn't a valid recruit target (already a
+    /// member, or never interacted with).
     @discardableResult
-    func recruitToYouthGroup(today: Date = .now) -> Bool? {
+    func recruitToYouthGroup(memberId: String, today: Date = .now) -> Bool? {
         guard let character, character.youthGroupFounded, youthGroupOutcome == .none else { return nil }
+        guard youthGroupRecruitableCrewMembers.contains(where: { $0.id == memberId }) else { return nil }
 
         var generator = SystemRandomNumberGenerator()
         let recruited = YouthGroupEngine.resolveRecruit(
-            currentMembers: character.youthGroupMemberCount, using: &generator
+            currentMembers: youthGroupMemberCount, using: &generator
         )
         if recruited {
-            character.youthGroupMemberCount += 1
+            character.youthGroupMemberIds.append(memberId)
         }
         apply(
             activity: .recruitYouthGroupMember, matchId: nil, satInUltrasStand: false, didPyro: false,
             today: today, calendar: .current
         )
         return recruited
+    }
+
+    /// Posts `topic` to the youth group's group chat — a small, generic
+    /// activity reward (see `.planWithYouthGroup`), separate from the
+    /// bond-score roll a one-on-one `CrewChatView` message uses, since this
+    /// is a broadcast to the whole group rather than a specific member.
+    @discardableResult
+    func sendYouthGroupChatMessage(today: Date = .now) -> ActivityOutcomeSummary? {
+        guard youthGroupFounded else { return nil }
+        return apply(
+            activity: .planWithYouthGroup, matchId: nil, satInUltrasStand: false, didPyro: false,
+            today: today, calendar: .current
+        )
     }
 
     /// Folds the youth group into the main ultras group — the peaceful

@@ -11,6 +11,9 @@ public enum ChatTopic: String, CaseIterable, Codable, Hashable, Sendable {
     case lifeOutsideFootball
     case theClub
     case banter
+    case transferRumors
+    case rivalClub
+    case oldDays
 
     public var displayName: String {
         switch self {
@@ -19,6 +22,9 @@ public enum ChatTopic: String, CaseIterable, Codable, Hashable, Sendable {
         case .lifeOutsideFootball: return "How's Life"
         case .theClub: return "The Club"
         case .banter: return "Banter"
+        case .transferRumors: return "Transfer Talk"
+        case .rivalClub: return "Our Rivals"
+        case .oldDays: return "The Old Days"
         }
     }
 
@@ -31,6 +37,9 @@ public enum ChatTopic: String, CaseIterable, Codable, Hashable, Sendable {
         case .lifeOutsideFootball: return "How's things been outside of all this?"
         case .theClub: return "What's your honest read on the club right now?"
         case .banter: return "Oi, you're all talk and no away days, you."
+        case .transferRumors: return "Heard anything about who we're signing?"
+        case .rivalClub: return "What's the story with our rivals these days?"
+        case .oldDays: return "Remember the old days following this club?"
         }
     }
 }

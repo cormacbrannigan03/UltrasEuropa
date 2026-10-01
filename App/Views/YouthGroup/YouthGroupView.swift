@@ -10,15 +10,28 @@ import UltrasEuropaCore
 /// over outright.
 struct YouthGroupView: View {
     @Environment(CharacterStore.self) private var characterStore
+    @Environment(ContentStore.self) private var contentStore
 
     @State private var lastRecruitSucceeded: Bool?
+    @State private var lastRecruitedMemberName = ""
     @State private var showRecruitResult = false
+    @State private var showRecruitSheet = false
     @State private var showMergeConfirmation = false
     @State private var showTakeoverConfirmation = false
     @State private var newGroupName = ""
 
     private var stage: YouthGroupStage { characterStore.youthGroupStage }
     private var outcome: YouthGroupOutcome { characterStore.youthGroupOutcome }
+
+    /// Clubs your own crew's ultras group has an accepted friendship
+    /// with (see `ClubDetailView`'s friendship proposal) — shown here
+    /// too since it's part of the same "who's backing you up" picture as
+    /// the youth group itself.
+    private var friendClubs: [Club] {
+        characterStore.friendClubIds
+            .compactMap { contentStore.repository.club(id: $0) }
+            .sorted { $0.name < $1.name }
+    }
 
     var body: some View {
         ScrollView {
@@ -29,6 +42,9 @@ struct YouthGroupView: View {
                     outcomeCard
                 } else {
                     statusCard
+                    if !friendClubs.isEmpty {
+                        friendshipsCard
+                    }
                     sectionCard
                     if characterStore.youthGroupHasPendingJoinRequest {
                         joinRequestCard
@@ -54,8 +70,8 @@ struct YouthGroupView: View {
         } message: {
             Text(
                 lastRecruitSucceeded == true
-                    ? "You've talked someone new into joining your group."
-                    : "They weren't interested this time. The bigger your group gets, the harder this becomes — keep at it."
+                    ? "\(lastRecruitedMemberName) is in — welcome to the group."
+                    : "\(lastRecruitedMemberName) wasn't interested this time. The bigger your group gets, the harder this becomes — keep at it."
             )
         }
         .confirmationDialog(
@@ -119,9 +135,18 @@ struct YouthGroupView: View {
                 Spacer()
                 Text(stage.displayName).font(.headline).foregroundStyle(Theme.accent)
             }
-            Text("\(characterStore.youthGroupMemberCount) member\(characterStore.youthGroupMemberCount == 1 ? "" : "s")")
-                .font(.subheadline)
-                .foregroundStyle(Theme.secondaryText)
+            NavigationLink {
+                YouthGroupMembersView()
+            } label: {
+                HStack {
+                    Text("\(characterStore.youthGroupMemberCount) member\(characterStore.youthGroupMemberCount == 1 ? "" : "s")")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.accent)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+            }
             ProgressView(
                 value: Double(characterStore.youthGroupMemberCount),
                 total: Double(YouthGroupEngine.takeoverThreshold)
@@ -130,8 +155,35 @@ struct YouthGroupView: View {
             Text("\(characterStore.youthGroupMemberCount)/\(YouthGroupEngine.takeoverThreshold) members to rival the main ultras group outright")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
+
+            Divider().overlay(Theme.secondaryText.opacity(0.3))
+
+            NavigationLink {
+                YouthGroupChatView()
+            } label: {
+                Label("Group Chat", systemImage: "bubble.left.and.bubble.right.fill")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(Theme.accent)
+            }
         }
         .padding(16)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var friendshipsCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Ultras Friendships", systemImage: "hands.sparkles.fill")
+                .font(.headline)
+            ForEach(friendClubs) { club in
+                HStack {
+                    Text(club.name).foregroundStyle(Theme.primaryText)
+                    Spacer()
+                    Text(club.ultrasGroupName).font(.caption).foregroundStyle(Theme.secondaryText)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
@@ -214,20 +266,59 @@ struct YouthGroupView: View {
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
 
-            Button {
-                lastRecruitSucceeded = characterStore.recruitToYouthGroup()
-                showRecruitResult = true
-            } label: {
-                Text("Try to Recruit Someone")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
-                    .foregroundStyle(Theme.accentForeground)
+            if characterStore.youthGroupRecruitableCrewMembers.isEmpty {
+                Text("You've got no one to ask yet — go chat with people from the Crew tab first, then come back here to invite them.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+            } else {
+                Button {
+                    showRecruitSheet = true
+                } label: {
+                    Text("Try to Recruit Someone")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(Theme.accentForeground)
+                }
             }
         }
         .padding(16)
         .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+        .sheet(isPresented: $showRecruitSheet) {
+            recruitPickerSheet
+        }
+    }
+
+    /// Lists every crew member the player has already interacted with
+    /// (and isn't already in the group) to pick a specific recruit target
+    /// from — see `CharacterStore.youthGroupRecruitableCrewMembers`.
+    private var recruitPickerSheet: some View {
+        NavigationStack {
+            List(characterStore.youthGroupRecruitableCrewMembers) { member in
+                Button {
+                    showRecruitSheet = false
+                    lastRecruitedMemberName = member.name
+                    lastRecruitSucceeded = characterStore.recruitToYouthGroup(memberId: member.id)
+                    showRecruitResult = true
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(member.name).font(.headline).foregroundStyle(Theme.primaryText)
+                        Text(member.rank.displayName).font(.caption).foregroundStyle(Theme.secondaryText)
+                    }
+                }
+                .listRowBackground(Theme.cardBackground)
+            }
+            .scrollContentBackground(.hidden)
+            .background(Theme.background)
+            .navigationTitle("Ask Someone")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { showRecruitSheet = false }
+                }
+            }
+        }
     }
 
     private var takeoverChoiceCard: some View {
