@@ -129,8 +129,30 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
   relationships, designed clothing — the same cascade rules used
   everywhere else) and frees the slot for a new fan.
 
+## On-device launch crash after a TestFlight schema change
+
+`ModelContainerFactory.make()` (`App/Persistence/ModelContainerFactory.swift`)
+builds the app's single local SwiftData container. It used to `fatalError`
+immediately if that failed, which is exactly what would happen if an
+earlier installed build's on-device store had a field a later build's
+schema no longer has (or vice versa) and SwiftData's automatic lightweight
+migration couldn't reconcile the two — the app would crash on every single
+launch from then on, before any UI ever rendered, with no way to recover
+short of deleting and reinstalling it. (This genuinely happened once: an
+in-development build briefly added `CharacterEntity.lastAdWatchDate` and
+then removed it again a commit later, both already pushed — installing the
+build after the removal on top of the build from before it was enough to
+trigger this.)
+
+`ModelContainerFactory.make()` now catches that failure, deletes the
+incompatible store's files, and creates a fresh empty one instead of
+crashing. Since this app has no backend or sync, losing that one local
+save is a one-time cost — far better than the app becoming permanently
+unlaunchable for every player who already has it installed.
+
 ## Manual verification checklist (run through this on a Simulator)
 
+- [ ] Installing a new build over an existing one (same device, old save data already on disk) launches straight to the Dashboard/picker rather than crashing — `ModelContainerFactory` resets the local store and starts fresh if a schema change between builds makes the old one unreadable, rather than crashing on every launch from then on (see "On-device launch crash after a TestFlight schema change" below)
 - [ ] First launch shows the save-slot picker with all 3 slots empty; tapping one shows character creation (name, crew name, favorite club — searchable across all 20 leagues)
 - [ ] After creating a character, the app goes straight to the Dashboard for that slot
 - [ ] Force-quit and relaunch the app — it resumes directly into the same save, no picker shown
