@@ -26,7 +26,7 @@
   {
     "kind": "removeAds",
     "name": "Remove Ads",
-    "description": "No more banner or ad breaks between matches. You can still choose to watch an ad after a match to double its XP, if you ever want to.",
+    "description": "No ads, anywhere in the app — no banner, no ad breaks between matches, and no rewarded ad offers either.",
     "priceDisplay": "$1.99"
   }
 ]

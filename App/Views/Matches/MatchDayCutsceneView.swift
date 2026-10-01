@@ -127,7 +127,9 @@ struct MatchDayCutsceneView: View {
     @State private var interstitialAdCoordinator = InterstitialAdCoordinator()
     /// The rewarded ad backing "Watch Ad to Double XP" — offered after
     /// every clean Full Time (not capped like the interstitial, since
-    /// it's the player's choice to take it, not an ad shown unprompted).
+    /// it's the player's choice to take it), but still suppressed by
+    /// `CharacterStore.hasRemovedAds` like every other ad surface — "no
+    /// ads" means zero ads, with no opt-in exception.
     @State private var rewardedAdCoordinator = RewardedAdCoordinator()
     /// Guards against doubling the same match's XP twice, and hides the
     /// offer once it's been taken.
@@ -894,7 +896,7 @@ struct MatchDayCutsceneView: View {
             interstitialAdCoordinator.showIfReady()
         }
         .task {
-            guard !wasPoliceIntervened, !wasEjected else { return }
+            guard !wasPoliceIntervened, !wasEjected, !characterStore.hasRemovedAds else { return }
             await rewardedAdCoordinator.load()
         }
     }
@@ -1151,7 +1153,7 @@ struct MatchDayCutsceneView: View {
             }
         case .summary:
             VStack(spacing: 8) {
-                if !wasPoliceIntervened, !wasEjected, !didDoubleXP, totalXP > 0 {
+                if !wasPoliceIntervened, !wasEjected, !didDoubleXP, !characterStore.hasRemovedAds, totalXP > 0 {
                     Button {
                         rewardedAdCoordinator.show { [totalXP] in
                             let bonus = characterStore.grantBonusXP(totalXP)

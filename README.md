@@ -195,7 +195,7 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] On first launch (in a region requiring it, e.g. the EU), a Google consent dialog appears before any ad loads; a real banner appears at the bottom of the Dashboard
 - [ ] After a clean Full Time (no ejection/police intervention), a "Watch Ad to Double XP (+N)" button appears above Done showing this match's actual XP total; watching the ad through to completion doubles the running XP total, adds an "Ad Bonus" row to the XP breakdown, and the button disappears for the rest of that summary; it reappears fresh after the next match
 - [ ] After a clean Full Time, a real interstitial appears roughly every third such match, not every single one, and never right after an ejection or police intervention
-- [ ] Buying "Remove Ads" in the Store hides the Dashboard banner and stops the post-match interstitial immediately; the "Watch Ad to Double XP" offer still appears after matches even with Remove Ads owned
+- [ ] Buying "Remove Ads" in the Store immediately hides the Dashboard banner, stops the post-match interstitial, and stops the "Watch Ad to Double XP" offer from appearing too — zero ads anywhere once owned
 
 ## The club/league data — real, but not live-verified
 
@@ -782,7 +782,7 @@ non-consumable entitlements via real StoreKit 2 (`App/Store/PurchaseManager.swif
 | Rise to the Top | $9.99 | Instantly sets rank to Capo, overriding the earned rank everywhere it's read |
 | Any Home Section Seat | $0.99 | Instantly grants a standing season ticket in the favorite club's ultras section, bypassing the loyalty threshold |
 | Unlimited Away Access | $0.99 | Every away-ticket request succeeds, bypassing `AwayTicketAllocationEngine` entirely |
-| Remove Ads | $1.99 | Hides the Dashboard banner and the post-match interstitial; the opt-in "Watch Ad to Double XP" offer (see below) stays available either way, since that one's a benefit the player chooses rather than an ad shown to them |
+| Remove Ads | $1.99 | Removes every ad surface — the Dashboard banner, the post-match interstitial, and the opt-in "Watch Ad to Double XP" offer (see below) alike. No ads at all once purchased |
 
 This is a deliberate departure from every other system in this app: the
 whole point of the progression design above (steep XP curves, prestige
@@ -841,10 +841,9 @@ Google Mobile Ads SDK (`App/Ads/`):
   player's choice to take it). Watching it to completion doubles that
   match's own XP total (`CharacterStore.grantBonusXP`, tallied on the XP
   breakdown as a new "Ad Bonus" row) rather than a flat amount, so a
-  heavily-engaged match is worth doubling far more than a quiet one. This
-  one stays available even with Remove Ads purchased — it's a benefit the
-  player opts into, not an ad shown to them unprompted, so paying to
-  remove ads shouldn't also remove that option.
+  heavily-engaged match is worth doubling far more than a quiet one —
+  also suppressed by Remove Ads, same as the other two: "Remove Ads"
+  means zero ads, with no opt-in exception.
 
 **Consent comes first.** `AdsManager.start()` (called once from
 `UltrasEuropaApp.init()`) requests an up-to-date GDPR/UK consent status

@@ -65,10 +65,9 @@ final class CharacterEntity {
     var purchasedTopRank: Bool = false
     var purchasedAnyHomeSeat: Bool = false
     var purchasedUnlimitedAwayPoints: Bool = false
-    /// Removes the banner and interstitial ads (see `CharacterStore.hasRemovedAds`)
-    /// — the opt-in "watch an ad to double this match's XP" offer stays
-    /// available either way, since that one's a benefit the player chose,
-    /// not an ad shown to them unprompted.
+    /// Removes every ad surface — banner, interstitial, and the opt-in
+    /// "watch an ad to double this match's XP" offer alike (see
+    /// `CharacterStore.hasRemovedAds`).
     var purchasedRemoveAds: Bool = false
 
     /// Set when stadium security ejects the player with a ban (see

@@ -1033,11 +1033,11 @@ final class CharacterStore {
         }
     }
 
-    /// Whether the banner and interstitial ads should be suppressed — see
-    /// `StoreProductKind.removeAds`. The opt-in "watch an ad to double
-    /// this match's XP" offer (`MatchDayCutsceneView`) is unaffected
-    /// either way, since that one is a benefit the player chooses, not an
-    /// ad shown to them unprompted.
+    /// Whether every ad surface should be suppressed — the Dashboard
+    /// banner, the post-match interstitial, and the opt-in "watch an ad
+    /// to double this match's XP" offer alike (see `StoreProductKind.removeAds`
+    /// and every call site that reads this). "Remove Ads" means zero ads,
+    /// full stop — no opt-in exception for the rewarded one.
     var hasRemovedAds: Bool {
         character?.purchasedRemoveAds ?? false
     }
