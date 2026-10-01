@@ -44,6 +44,11 @@ struct RootView: View {
                 }
                 characterStore = newCharacterStore
                 saveSlotStore = newSaveSlotStore
+                // Only safe to call once the app's window actually exists —
+                // unlike UltrasEuropaApp.init(), this .onAppear fires after
+                // RootView is on screen, so AdsManager can find a real view
+                // controller to present the consent form and ATT prompt on.
+                AdsManager.start()
             }
         }
         .onChange(of: saveSlotStore?.activeSlotIndex) { _, newSlot in

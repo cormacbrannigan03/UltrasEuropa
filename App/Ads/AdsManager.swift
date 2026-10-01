@@ -1,3 +1,4 @@
+import AppTrackingTransparency
 import Foundation
 import GoogleMobileAds
 import UIKit
@@ -28,13 +29,19 @@ enum AdsManager {
             : "ca-app-pub-9676786622570370/5669831820"
     }
 
-    /// Call once at app launch (see `UltrasEuropaApp`). Requests an
-    /// up-to-date GDPR/UK consent status from the UMP SDK and shows a
-    /// consent form if the player's region requires one, then starts the
-    /// Mobile Ads SDK — which is what actually allows any ad request to
-    /// go out — only after consent is resolved one way or another, so a
-    /// slow or failed consent fetch can never result in ads loading
-    /// without it ever being asked for.
+    /// Call once at app launch, after the app's window actually exists
+    /// (see `RootView` — NOT from `UltrasEuropaApp.init()`, which runs
+    /// before any window/scene exists, so `topViewController` would be
+    /// `nil` and both the consent form and the ATT prompt below could
+    /// silently fail to present). Requests an up-to-date GDPR/UK consent
+    /// status from the UMP SDK and shows a consent form if the player's
+    /// region requires one, then requests the system's App Tracking
+    /// Transparency permission (needed for personalized — higher-paying —
+    /// ads; declining it still allows non-personalized ads), and only
+    /// starts the Mobile Ads SDK itself — which is what actually allows
+    /// any ad request to go out — once both are resolved, so a slow or
+    /// failed consent fetch can never result in ads loading without the
+    /// player ever being asked.
     static func start() {
         let parameters = UMPRequestParameters()
         parameters.tagForUnderAgeOfConsent = false
@@ -42,15 +49,24 @@ enum AdsManager {
         UMPConsentInformation.sharedInstance.requestConsentInfoUpdate(with: parameters) { requestError in
             guard requestError == nil else {
                 // Couldn't reach Google's consent service (e.g. offline on
-                // first launch) — fall back to starting the SDK as-is
-                // rather than permanently blocking ads over a network
-                // blip; it will ask again on the next launch.
-                MobileAds.shared.start(completionHandler: nil)
+                // first launch) — fall back to the ATT prompt + starting
+                // the SDK as-is rather than permanently blocking ads over
+                // a network blip; it will ask again on the next launch.
+                requestTrackingThenStartSDK()
                 return
             }
             UMPConsentForm.loadAndPresentIfRequired(from: topViewController) { _ in
-                MobileAds.shared.start(completionHandler: nil)
+                requestTrackingThenStartSDK()
             }
+        }
+    }
+
+    private static func requestTrackingThenStartSDK() {
+        ATTrackingManager.requestTrackingAuthorization { _ in
+            // Any status (authorized, denied, restricted) still starts the
+            // SDK — Google Mobile Ads serves non-personalized ads on its
+            // own whenever tracking wasn't authorized.
+            MobileAds.shared.start(completionHandler: nil)
         }
     }
 
