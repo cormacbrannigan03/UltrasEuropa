@@ -72,6 +72,11 @@ struct MatchDayCutsceneView: View {
     @State private var matchSpeed: MatchSpeed = .normal
     @State private var acknowledgedGoalIDs: Set<String> = []
     @State private var pendingReactionGoal: GoalEvent?
+    /// Drives the pop-in animation on the "GOAL FOR ...!!" banner each
+    /// time `reactionPromptCard(for:)` appears for a new goal — reset to
+    /// `false` first so the spring replays even if the same view instance
+    /// is reused for back-to-back goals.
+    @State private var goalBannerDidAppear = false
     @State private var acknowledgedCardIDs: Set<String> = []
     @State private var pendingReactionCard: CardEvent?
     @State private var reactionSeverities: [ReactionSeverity] = []
@@ -626,11 +631,28 @@ struct MatchDayCutsceneView: View {
 
     private func reactionPromptCard(for goal: GoalEvent) -> some View {
         let isOwnGoalForFavorite = isGoalForFavoriteClub(goal)
+        let scoringClubName = (goal.isHomeTeam ? homeClub?.name : awayClub?.name) ?? "Goal"
+        let scoringColorHex = (goal.isHomeTeam ? homeClub?.primaryColorHex : awayClub?.primaryColorHex) ?? Theme.crewPrimaryHex
         return VStack(spacing: 16) {
             Image(systemName: "soccerball")
                 .font(.system(size: 48))
                 .foregroundStyle(Theme.accent)
-            Text("GOAL! \(goal.minute)'").font(.title.bold())
+            Text("GOAL FOR \(scoringClubName.uppercased())!!")
+                .font(.system(size: 26, weight: .black, design: .rounded))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Color(hex: scoringColorHex))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color(hex: scoringColorHex).opacity(0.18), in: RoundedRectangle(cornerRadius: 12))
+                .scaleEffect(goalBannerDidAppear ? 1 : 0.5)
+                .opacity(goalBannerDidAppear ? 1 : 0)
+                .onAppear {
+                    goalBannerDidAppear = false
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
+                        goalBannerDidAppear = true
+                    }
+                }
+            Text("\(goal.minute)'").font(.title3.bold()).foregroundStyle(Theme.secondaryText)
             Text(isOwnGoalForFavorite ? "Your side scores — how do you react?" : "They've scored — how do you react?")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Theme.secondaryText)
@@ -1269,44 +1291,94 @@ struct MatchDayCutsceneView: View {
         seasonTicketAnnouncement = outcome.seasonTicketAnnouncement ?? seasonTicketAnnouncement
     }
 
-    /// A stylized, static pitch shown above the scoreline while the match
-    /// is live — there's no real player positions to render, so this is
-    /// purely atmospheric texture (like a broadcast's establishing shot)
-    /// rather than a literal live view, tinted in each club's own colors
-    /// at its own end of the pitch.
+    /// A stylized pitch shown above the scoreline while the match is
+    /// live, in the spirit of an old-school 2D match engine: 11
+    /// player-position dots per side, gently wandering around a fixed
+    /// formation slot, plus a ball dot drifting near the center circle.
+    /// None of this tracks the real simulated match (there are no real
+    /// player positions to render) — it's purely atmospheric texture,
+    /// tinted in each club's own colors at its own end of the pitch.
     private struct LiveMatchPitchView: View {
         let homeColorHex: String
         let awayColorHex: String
 
+        /// Relative (x, y) formation slots for one team, in its own half
+        /// (x in 0...1 of that half's width): goalkeeper, back four,
+        /// midfield four, front two — mirrored for the away side.
+        private static let formationSlots: [(x: Double, y: Double)] = [
+            (0.08, 0.5),
+            (0.28, 0.12), (0.28, 0.37), (0.28, 0.63), (0.28, 0.88),
+            (0.58, 0.08), (0.58, 0.33), (0.58, 0.67), (0.58, 0.92),
+            (0.85, 0.3), (0.85, 0.7),
+        ]
+
         var body: some View {
-            GeometryReader { geometry in
-                let width = geometry.size.width
-                let height = geometry.size.height
-                ZStack {
-                    LinearGradient(
-                        colors: [Color(hex: homeColorHex).opacity(0.55), Color(hex: awayColorHex).opacity(0.55)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    Color.black.opacity(0.25)
+            TimelineView(.animation) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                GeometryReader { geometry in
+                    let width = geometry.size.width
+                    let height = geometry.size.height
+                    ZStack {
+                        LinearGradient(
+                            colors: [Color(hex: homeColorHex).opacity(0.55), Color(hex: awayColorHex).opacity(0.55)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        Color.black.opacity(0.25)
 
-                    Rectangle()
-                        .strokeBorder(Color.white.opacity(0.6), lineWidth: 1.5)
-                        .padding(10)
+                        Rectangle()
+                            .strokeBorder(Color.white.opacity(0.6), lineWidth: 1.5)
+                            .padding(10)
 
-                    Path { path in
-                        path.move(to: CGPoint(x: width / 2, y: 10))
-                        path.addLine(to: CGPoint(x: width / 2, y: height - 10))
-                    }
-                    .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
-
-                    Circle()
+                        Path { path in
+                            path.move(to: CGPoint(x: width / 2, y: 10))
+                            path.addLine(to: CGPoint(x: width / 2, y: height - 10))
+                        }
                         .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
-                        .frame(width: height * 0.55, height: height * 0.55)
+
+                        Circle()
+                            .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
+                            .frame(width: height * 0.55, height: height * 0.55)
+
+                        ForEach(Array(Self.formationSlots.enumerated()), id: \.offset) { index, slot in
+                            playerDot(color: Color(hex: homeColorHex), index: index, slot: slot, mirrored: false, width: width, height: height, t: t)
+                            playerDot(color: Color(hex: awayColorHex), index: index + Self.formationSlots.count, slot: slot, mirrored: true, width: width, height: height, t: t)
+                        }
+
+                        ballDot(width: width, height: height, t: t)
+                    }
                 }
             }
-            .frame(height: 90)
+            .frame(height: 130)
             .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+
+        /// One team's player marker, wandering in a small Lissajous loop
+        /// around its formation slot so the pitch feels alive without
+        /// simulating anything real.
+        private func playerDot(color: Color, index: Int, slot: (x: Double, y: Double), mirrored: Bool, width: CGFloat, height: CGFloat, t: Double) -> some View {
+            let phase = Double(index) * 1.7
+            let baseX = mirrored ? (1 - slot.x) : slot.x
+            let wanderX = sin(t * 0.6 + phase) * 0.035
+            let wanderY = cos(t * 0.5 + phase * 1.3) * 0.06
+            let x = (baseX + wanderX) * width
+            let y = (slot.y + wanderY) * height
+            return Circle()
+                .fill(color)
+                .overlay(Circle().stroke(Color.white.opacity(0.8), lineWidth: 0.75))
+                .frame(width: 7, height: 7)
+                .position(x: x, y: y)
+        }
+
+        /// A small white dot drifting near the center circle, standing in
+        /// for the ball.
+        private func ballDot(width: CGFloat, height: CGFloat, t: Double) -> some View {
+            let x = (0.5 + sin(t * 0.9) * 0.18) * width
+            let y = (0.5 + cos(t * 1.3) * 0.22) * height
+            return Circle()
+                .fill(Color.white)
+                .frame(width: 5, height: 5)
+                .position(x: x, y: y)
         }
     }
 }
