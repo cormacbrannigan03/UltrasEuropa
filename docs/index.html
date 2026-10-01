@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UltrasEuropa — Live the Ultras Life</title>
+<meta name="description" content="A football fan life simulator across 20 real European leagues. Build your reputation from Regular to Capo.">
+<style>
+  :root {
+    --navy: #0b1220;
+    --navy-2: #121b30;
+    --orange: #f2994a;
+    --cream: #fbf3e7;
+    --cream-dim: #cfc6b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--navy);
+    color: var(--cream);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+  header {
+    padding: 72px 0 48px;
+    text-align: center;
+    background: linear-gradient(180deg, var(--navy-2), var(--navy));
+  }
+  h1 {
+    font-size: clamp(2.2rem, 7vw, 3.2rem);
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+  }
+  .tagline {
+    color: var(--orange);
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 0 0 28px;
+  }
+  .badge {
+    display: inline-block;
+    border: 1px solid var(--orange);
+    color: var(--orange);
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  section { padding: 40px 0; }
+  h2 {
+    font-size: 1.3rem;
+    color: var(--orange);
+    margin: 0 0 16px;
+  }
+  p { color: var(--cream-dim); margin: 0 0 16px; }
+  ul { padding-left: 20px; color: var(--cream-dim); }
+  li { margin-bottom: 10px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .card {
+    background: var(--navy-2);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .card h3 {
+    color: var(--cream);
+    font-size: 1rem;
+    margin: 0 0 6px;
+  }
+  .card p { margin: 0; font-size: 0.92rem; }
+  footer {
+    padding: 36px 0 56px;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  footer a {
+    color: var(--cream-dim);
+    text-decoration: none;
+    margin: 0 10px;
+  }
+  footer a:hover { color: var(--orange); }
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>UltrasEuropa</h1>
+      <p class="tagline">Live the Ultras Life</p>
+      <span class="badge">Coming soon to the App Store</span>
+    </div>
+  </header>
+
+  <section class="wrap">
+    <h2>Follow your club. Build your reputation.</h2>
+    <p>
+      UltrasEuropa is a football fan life simulator that puts you in the stands,
+      not on the pitch. Create your character, choose your favorite club from
+      real leagues across Europe, and work your way up from a regular fan to a
+      respected Capo running the show.
+    </p>
+  </section>
+
+  <section class="wrap">
+    <h2>What you'll do</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Watch every match live</h3>
+        <p>Minute-by-minute goals, cards, and reactions — react your way, for better or worse.</p>
+      </div>
+      <div class="card">
+        <h3>Climb the ranks</h3>
+        <p>From Regular to Capo, growing your Loyalty, Knowledge, Influence, and Notoriety along the way.</p>
+      </div>
+      <div class="card">
+        <h3>Build a crew</h3>
+        <p>Found your own youth group, chat with your crew, and make friends — or rivals — of other clubs' ultras.</p>
+      </div>
+      <div class="card">
+        <h3>A living season</h3>
+        <p>A full generated calendar across 20 leagues and hundreds of real clubs, with tickets, standings, and form.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <a href="support.html">Support</a>
+    <a href="privacy.html">Privacy Policy</a>
+  </footer>
+</body>
+</html>
