@@ -119,6 +119,12 @@ struct MatchDayCutsceneView: View {
     /// Guards the one-time low-involvement check against `summaryCard`
     /// being re-evaluated on every render.
     @State private var didApplyMatchWrapUp = false
+    /// Guards the one-time interstitial-ad check against `summaryCard`
+    /// being re-evaluated on every render — separate from
+    /// `didApplyMatchWrapUp` since it has its own (non-overlapping)
+    /// eligibility rule, see `summaryCard`'s second `.task`.
+    @State private var didCheckInterstitial = false
+    @State private var interstitialAdCoordinator = InterstitialAdCoordinator()
 
     /// Where a chunk of match-day XP came from, for the full-time XP chart.
     private enum XPSource: String, CaseIterable, Hashable {
@@ -871,6 +877,13 @@ struct MatchDayCutsceneView: View {
             guard penalty > 0 else { return }
             totalXP -= penalty
             xpBySource[.involvement, default: 0] -= penalty
+        }
+        .task {
+            guard !didCheckInterstitial, !wasPoliceIntervened, !wasEjected else { return }
+            didCheckInterstitial = true
+            guard AdsManager.shouldShowInterstitialAfterMatch() else { return }
+            await interstitialAdCoordinator.load()
+            interstitialAdCoordinator.showIfReady()
         }
     }
 

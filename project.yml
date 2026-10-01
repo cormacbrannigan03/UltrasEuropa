@@ -7,6 +7,12 @@ options:
 packages:
   UltrasEuropaCore:
     path: Core
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    from: 12.0.0
+  GoogleUserMessagingPlatform:
+    url: https://github.com/googleads/swift-package-manager-google-user-messaging-platform.git
+    from: 3.0.0
 targets:
   UltrasEuropa:
     type: application
@@ -16,6 +22,10 @@ targets:
     dependencies:
       - package: UltrasEuropaCore
         product: UltrasEuropaCore
+      - package: GoogleMobileAds
+        product: GoogleMobileAds
+      - package: GoogleUserMessagingPlatform
+        product: GoogleUserMessagingPlatform
     info:
       path: App/Info.plist
     settings:

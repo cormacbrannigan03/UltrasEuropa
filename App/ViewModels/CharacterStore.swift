@@ -435,6 +435,29 @@ final class CharacterStore {
         return applied
     }
 
+    /// Whether the player hasn't already watched today's rewarded ad — see
+    /// `grantRewardedAdBonus`. `true` whenever there's an active character
+    /// and either they've never watched one or it wasn't today.
+    var canWatchRewardedAdToday: Bool {
+        guard let character else { return false }
+        guard let lastDate = character.lastAdWatchDate else { return true }
+        return !Calendar.current.isDate(lastDate, inSameDayAs: .now)
+    }
+
+    /// Flat XP for watching a rewarded ad to completion — a direct
+    /// top-up like `applyLowInvolvementPenalty`'s deduction, not a routed
+    /// `ActivityType` (no diminishing returns, no achievement checks).
+    /// Capped to once per calendar day so it can't be farmed by replaying
+    /// the ad; returns 0 (and grants nothing) if already watched today.
+    @discardableResult
+    func grantRewardedAdBonus(amount: Int = 15, today: Date = .now, calendar: Calendar = .current) -> Int {
+        guard let character, canWatchRewardedAdToday else { return 0 }
+        character.totalXP += amount
+        character.lastAdWatchDate = today
+        try? modelContext.save()
+        return amount
+    }
+
     func applyStadiumBan(days: Int, calendar: Calendar = .current) {
         guard let character else { return }
         character.stadiumBanUntilDate = calendar.date(byAdding: .day, value: days, to: simulatedDate)

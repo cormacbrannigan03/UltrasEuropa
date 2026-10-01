@@ -72,6 +72,12 @@ final class CharacterEntity {
     /// (`simulatedDate`) is still before this date.
     var stadiumBanUntilDate: Date?
 
+    /// The last calendar day the player watched a rewarded ad for a bonus
+    /// — see `CharacterStore.grantRewardedAdBonus`/`canWatchRewardedAdToday`.
+    /// `nil` means they've never watched one. Capped to once per day so it
+    /// can't be farmed by repeatedly tapping "Watch Ad."
+    var lastAdWatchDate: Date?
+
     /// Whether the player has founded their own breakaway youth group —
     /// see `CharacterStore.foundYouthGroup`/`YouthGroupEngine`.
     var youthGroupFounded: Bool = false

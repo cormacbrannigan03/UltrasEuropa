@@ -192,6 +192,9 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Buttons, badges, progress bars, and the tab bar tint match the favorite club's primary color; creating a second save with a different club and switching to it via "Switch Save" changes all of those immediately; button text stays readable even for a club with a very light primary color
 - [ ] Dashboard's toolbar shows a flag emblem (🇬🇧 by default); tapping it opens a dropdown of all 27 languages with a checkmark on the current one; picking another immediately relabels the tab bar and the "Season Calendar"/"Store" Dashboard links in that language; force-quit and relaunch — the chosen language is still selected
 - [ ] Dashboard shows a "Next Match" card right under the Season Clock with the favorite club's soonest unplayed fixture (opponent, home/away, date); tapping it goes straight to that match's detail screen, same as tapping it from the Season Calendar; once every fixture is played, the card reads "No fixtures left this season" instead
+- [ ] On first launch (in a region requiring it, e.g. the EU), a Google consent dialog appears before any ad loads; a test banner (clearly labeled "Test Ad") appears at the bottom of the Dashboard
+- [ ] Dashboard's "Watch Ad for Bonus XP" button plays a test rewarded ad and grants +15 XP only once it's watched through to completion; tapping it again the same day shows it disabled with "Already watched today"; force-quit, relaunch, and simulate forward a day — it's available again
+- [ ] After a clean Full Time (no ejection/police intervention), a test interstitial appears roughly every third such match, not every single one
 
 ## The club/league data — real, but not live-verified
 
@@ -812,6 +815,53 @@ local StoreKit testing environment with no App Store Connect account or
 network connection needed. That local configuration is just for testing;
 it has no effect on a real device or a TestFlight/App Store build; those
 still need the real App Store Connect products described above.
+
+## In-app advertising — Google Mobile Ads (AdMob), gated behind real consent
+
+Alongside the real-money Store, UltrasEuropa also earns ad revenue via the
+Google Mobile Ads SDK (`App/Ads/`):
+
+- **A banner** at the bottom of the Dashboard (`BannerAdView`, a
+  `UIViewControllerRepresentable` wrapping `BannerView` — there's no
+  SwiftUI-native banner API in the SDK).
+- **An interstitial** after a clean Full Time summary (not after an
+  ejection or police intervention — kicking someone with an ad right
+  after a punitive outcome is bad form), and only roughly every third
+  such match (`AdsManager.shouldShowInterstitialAfterMatch`), so ad
+  breaks don't dominate the between-match flow.
+- **A rewarded ad** behind a "Watch Ad for Bonus XP" button on the
+  Dashboard, granting a flat +15 XP (mirroring the low-involvement
+  penalty's magnitude) once per calendar day
+  (`CharacterStore.canWatchRewardedAdToday`/`grantRewardedAdBonus`,
+  backed by a new `CharacterEntity.lastAdWatchDate` field) — capped so it
+  can't be farmed by replaying the ad.
+
+**Consent comes first.** `AdsManager.start()` (called once from
+`UltrasEuropaApp.init()`) requests an up-to-date GDPR/UK consent status
+from Google's User Messaging Platform (UMP) SDK and presents a consent
+form if the player's region requires one, and only starts the Mobile Ads
+SDK itself — which is what actually allows any ad request to go out —
+once that's resolved either way. This matters more than it might for a
+typical app: UltrasEuropa's whole subject is European football, so a
+large share of its real audience is in the EEA/UK, where serving ads
+without a Google-certified consent flow is a genuine compliance problem,
+not a hypothetical one.
+
+**Getting real ad revenue requires an AdMob account this environment
+can't create:** every ad unit ID in `AdsManager.AdUnitID` is currently one
+of Google's own published *test* IDs (`isUsingTestAdUnits = true`) —
+these only ever serve ads clearly labeled "Test Ad," so they're always
+safe to ship during development, but they will never earn real money.
+Once there's a real AdMob account and app (admob.google.com → Apps → Add
+App, linked to this app's App Store listing), flip `isUsingTestAdUnits`
+to `false` and fill in the three real ad unit IDs, and swap the matching
+test `GADApplicationIdentifier` in `App/Info.plist` for the app's real
+AdMob App ID. The `SKAdNetworkItems` list in `App/Info.plist` currently
+has only Google's own identifier; before shipping for real revenue, copy
+the full current list from
+developers.google.com/admob/ios/ios14 over it — that list keeps growing
+as Google adds ad buyers, so it's best fetched fresh rather than frozen
+into committed code.
 
 ## Every club has an ultras group — but it's a generic label, not invented lore
 

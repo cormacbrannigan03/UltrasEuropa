@@ -7,6 +7,8 @@ struct DashboardView: View {
     @Environment(SaveSlotStore.self) private var saveSlotStore
 
     @State private var showSwitchSaveConfirmation = false
+    @State private var rewardedAdCoordinator = RewardedAdCoordinator()
+    @State private var rewardedAdBonusMessage: String?
 
     private var favoriteClub: Club? { characterStore.favoriteClub }
     private var localization: LocalizationManager { LocalizationManager.shared }
@@ -50,6 +52,8 @@ struct DashboardView: View {
                     xpMultiplier: characterStore.favoriteClubXPMultiplier,
                     achievementName: { id in contentStore.repository.achievement(id: id)?.name ?? id }
                 )
+
+                watchAdCard
 
                 if let favoriteClub {
                     UltrasGroupStatusCard(
@@ -102,6 +106,10 @@ struct DashboardView: View {
                 NavigationLink { StoreView() } label: {
                     DashboardLinkRow(title: localization.string(.store), subtitle: "Fast-track your journey", systemImage: "cart.fill")
                 }
+
+                BannerAdView()
+                    .frame(height: 50)
+                    .frame(maxWidth: .infinity)
             }
             .padding()
         }
@@ -109,6 +117,15 @@ struct DashboardView: View {
         .navigationTitle("Dashboard")
         .navigationDestination(for: Match.self) { match in
             MatchDetailView(match: match)
+        }
+        .task { await rewardedAdCoordinator.load() }
+        .alert("Bonus XP", isPresented: Binding(
+            get: { rewardedAdBonusMessage != nil },
+            set: { if !$0 { rewardedAdBonusMessage = nil } }
+        )) {
+            Button("OK") { rewardedAdBonusMessage = nil }
+        } message: {
+            Text(rewardedAdBonusMessage ?? "")
         }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -149,6 +166,30 @@ struct DashboardView: View {
         } message: {
             Text("Your progress in this save is kept — you can come back to it anytime from the save picker.")
         }
+    }
+
+    /// Lets the player watch a rewarded ad for a flat XP top-up, capped
+    /// to once per day by `CharacterStore.canWatchRewardedAdToday` —
+    /// disabled (rather than hidden) once used today or while the ad
+    /// hasn't finished loading yet, so it's always clear why it can't be
+    /// tapped right now.
+    private var watchAdCard: some View {
+        let alreadyWatchedToday = !characterStore.canWatchRewardedAdToday
+        return Button {
+            rewardedAdCoordinator.show { [characterStore] in
+                let granted = characterStore.grantRewardedAdBonus()
+                guard granted > 0 else { return }
+                rewardedAdBonusMessage = "You earned +\(granted) XP for watching."
+            }
+        } label: {
+            DashboardLinkRow(
+                title: "Watch Ad for Bonus XP",
+                subtitle: alreadyWatchedToday ? "Already watched today — come back tomorrow" : "Earn a quick +15 XP",
+                systemImage: "play.rectangle.fill"
+            )
+        }
+        .disabled(alreadyWatchedToday || !rewardedAdCoordinator.isReady)
+        .opacity(alreadyWatchedToday || !rewardedAdCoordinator.isReady ? 0.5 : 1)
     }
 
     private var header: some View {
