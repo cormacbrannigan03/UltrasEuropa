@@ -9,6 +9,7 @@ struct MatchScheduleView: View {
     let matches: [Match]
 
     @Environment(ContentStore.self) private var contentStore
+    @Environment(CharacterStore.self) private var characterStore
 
     private var sortedMatches: [Match] { matches.sorted { $0.date < $1.date } }
     private var upcoming: [Match] { sortedMatches.filter { !$0.isPlayed } }
@@ -39,6 +40,11 @@ struct MatchScheduleView: View {
         .background(Theme.background)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if !upcoming.isEmpty {
+                characterStore.completeTask("check-the-fixtures")
+            }
+        }
         .navigationDestination(for: Match.self) { match in
             MatchDetailView(match: match)
         }

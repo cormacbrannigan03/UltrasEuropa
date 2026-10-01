@@ -79,6 +79,13 @@ struct ClubDetailView: View {
         .background(Theme.background)
         .navigationTitle(club.name)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if isFavoriteClub {
+                characterStore.completeTask("know-your-history")
+            } else {
+                characterStore.completeTask("know-your-rivals")
+            }
+        }
         .alert(friendshipAlertTitle, isPresented: $showFriendshipAlert) {
             Button("OK") {}
         } message: {

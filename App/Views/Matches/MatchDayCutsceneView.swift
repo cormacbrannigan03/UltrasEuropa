@@ -759,6 +759,7 @@ struct MatchDayCutsceneView: View {
         if lightIt {
             didLightPyro = true
             absorb(characterStore.recordActivity(.doPyroChallenge), source: .pyro)
+            characterStore.completeTask("light-it-up")
         }
         if !wasEjected {
             advanceWithinLiveMatch()
@@ -1200,6 +1201,7 @@ struct MatchDayCutsceneView: View {
             Button {
                 absorb(characterStore.recordActivity(.participateInChant), source: .chantAndTifo)
                 didJoinChant = true
+                characterStore.completeTask("learn-a-chant")
             } label: {
                 cutsceneButtonLabel("Join the Chant")
             }
@@ -1207,6 +1209,7 @@ struct MatchDayCutsceneView: View {
             Button {
                 absorb(characterStore.recordActivity(.contributeToTifo), source: .chantAndTifo)
                 didContributeTifo = true
+                characterStore.completeTask("help-make-a-tifo")
             } label: {
                 cutsceneButtonLabel("Help Raise the Tifo")
             }
@@ -1271,6 +1274,11 @@ struct MatchDayCutsceneView: View {
         if characterStore.isFriendClub(match.homeClubId) || characterStore.isFriendClub(match.awayClubId) {
             absorb(characterStore.recordActivity(.attendFriendClubMatch), source: .attendance)
         }
+        // travelMode is only ever set for a fixture where the favorite
+        // club is playing away — see where this view is launched.
+        if travelMode != nil {
+            characterStore.completeTask("travel-to-an-away-game")
+        }
     }
 
     /// Tallies one activity's outcome into the running totals shown on the
@@ -1293,28 +1301,45 @@ struct MatchDayCutsceneView: View {
 
     /// A stylized pitch shown above the scoreline while the match is
     /// live, in the spirit of an old-school 2D match engine: 11
-    /// player-position dots per side, gently wandering around a fixed
-    /// formation slot, plus a ball dot drifting near the center circle.
-    /// None of this tracks the real simulated match (there are no real
-    /// player positions to render) — it's purely atmospheric texture,
-    /// tinted in each club's own colors at its own end of the pitch.
+    /// player-position dots per side whose team shape pushes forward or
+    /// drops back as a slow "which side currently has it" swing plays out,
+    /// all reacting to a single ball marker that drives back and forth
+    /// across the pitch. None of this reads the real simulated match
+    /// result (there are no real player positions to tie it to, and
+    /// nothing here affects the score) — it's a believable animated
+    /// backdrop, not a physics/AI engine, tinted in each club's own kit
+    /// colors. Many real club pairings share a primary color (e.g. two
+    /// clubs both playing in red), so the away side always renders as a
+    /// reversed/"away kit" marker — light fill, colored ring — rather than
+    /// relying on hue alone to tell the sides apart.
     private struct LiveMatchPitchView: View {
         let homeColorHex: String
         let awayColorHex: String
 
-        /// Relative (x, y) formation slots for one team, in its own half
-        /// (x in 0...1 of that half's width): goalkeeper, back four,
-        /// midfield four, front two — mirrored for the away side.
-        private static let formationSlots: [(x: Double, y: Double)] = [
-            (0.08, 0.5),
-            (0.28, 0.12), (0.28, 0.37), (0.28, 0.63), (0.28, 0.88),
-            (0.58, 0.08), (0.58, 0.33), (0.58, 0.67), (0.58, 0.92),
-            (0.85, 0.3), (0.85, 0.7),
+        /// Relative (x, y) formation slot plus a 0...1 "attacking line"
+        /// weight for one team, in its own half (x in 0...1 of that
+        /// half's width): goalkeeper (weight 0, barely moves), back four,
+        /// midfield four, front two — mirrored horizontally for the away
+        /// side. Higher-weight lines shift further when their team is on
+        /// the front foot and react more to the ball's position.
+        private static let formationSlots: [(x: Double, y: Double, weight: Double)] = [
+            (0.08, 0.5, 0.0),
+            (0.28, 0.12, 0.3), (0.28, 0.37, 0.3), (0.28, 0.63, 0.3), (0.28, 0.88, 0.3),
+            (0.58, 0.08, 0.55), (0.58, 0.33, 0.55), (0.58, 0.67, 0.55), (0.58, 0.92, 0.55),
+            (0.85, 0.3, 0.8), (0.85, 0.7, 0.8),
         ]
 
         var body: some View {
             TimelineView(.animation) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
+                // A slow -1...1 swing standing in for "who currently has
+                // the run of play" — positive means the home side is
+                // pushing forward (so the ball trends toward the away
+                // goal), negative means the away side is.
+                let momentum = sin(t * 0.12)
+                let ballX = 0.5 + momentum * 0.38 + sin(t * 0.9) * 0.05
+                let ballY = 0.5 + cos(t * 0.53) * 0.33
+
                 GeometryReader { geometry in
                     let width = geometry.size.width
                     let height = geometry.size.height
@@ -1341,11 +1366,11 @@ struct MatchDayCutsceneView: View {
                             .frame(width: height * 0.55, height: height * 0.55)
 
                         ForEach(Array(Self.formationSlots.enumerated()), id: \.offset) { index, slot in
-                            playerDot(color: Color(hex: homeColorHex), index: index, slot: slot, mirrored: false, width: width, height: height, t: t)
-                            playerDot(color: Color(hex: awayColorHex), index: index + Self.formationSlots.count, slot: slot, mirrored: true, width: width, height: height, t: t)
+                            playerDot(isHome: true, teamColor: Color(hex: homeColorHex), index: index, slot: slot, width: width, height: height, t: t, momentum: momentum, ballY: ballY)
+                            playerDot(isHome: false, teamColor: Color(hex: awayColorHex), index: index + Self.formationSlots.count, slot: slot, width: width, height: height, t: t, momentum: momentum, ballY: ballY)
                         }
 
-                        ballDot(width: width, height: height, t: t)
+                        ballDot(width: width, height: height, ballX: ballX, ballY: ballY, t: t)
                     }
                 }
             }
@@ -1353,30 +1378,55 @@ struct MatchDayCutsceneView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
 
-        /// One team's player marker, wandering in a small Lissajous loop
-        /// around its formation slot so the pitch feels alive without
-        /// simulating anything real.
-        private func playerDot(color: Color, index: Int, slot: (x: Double, y: Double), mirrored: Bool, width: CGFloat, height: CGFloat, t: Double) -> some View {
+        /// One team's player marker: its formation slot shifted toward the
+        /// opponent's goal when `momentum` favors this team (and pulled
+        /// back when it doesn't), nudged toward the ball's height, plus a
+        /// touch of individual jitter so the pitch feels alive. The home
+        /// side renders as a solid-filled dot in its own color; the away
+        /// side renders as a light dot ringed in its color — an "away
+        /// kit" look that stays readable even when both clubs' primary
+        /// colors are nearly identical.
+        private func playerDot(isHome: Bool, teamColor: Color, index: Int, slot: (x: Double, y: Double, weight: Double), width: CGFloat, height: CGFloat, t: Double, momentum: Double, ballY: Double) -> some View {
+            let baseX = isHome ? slot.x : (1 - slot.x)
+            let attackDirection = isHome ? 1.0 : -1.0
+            let isAttacking = isHome ? momentum > 0 : momentum < 0
+            let shiftAmount = (isAttacking ? 0.22 : -0.12) * slot.weight * abs(momentum)
+            let pullTowardBallY = 0.12 + slot.weight * 0.18
+
             let phase = Double(index) * 1.7
-            let baseX = mirrored ? (1 - slot.x) : slot.x
-            let wanderX = sin(t * 0.6 + phase) * 0.035
-            let wanderY = cos(t * 0.5 + phase * 1.3) * 0.06
-            let x = (baseX + wanderX) * width
-            let y = (slot.y + wanderY) * height
-            return Circle()
-                .fill(color)
-                .overlay(Circle().stroke(Color.white.opacity(0.8), lineWidth: 0.75))
-                .frame(width: 7, height: 7)
-                .position(x: x, y: y)
+            let jitterX = sin(t * 0.8 + phase) * 0.012
+            let jitterY = cos(t * 0.7 + phase * 1.3) * 0.018
+
+            let targetX = baseX + attackDirection * shiftAmount + jitterX
+            let targetY = slot.y + (ballY - slot.y) * pullTowardBallY + jitterY
+
+            let x = min(max(targetX, 0.03), 0.97) * width
+            let y = min(max(targetY, 0.05), 0.95) * height
+
+            return Group {
+                if isHome {
+                    Circle()
+                        .fill(teamColor)
+                        .overlay(Circle().stroke(Color.white.opacity(0.85), lineWidth: 0.75))
+                } else {
+                    Circle()
+                        .fill(Color.white.opacity(0.92))
+                        .overlay(Circle().stroke(teamColor, lineWidth: 1.5))
+                }
+            }
+            .frame(width: 7, height: 7)
+            .position(x: x, y: y)
         }
 
-        /// A small white dot drifting near the center circle, standing in
-        /// for the ball.
-        private func ballDot(width: CGFloat, height: CGFloat, t: Double) -> some View {
-            let x = (0.5 + sin(t * 0.9) * 0.18) * width
-            let y = (0.5 + cos(t * 1.3) * 0.22) * height
+        /// The ball marker, following the same `ballX`/`ballY` the player
+        /// dots react to, with a touch of extra high-frequency wiggle for
+        /// a "being knocked around" feel.
+        private func ballDot(width: CGFloat, height: CGFloat, ballX: Double, ballY: Double, t: Double) -> some View {
+            let x = (ballX + sin(t * 3) * 0.012) * width
+            let y = (ballY + cos(t * 3.4) * 0.012) * height
             return Circle()
                 .fill(Color.white)
+                .overlay(Circle().stroke(Color.black.opacity(0.35), lineWidth: 0.5))
                 .frame(width: 5, height: 5)
                 .position(x: x, y: y)
         }
