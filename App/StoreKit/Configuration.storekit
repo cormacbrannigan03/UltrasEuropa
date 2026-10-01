@@ -61,6 +61,21 @@
       "productID": "com.cormacbrannigan03.UltrasEuropa.store.unlimitedAwayPoints",
       "referenceName": "Unlimited Away Access",
       "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "1.99",
+      "familyShareable": false,
+      "internalID": "42D287E0-BEFA-46E9-89F6-8E1F9436F88A",
+      "localizations": [
+        {
+          "description": "No more banner or ad breaks between matches. You can still choose to watch an ad after a match to double its XP, if you ever want to.",
+          "displayName": "Remove Ads",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.cormacbrannigan03.UltrasEuropa.store.removeAds",
+      "referenceName": "Remove Ads",
+      "type": "NonConsumable"
     }
   ],
   "settings": {

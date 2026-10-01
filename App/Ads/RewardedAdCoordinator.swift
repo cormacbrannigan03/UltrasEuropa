@@ -1,11 +1,11 @@
 import GoogleMobileAds
 import UIKit
 
-/// Loads and shows a single rewarded ad at a time — backs the Dashboard's
-/// "Watch Ad for Bonus XP" button. `CharacterStore` is what actually
-/// decides whether the player's earned (and already granted) today's
-/// bonus (see `canWatchRewardedAdToday`/`grantRewardedAdBonus`); this
-/// coordinator only knows how to load and present the ad itself.
+/// Loads and shows a single rewarded ad at a time — backs the Full Time
+/// screen's "Watch Ad to Double XP" button (`MatchDayCutsceneView`),
+/// which decides what the reward actually is (doubling that match's XP
+/// via `CharacterStore.grantBonusXP`); this coordinator only knows how to
+/// load and present the ad itself.
 @MainActor
 @Observable
 final class RewardedAdCoordinator: NSObject {

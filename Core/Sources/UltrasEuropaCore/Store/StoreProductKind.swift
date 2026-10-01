@@ -10,6 +10,7 @@ public enum StoreProductKind: String, Codable, CaseIterable, Hashable, Sendable 
     case riseToTop
     case anyHomeSeat
     case unlimitedAwayPoints
+    case removeAds
 
     /// The StoreKit/App Store Connect product identifier this kind maps to.
     /// Must match a non-consumable In-App Purchase configured in App Store

@@ -125,6 +125,13 @@ struct MatchDayCutsceneView: View {
     /// eligibility rule, see `summaryCard`'s second `.task`.
     @State private var didCheckInterstitial = false
     @State private var interstitialAdCoordinator = InterstitialAdCoordinator()
+    /// The rewarded ad backing "Watch Ad to Double XP" — offered after
+    /// every clean Full Time (not capped like the interstitial, since
+    /// it's the player's choice to take it, not an ad shown unprompted).
+    @State private var rewardedAdCoordinator = RewardedAdCoordinator()
+    /// Guards against doubling the same match's XP twice, and hides the
+    /// offer once it's been taken.
+    @State private var didDoubleXP = false
 
     /// Where a chunk of match-day XP came from, for the full-time XP chart.
     private enum XPSource: String, CaseIterable, Hashable {
@@ -135,6 +142,7 @@ struct MatchDayCutsceneView: View {
         case chantAndTifo = "Chant & Tifo"
         case confrontation = "Confrontation"
         case involvement = "Involvement"
+        case adBonus = "Ad Bonus"
     }
 
     private var chant: Chant? { contentStore.repository.chantOfTheDay(matchId: match.id) }
@@ -879,11 +887,15 @@ struct MatchDayCutsceneView: View {
             xpBySource[.involvement, default: 0] -= penalty
         }
         .task {
-            guard !didCheckInterstitial, !wasPoliceIntervened, !wasEjected else { return }
+            guard !didCheckInterstitial, !wasPoliceIntervened, !wasEjected, !characterStore.hasRemovedAds else { return }
             didCheckInterstitial = true
             guard AdsManager.shouldShowInterstitialAfterMatch() else { return }
             await interstitialAdCoordinator.load()
             interstitialAdCoordinator.showIfReady()
+        }
+        .task {
+            guard !wasPoliceIntervened, !wasEjected else { return }
+            await rewardedAdCoordinator.load()
         }
     }
 
@@ -1138,10 +1150,32 @@ struct MatchDayCutsceneView: View {
                 cutsceneButtonLabel("Help Raise the Tifo")
             }
         case .summary:
-            Button {
-                dismiss()
-            } label: {
-                cutsceneButtonLabel("Done")
+            VStack(spacing: 8) {
+                if !wasPoliceIntervened, !wasEjected, !didDoubleXP, totalXP > 0 {
+                    Button {
+                        rewardedAdCoordinator.show { [totalXP] in
+                            let bonus = characterStore.grantBonusXP(totalXP)
+                            guard bonus > 0 else { return }
+                            self.totalXP += bonus
+                            xpBySource[.adBonus, default: 0] += bonus
+                            didDoubleXP = true
+                        }
+                    } label: {
+                        Text("Watch Ad to Double XP (+\(totalXP))")
+                            .font(.subheadline.bold())
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12))
+                            .foregroundStyle(Theme.primaryText)
+                    }
+                    .disabled(!rewardedAdCoordinator.isReady)
+                    .opacity(rewardedAdCoordinator.isReady ? 1 : 0.5)
+                }
+                Button {
+                    dismiss()
+                } label: {
+                    cutsceneButtonLabel("Done")
+                }
             }
         default:
             Button {

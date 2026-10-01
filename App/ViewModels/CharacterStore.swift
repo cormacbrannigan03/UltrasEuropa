@@ -435,25 +435,16 @@ final class CharacterStore {
         return applied
     }
 
-    /// Whether the player hasn't already watched today's rewarded ad — see
-    /// `grantRewardedAdBonus`. `true` whenever there's an active character
-    /// and either they've never watched one or it wasn't today.
-    var canWatchRewardedAdToday: Bool {
-        guard let character else { return false }
-        guard let lastDate = character.lastAdWatchDate else { return true }
-        return !Calendar.current.isDate(lastDate, inSameDayAs: .now)
-    }
-
-    /// Flat XP for watching a rewarded ad to completion — a direct
-    /// top-up like `applyLowInvolvementPenalty`'s deduction, not a routed
-    /// `ActivityType` (no diminishing returns, no achievement checks).
-    /// Capped to once per calendar day so it can't be farmed by replaying
-    /// the ad; returns 0 (and grants nothing) if already watched today.
+    /// A direct XP top-up — like `applyLowInvolvementPenalty`'s deduction,
+    /// not a routed `ActivityType` (no diminishing returns, no achievement
+    /// checks). Used to double a match's XP after watching a rewarded ad
+    /// (see `MatchDayCutsceneView`'s "Watch Ad to Double XP"), with no cap
+    /// of its own — it's offered once per match, every match, and it's the
+    /// caller's job not to call it twice for the same match.
     @discardableResult
-    func grantRewardedAdBonus(amount: Int = 15, today: Date = .now, calendar: Calendar = .current) -> Int {
-        guard let character, canWatchRewardedAdToday else { return 0 }
+    func grantBonusXP(_ amount: Int) -> Int {
+        guard let character, amount > 0 else { return 0 }
         character.totalXP += amount
-        character.lastAdWatchDate = today
         try? modelContext.save()
         return amount
     }
@@ -1038,7 +1029,17 @@ final class CharacterStore {
         case .riseToTop: return character.purchasedTopRank
         case .anyHomeSeat: return character.purchasedAnyHomeSeat
         case .unlimitedAwayPoints: return character.purchasedUnlimitedAwayPoints
+        case .removeAds: return character.purchasedRemoveAds
         }
+    }
+
+    /// Whether the banner and interstitial ads should be suppressed — see
+    /// `StoreProductKind.removeAds`. The opt-in "watch an ad to double
+    /// this match's XP" offer (`MatchDayCutsceneView`) is unaffected
+    /// either way, since that one is a benefit the player chooses, not an
+    /// ad shown to them unprompted.
+    var hasRemovedAds: Bool {
+        character?.purchasedRemoveAds ?? false
     }
 
     /// Applies the entitlement for a StoreKit-verified purchase of `kind`.
@@ -1053,6 +1054,7 @@ final class CharacterStore {
         case .riseToTop: character.purchasedTopRank = true
         case .anyHomeSeat: character.purchasedAnyHomeSeat = true
         case .unlimitedAwayPoints: character.purchasedUnlimitedAwayPoints = true
+        case .removeAds: character.purchasedRemoveAds = true
         }
         try? modelContext.save()
     }

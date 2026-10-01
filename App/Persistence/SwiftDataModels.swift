@@ -65,18 +65,17 @@ final class CharacterEntity {
     var purchasedTopRank: Bool = false
     var purchasedAnyHomeSeat: Bool = false
     var purchasedUnlimitedAwayPoints: Bool = false
+    /// Removes the banner and interstitial ads (see `CharacterStore.hasRemovedAds`)
+    /// — the opt-in "watch an ad to double this match's XP" offer stays
+    /// available either way, since that one's a benefit the player chose,
+    /// not an ad shown to them unprompted.
+    var purchasedRemoveAds: Bool = false
 
     /// Set when stadium security ejects the player with a ban (see
     /// `SecurityIncidentEngine`) — `nil` means no active ban. The player
     /// can't confirm attendance at any match while the season clock
     /// (`simulatedDate`) is still before this date.
     var stadiumBanUntilDate: Date?
-
-    /// The last calendar day the player watched a rewarded ad for a bonus
-    /// — see `CharacterStore.grantRewardedAdBonus`/`canWatchRewardedAdToday`.
-    /// `nil` means they've never watched one. Capped to once per day so it
-    /// can't be farmed by repeatedly tapping "Watch Ad."
-    var lastAdWatchDate: Date?
 
     /// Whether the player has founded their own breakaway youth group —
     /// see `CharacterStore.foundYouthGroup`/`YouthGroupEngine`.

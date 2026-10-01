@@ -22,5 +22,11 @@
     "name": "Unlimited Away Access",
     "description": "Every away ticket request is guaranteed to succeed, however big the club.",
     "priceDisplay": "$0.99"
+  },
+  {
+    "kind": "removeAds",
+    "name": "Remove Ads",
+    "description": "No more banner or ad breaks between matches. You can still choose to watch an ad after a match to double its XP, if you ever want to.",
+    "priceDisplay": "$1.99"
   }
 ]

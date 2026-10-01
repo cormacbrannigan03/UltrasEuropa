@@ -192,9 +192,10 @@ other — each is a separate `CharacterEntity` tagged with a `slotIndex`
 - [ ] Buttons, badges, progress bars, and the tab bar tint match the favorite club's primary color; creating a second save with a different club and switching to it via "Switch Save" changes all of those immediately; button text stays readable even for a club with a very light primary color
 - [ ] Dashboard's toolbar shows a flag emblem (🇬🇧 by default); tapping it opens a dropdown of all 27 languages with a checkmark on the current one; picking another immediately relabels the tab bar and the "Season Calendar"/"Store" Dashboard links in that language; force-quit and relaunch — the chosen language is still selected
 - [ ] Dashboard shows a "Next Match" card right under the Season Clock with the favorite club's soonest unplayed fixture (opponent, home/away, date); tapping it goes straight to that match's detail screen, same as tapping it from the Season Calendar; once every fixture is played, the card reads "No fixtures left this season" instead
-- [ ] On first launch (in a region requiring it, e.g. the EU), a Google consent dialog appears before any ad loads; a test banner (clearly labeled "Test Ad") appears at the bottom of the Dashboard
-- [ ] Dashboard's "Watch Ad for Bonus XP" button plays a test rewarded ad and grants +15 XP only once it's watched through to completion; tapping it again the same day shows it disabled with "Already watched today"; force-quit, relaunch, and simulate forward a day — it's available again
-- [ ] After a clean Full Time (no ejection/police intervention), a test interstitial appears roughly every third such match, not every single one
+- [ ] On first launch (in a region requiring it, e.g. the EU), a Google consent dialog appears before any ad loads; a real banner appears at the bottom of the Dashboard
+- [ ] After a clean Full Time (no ejection/police intervention), a "Watch Ad to Double XP (+N)" button appears above Done showing this match's actual XP total; watching the ad through to completion doubles the running XP total, adds an "Ad Bonus" row to the XP breakdown, and the button disappears for the rest of that summary; it reappears fresh after the next match
+- [ ] After a clean Full Time, a real interstitial appears roughly every third such match, not every single one, and never right after an ejection or police intervention
+- [ ] Buying "Remove Ads" in the Store hides the Dashboard banner and stops the post-match interstitial immediately; the "Watch Ad to Double XP" offer still appears after matches even with Remove Ads owned
 
 ## The club/league data — real, but not live-verified
 
@@ -781,23 +782,26 @@ non-consumable entitlements via real StoreKit 2 (`App/Store/PurchaseManager.swif
 | Rise to the Top | $9.99 | Instantly sets rank to Capo, overriding the earned rank everywhere it's read |
 | Any Home Section Seat | $0.99 | Instantly grants a standing season ticket in the favorite club's ultras section, bypassing the loyalty threshold |
 | Unlimited Away Access | $0.99 | Every away-ticket request succeeds, bypassing `AwayTicketAllocationEngine` entirely |
+| Remove Ads | $1.99 | Hides the Dashboard banner and the post-match interstitial; the opt-in "Watch Ad to Double XP" offer (see below) stays available either way, since that one's a benefit the player chooses rather than an ad shown to them |
 
 This is a deliberate departure from every other system in this app: the
 whole point of the progression design above (steep XP curves, prestige
 scaling, activity-diversity gates, loyalty grinds) is that ranking up
-*shouldn't* be easy — these four purchases exist specifically to let a
-player pay to skip that, at the player's choice. `StoreProductKind`
+*shouldn't* be easy — the first four purchases exist specifically to let a
+player pay to skip that, at the player's choice; Remove Ads is the one
+exception, paying only to remove the ad surfaces rather than to skip any
+progression. `StoreProductKind`
 (`Core/Sources/UltrasEuropaCore/Store/StoreProductKind.swift`) keeps this
 short and explicit rather than open-ended, and each entitlement is a
 simple persisted flag on `CharacterEntity` that the relevant
 `CharacterStore` property already checks first (see `rank`,
 `ownedItemIDs`, `hasUltrasSeasonTicket`, `awayTicketChance`,
-`attemptAwayTicket`) — none of it touches or recalculates the underlying
-earned progress, so a refund or a bug in the entitlement flag can't erase
-real progress underneath it.
+`attemptAwayTicket`, `hasRemovedAds`) — none of it touches or recalculates
+the underlying earned progress, so a refund or a bug in the entitlement
+flag can't erase real progress underneath it.
 
 **Getting real purchases working requires two things this environment
-can't do:** registering these four product identifiers
+can't do:** registering these five product identifiers
 (`StoreProductKind.productID`, e.g.
 `com.cormacbrannigan03.UltrasEuropa.store.riseToTop`) as non-consumable
 In-App Purchases in App Store Connect, and setting their pricing/tax/banking
@@ -807,10 +811,10 @@ that's done, `Product.products(for:)` returns nothing and `StoreView` shows
 its "no products found" message.
 
 For local testing before that setup exists, `App/StoreKit/Configuration.storekit`
-defines the same four products with sandbox prices, and `project.yml`
+defines the same five products with sandbox prices, and `project.yml`
 wires it into the `UltrasEuropa` scheme's run configuration
 (`storeKitConfiguration`) — running the app in the iOS Simulator from Xcode
-should let you buy, cancel, and restore all four products against Apple's
+should let you buy, cancel, and restore all five products against Apple's
 local StoreKit testing environment with no App Store Connect account or
 network connection needed. That local configuration is just for testing;
 it has no effect on a real device or a TestFlight/App Store build; those
@@ -823,18 +827,24 @@ Google Mobile Ads SDK (`App/Ads/`):
 
 - **A banner** at the bottom of the Dashboard (`BannerAdView`, a
   `UIViewControllerRepresentable` wrapping `BannerView` — there's no
-  SwiftUI-native banner API in the SDK).
+  SwiftUI-native banner API in the SDK) — hidden entirely once the player
+  owns the Remove Ads entitlement (`CharacterStore.hasRemovedAds`).
 - **An interstitial** after a clean Full Time summary (not after an
   ejection or police intervention — kicking someone with an ad right
   after a punitive outcome is bad form), and only roughly every third
   such match (`AdsManager.shouldShowInterstitialAfterMatch`), so ad
-  breaks don't dominate the between-match flow.
-- **A rewarded ad** behind a "Watch Ad for Bonus XP" button on the
-  Dashboard, granting a flat +15 XP (mirroring the low-involvement
-  penalty's magnitude) once per calendar day
-  (`CharacterStore.canWatchRewardedAdToday`/`grantRewardedAdBonus`,
-  backed by a new `CharacterEntity.lastAdWatchDate` field) — capped so it
-  can't be farmed by replaying the ad.
+  breaks don't dominate the between-match flow — also suppressed by
+  Remove Ads.
+- **A rewarded ad** behind a "Watch Ad to Double XP" button on every
+  clean Full Time summary (`MatchDayCutsceneView`, not capped like the
+  interstitial — it's offered after every eligible match, since it's the
+  player's choice to take it). Watching it to completion doubles that
+  match's own XP total (`CharacterStore.grantBonusXP`, tallied on the XP
+  breakdown as a new "Ad Bonus" row) rather than a flat amount, so a
+  heavily-engaged match is worth doubling far more than a quiet one. This
+  one stays available even with Remove Ads purchased — it's a benefit the
+  player opts into, not an ad shown to them unprompted, so paying to
+  remove ads shouldn't also remove that option.
 
 **Consent comes first.** `AdsManager.start()` (called once from
 `UltrasEuropaApp.init()`) requests an up-to-date GDPR/UK consent status
@@ -847,21 +857,20 @@ large share of its real audience is in the EEA/UK, where serving ads
 without a Google-certified consent flow is a genuine compliance problem,
 not a hypothetical one.
 
-**Getting real ad revenue requires an AdMob account this environment
-can't create:** every ad unit ID in `AdsManager.AdUnitID` is currently one
-of Google's own published *test* IDs (`isUsingTestAdUnits = true`) —
-these only ever serve ads clearly labeled "Test Ad," so they're always
-safe to ship during development, but they will never earn real money.
-Once there's a real AdMob account and app (admob.google.com → Apps → Add
-App, linked to this app's App Store listing), flip `isUsingTestAdUnits`
-to `false` and fill in the three real ad unit IDs, and swap the matching
-test `GADApplicationIdentifier` in `App/Info.plist` for the app's real
-AdMob App ID. The `SKAdNetworkItems` list in `App/Info.plist` currently
-has only Google's own identifier; before shipping for real revenue, copy
-the full current list from
-developers.google.com/admob/ios/ios14 over it — that list keeps growing
-as Google adds ad buyers, so it's best fetched fresh rather than frozen
-into committed code.
+**Ad revenue is live.** The AdMob account/app for UltrasEuropa now exists
+(created 1 Oct 2026, app ID `ca-app-pub-9676786622570370~8925541395`),
+and `AdsManager.AdUnitID` points at this app's three real ad units
+(`isUsingTestAdUnits = false`) rather than Google's test placeholders —
+real ads serve in any build from this point on. The
+`SKAdNetworkItems` list in `App/Info.plist` currently has only Google's
+own identifier; before relying on ad revenue at scale, copy the full
+current list from developers.google.com/admob/ios/ios14 over it — that
+list keeps growing as Google adds ad buyers, so it's best fetched fresh
+rather than frozen into committed code. (To force test ads again for any
+reason — e.g. testing without risking invalid-traffic flags on the real
+account from repeated self-clicks — flip `isUsingTestAdUnits` back to
+`true` and revert `GADApplicationIdentifier` in `Info.plist` to Google's
+sample App ID, `ca-app-pub-3940256099942544~1458002511`.)
 
 ## Every club has an ultras group — but it's a generic label, not invented lore
 
